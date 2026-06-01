@@ -4,87 +4,95 @@ import { dbConnect } from "./dbConnect";
 import { Admin } from "@/models/admin.model";
 import { AdminInvite } from "@/models/adminInvite.model";
 
-export const authOption = {
+export const authOptions = {
     providers : [
     GoogleProvider({
             clientId: process.env.GOOGLE_CLIENT_ID,
             clientSecret: process.env.GOOGLE_CLIENT_SECRET
         })  
     ],
+
     callbacks: {
-       async signIn({ account, profile }) {
-  try {
-    // Google provider check
-    if (account.provider !== "google") return false
-    if (!profile.email_verified) return false
+    async signIn({ account, profile }) {
+        try {
+            // 1. Google provider and verification check
+            if (account.provider !== "google") return false;
+            if (!profile.email_verified) return false;
 
-    await dbConnect()
+            await dbConnect();
 
-    // Superadmin check
-    if (profile.email === process.env.SUPER_ADMIN_EMAIL) {
-      const superAdmin = await Admin.findOne({ 
-        email: profile.email 
-      })
+            // Superadmin Check
+            if (profile.email === process.env.SUPER_ADMIN_EMAIL) {
+            const superAdmin = await Admin.findOne({ email: profile.email });
 
-      if (!superAdmin) {
-        await Admin.create({
-          name: profile.name,
-          email: profile.email,
-          googleId: profile.sub,
-          image: profile.picture,
-          role: "superadmin",
-          isActive: true,
-          invitedBy: null
-        })
-      } else {
-        await Admin.findOneAndUpdate(
-          { email: profile.email },
-          { lastLogin: Date.now(), image: profile.picture }
-        )
-      }
-      return true
-    }
+            if (!superAdmin) {
+                await Admin.create({
+                name: profile.name,
+                email: profile.email,
+                googleId: profile.sub,
+                image: profile.picture,
+                role: "superadmin",
+                isActive: true,
+                invitedBy: null
+                });
+            } else {
+                await Admin.findOneAndUpdate(
+                { email: profile.email },
+                { lastLogin: Date.now(), image: profile.picture }
+                );
+            }
+            return true;
+            }
 
-    // Invited admin check
-    const invite = await AdminInvite.findOne({
-      email: profile.email,
-      isUsed: false,
-      expiresAt: { $gt: new Date() }
-    })
+            // Agar koi purana sub-admin ya staff dobara login kare toh
+            const existingAdmin = await Admin.findOne({ email: profile.email });
+            
+            if (existingAdmin) {
+            // Agar superadmin ne is admin ko block/deactivate kiya hai toh login mat hone do
+            if (!existingAdmin.isActive) return false;
 
-    if (invite) {
-      const existingAdmin = await Admin.findOne({  // ← Admin, not AdminInvite
-        email: profile.email
-      })
+            // Last login aur profile picture update 
+            await Admin.findOneAndUpdate(
+                { email: profile.email },
+                { lastLogin: Date.now(), image: profile.picture }
+            );
+            return true; // Successfully logged in
+            }
 
-      if (!existingAdmin) {
-        await Admin.create({
-          name: profile.name,
-          email: profile.email,
-          googleId: profile.sub,
-          image: profile.picture,
-          role: invite.role,
-          isActive: true,
-          invitedBy: invite.invitedBy
-        })
-      }
+            // 4. Invited Admin Check (First time login only for new admin)
+            const invite = await AdminInvite.findOne({
+            email: profile.email,
+            isUsed: false,
+            expiresAt: { $gt: new Date() } // Token expire nahi hona chahiye
+            });
 
-      await AdminInvite.findByIdAndUpdate(
-        invite._id,
-        { isUsed: true }
-      )
+            if (invite) {
+    
+            await Admin.create({
+                name: profile.name,
+                email: profile.email,
+                googleId: profile.sub,
+                image: profile.picture,
+                role: invite.role, // admin ya staff jo invite me tha
+                isActive: true,
+                invitedBy: invite.invitedBy
+            });
 
-      return true
-    }
+            await AdminInvite.findByIdAndUpdate(
+                invite._id,
+                { isUsed: true }
+            );
 
-    // Koi bhi check pass nahi hua
-    return false
+            return true;
+            }
 
-  } catch (error) {
-    console.log("SignIn error:", error)
-    return false  // error pe bhi bahar bhejo
-  }
-},
+            return false;
+
+        } catch (error) {
+            console.log("SignIn error:", error);
+            return false;
+        }
+    },
 
     async jwt({ token, profile }) {
         try {
