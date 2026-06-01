@@ -2,7 +2,7 @@ import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import { dbConnect } from "./dbConnect";
 import { Admin } from "@/models/admin.model";
-import { AdminInvite } from "@/models/AdminInvite.model";
+import { AdminInvite } from "@/models/adminInvite.model";
 
 export const authOption = {
     providers : [
