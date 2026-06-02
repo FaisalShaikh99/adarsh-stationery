@@ -63,7 +63,7 @@ export const authOptions = {
             const invite = await AdminInvite.findOne({
             email: profile.email,
             isUsed: false,
-            expiresAt: { $gt: new Date() } // Token expire nahi hona chahiye
+            expiresAt: { $gt: new Date() } 
             });
 
             if (invite) {
