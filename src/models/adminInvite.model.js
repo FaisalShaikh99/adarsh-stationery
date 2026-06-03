@@ -11,6 +11,9 @@ const AdminInviteSchema = new mongoose.Schema({
         required : true,
         default : "staff"
     },
+    message : {
+        type : String,
+    },
     token : {
         type : String,
         required : true,

@@ -1,3 +1,5 @@
+// when sub admin or staff will login with google then this code will work
+
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import { dbConnect } from "./dbConnect";
@@ -15,7 +17,7 @@ export const authOptions = {
     callbacks: {
     async signIn({ account, profile }) {
         try {
-            // 1. Google provider and verification check
+            //Google provider and verification check
             if (account.provider !== "google") return false;
             if (!profile.email_verified) return false;
 

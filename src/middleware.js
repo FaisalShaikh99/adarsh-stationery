@@ -3,7 +3,7 @@ import { getToken } from 'next-auth/jwt';
 
 // middleware work on all files of admin folder 
 export const config = {
-  matcher: ['/admin/:path*'],
+  matcher: ['/admin/:path*', '/api/admin/:path*'],
 };
 
 export async function middleware(request) {
