@@ -11,7 +11,7 @@ import {
 } from '@react-email/components';
 
 export default function InviteEmail({ email, role, inviteLink, message }) {
-  // 🔑 Smart Extract: '@' ke pehle wale saare letters nikal liye
+  
   const username = email ? email.split('@')[0] : "Team Member";
 
   return (
@@ -32,7 +32,7 @@ export default function InviteEmail({ email, role, inviteLink, message }) {
       <Preview>You have been invited to join Adarsh Stationery</Preview>
       
       <Section style={{ padding: '20px', fontFamily: 'Roboto, sans-serif' }}>
-        {/* ✅ Ab yahan direct username show hoga */}
+      
         <Row>
           <Heading as="h2">Hello {username},</Heading>
         </Row>
