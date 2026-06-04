@@ -47,7 +47,7 @@ export const POST = asyncHandler(async (request) => {
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     //  Create Invite Link URL
-    const inviteLink = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/admin/login?token=${token}`;
+    const inviteLink = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/admin/sign-in?token=${token}`;
 
     //  Send Email via Resend Helper Function
     const emailResult = await sendInvitationEmail(email, role, inviteLink, message);
