@@ -106,6 +106,7 @@ export const authOptions = {
             if (admin) {
                 token.role = admin.role
                 token.id = admin._id.toString()
+                token.lastLogin = admin.lastLogin
             }
             }
             return token
@@ -119,7 +120,8 @@ export const authOptions = {
         try {
             if (token) {
             session.user.role = token.role   
-            session.user.id = token.id       
+            session.user.id = token.id   
+            session.user.lastLogin = token.lastLogin;    
             }
             return session
         } catch (error) {
@@ -133,6 +135,6 @@ export const authOptions = {
         strategy: "jwt" 
     },
     pages: {
-    signIn: '/admin/login'
+    signIn: '/admin/sign-in'
   }
 }

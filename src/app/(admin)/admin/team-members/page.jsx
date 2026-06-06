@@ -10,6 +10,25 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner"; 
 import { Loader2 } from "lucide-react"; 
 
+const formatLastLogin = (dateString) => {
+  if (!dateString) return "Never logged in";
+  
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return "Never logged in";
+
+    const dateOptions = { day: '2-digit', month: 'short', year: 'numeric' };
+    const formattedDate = date.toLocaleDateString('en-IN', dateOptions);
+    
+    const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: true };
+    const formattedTime = date.toLocaleTimeString('en-IN', timeOptions);
+    
+    return `${formattedDate} at ${formattedTime}`;
+  } catch (error) {
+    return "Never logged in";
+  }
+};
+
 export default function TeamMembersPage() {
   const { data: session, status } = useSession();
   const [isOpen, setIsOpen] = useState(false);
@@ -73,11 +92,8 @@ export default function TeamMembersPage() {
         </div>
 
         {userRole === "superadmin" && (
-          <Button
-            onClick={() => setIsOpen(true)}
-            size="lg"
-            className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-md transition-all active:scale-95"
-          >
+          <Button className="bg-blue-600 "
+                  onClick={() => setIsOpen(true)}>
             + Invite Member
           </Button>
         )}
@@ -98,24 +114,55 @@ export default function TeamMembersPage() {
           </thead>
           <tbody className="divide-y divide-zinc-800 text-zinc-300">
             <tr className="hover:bg-zinc-900/40 transition-colors">
-              <td className="p-4">1</td>
+              {/* 1. Serial Number */}
+              <td className="p-4 font-medium">1</td>
+              
+              {/* 2. Dynamic Avatar (Google Picture OR First Letter) */}
               <td className="p-4">
-                <div className="w-8 h-8 rounded-full bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-xs font-bold text-blue-400">
-                  {session?.user?.name ? session.user.name[0].toUpperCase() : "A"}
-                </div>
+                {session?.user?.image ? (
+                  <img 
+                    src={session.user.image} 
+                    alt={session.user.name || "User"} 
+                    className="w-9 h-9 rounded-full object-cover border border-zinc-800"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <div className="w-9 h-9 rounded-full bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-sm font-bold text-blue-400 capitalize">
+                    {session?.user?.name ? session.user.name[0] : "U"}
+                  </div>
+                )}
               </td>
-              <td className="p-4 capitalize">{session?.user?.name || "Adarsh Proprietor"}</td>
-              <td className="p-4 text-zinc-400">{session?.user?.email || "owner@adarsh.com"}</td>
+              
+              {/* 3. User Name */}
+              <td className="p-4 capitalize font-medium text-white">
+                {session?.user?.name || "Loading..."}
+              </td>
+              
+              {/* 4. User Email */}
+              <td className="p-4 text-zinc-400">
+                {session?.user?.email || "Loading..."}
+              </td>
+              
+              {/* 5. Role Badge */}
               <td className="p-4">
-                <span className="px-2 py-1 text-xs font-semibold rounded-md bg-purple-500/10 text-purple-400 border border-purple-500/20 uppercase tracking-wider">
-                  {userRole || "superadmin"}
+                <span className="px-2.5 py-1 text-xs font-semibold rounded-md bg-purple-500/10 text-purple-400 border border-purple-500/20 uppercase tracking-wider">
+                  {session?.user?.role || "superadmin"}
                 </span>
               </td>
+              
+              {/* 6. Active Status Indicator */}
               <td className="p-4">
                 <div className="flex items-center gap-2 text-green-400 text-sm">
                   <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
                   Active
                 </div>
+              </td>
+
+              {/* 7. Dynamic Last Login Format Display */}
+              <td className="p-4 text-sm text-zinc-400 font-mono">
+                {/* Agar session mein lastLogin data backend se inject hoto wo dikhao, 
+                    nahi toh aapke mongoDB data ke anusaar test timestamp fallback de sakte hain */}
+                {formatLastLogin(session?.user?.lastLogin || new Date().toISOString())}
               </td>
             </tr>
           </tbody>
