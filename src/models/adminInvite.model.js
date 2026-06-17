@@ -19,7 +19,7 @@ const AdminInviteSchema = new mongoose.Schema({
         required : true,
         unique : true
     },
-    expiredAt : {
+    expiresAt : {
         type : Date,
         default: () => new Date(Date.now() + 24*60*60*1000)
     },

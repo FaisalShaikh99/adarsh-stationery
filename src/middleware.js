@@ -11,16 +11,13 @@ export async function middleware(request) {
   const {pathname} = request.nextUrl;
 
 
-  if (
-    token &&
-    (pathname.startsWith('/admin/sign-in'))
-  ) {
+  if (token && (pathname.startsWith('/admin/sign-in'))) {
     return NextResponse.redirect(new URL('/admin/dashboard', request.url));
   }
 
-  if (!token && pathname.startsWith('/admin/:path*')) {
+  if (!token && pathname.startsWith('/admin') && !pathname.startsWith('/admin/sign-in')) {
     return NextResponse.redirect(new URL('/admin/sign-in', request.url));
-  }
+  } 
 
   // check user role
 

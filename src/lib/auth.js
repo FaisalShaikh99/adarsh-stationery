@@ -15,120 +15,136 @@ export const authOptions = {
     ],
 
     callbacks: {
-    async signIn({ account, profile }) {
-        try {
-            //Google provider and verification check
-            if (account.provider !== "google") return false;
-            if (!profile.email_verified) return false;
+        async signIn({ account, profile, user }) { 
+            try {
+                if (account.provider !== "google") return false;
 
-            await dbConnect();
+                await dbConnect();
 
-            // Superadmin Check
-            if (profile.email === process.env.SUPER_ADMIN_EMAIL) {
-            const superAdmin = await Admin.findOne({ email: profile.email });
+                //  SAFE EMAIL EXTLECTION: Profile se lo, agar undefined hai toh user object se lo!
+                const userEmail = profile?.email || user?.email;
+                const userName = profile?.name || user?.name;
+                const userImage = profile?.picture || user?.image;
+                const googleId = profile?.sub || user?.id;
 
-            if (!superAdmin) {
-                await Admin.create({
-                name: profile.name,
-                email: profile.email,
-                googleId: profile.sub,
-                image: profile.picture,
-                role: "superadmin",
-                isActive: true,
-                invitedBy: null
+                if (!userEmail) {
+                    console.log("NextAuth Error: Could not extract email from Google identity.");
+                    return false;
+                }
+
+              
+                if (userEmail === process.env.SUPER_ADMIN_EMAIL) {
+                    const superAdmin = await Admin.findOne({ email: userEmail });
+
+                    if (!superAdmin) {
+                        await Admin.create({
+                            name: userName,
+                            email: userEmail,
+                            googleId: googleId,
+                            image: userImage,
+                            role: "superadmin",
+                            isActive: true,
+                            invitedBy: null
+                        });
+                    } else {
+                        await Admin.findOneAndUpdate(
+                            { email: userEmail },
+                            { lastLogin: Date.now(), image: userImage, isActive: true }
+                        );
+                    }
+                    return true;
+                }
+
+                // ==========================================
+                // 👥 2. EXISTING SUB-ADMIN / STAFF LOGIN (Dobara Login)
+                // ==========================================
+                const existingAdmin = await Admin.findOne({ email: userEmail });
+                
+                if (existingAdmin) {
+                    // 🟢 User jab bhi dubara login karega, status wapas Active (true) ho jayega!
+                    await Admin.findOneAndUpdate(
+                        { email: userEmail },
+                        { 
+                            lastLogin: Date.now(), 
+                            image: userImage, 
+                            isActive: true 
+                        }
+                    );
+                    return true; 
+                }
+
+                // ==========================================
+                // 📨 3. FIRST TIME INVITED ADMIN CHECK
+                // ==========================================
+                const invite = await AdminInvite.findOne({
+                    email: userEmail,
+                    isUsed: false,
+                    $or: [
+                        { expiresAt: { $gt: new Date() } },
+                        { expiredAt: { $gt: new Date() } }
+                    ]
                 });
-            } else {
-                await Admin.findOneAndUpdate(
-                { email: profile.email },
-                { lastLogin: Date.now(), image: profile.picture }
-                );
+
+                if (invite) {
+                    await Admin.create({
+                        name: userName,
+                        email: userEmail,
+                        googleId: googleId,
+                        image: userImage,
+                        role: invite.role, 
+                        isActive: true, 
+                        invitedBy: invite.invitedBy
+                    });
+
+                    await AdminInvite.findByIdAndUpdate(
+                        invite._id,
+                        { isUsed: true }
+                    );
+
+                    return true;
+                }
+
+                console.log(`Unauthorized access attempt blocked for: ${userEmail}`);
+                return false;
+
+            } catch (error) {
+                console.log("SignIn error:", error);
+                return false;
             }
-            return true;
+        },
+        async jwt({ token, profile, user }) { // 👈 'user' add kiya
+            try {
+                const targetEmail = profile?.email || user?.email || token?.email;
+                
+                if (targetEmail) {
+                    await dbConnect();
+                    const admin = await Admin.findOne({ email: targetEmail });
+                    if (admin) {
+                        token.role = admin.role;
+                        token.id = admin._id.toString();
+                        token.lastLogin = admin.lastLogin;
+                    }
+                }
+                return token;
+            } catch (error) {
+                console.log("JWT error:", error);
+                return token;
             }
-
-            // Agar koi purana sub-admin ya staff dobara login kare toh
-            const existingAdmin = await Admin.findOne({ email: profile.email });
-            
-            if (existingAdmin) {
-            // Agar superadmin ne is admin ko block/deactivate kiya hai toh login mat hone do
-            if (!existingAdmin.isActive) return false;
-
-            // Last login aur profile picture update 
-            await Admin.findOneAndUpdate(
-                { email: profile.email },
-                { lastLogin: Date.now(), image: profile.picture }
-            );
-            return true; // Successfully logged in
-            }
-
-            // 4. Invited Admin Check (First time login only for new admin)
-            const invite = await AdminInvite.findOne({
-            email: profile.email,
-            isUsed: false,
-            expiresAt: { $gt: new Date() } 
-            });
-
-            if (invite) {
-    
-            await Admin.create({
-                name: profile.name,
-                email: profile.email,
-                googleId: profile.sub,
-                image: profile.picture,
-                role: invite.role, // admin ya staff jo invite me tha
-                isActive: true,
-                invitedBy: invite.invitedBy
-            });
-
-            await AdminInvite.findByIdAndUpdate(
-                invite._id,
-                { isUsed: true }
-            );
-
-            return true;
-            }
-
-            return false;
-
-        } catch (error) {
-            console.log("SignIn error:", error);
-            return false;
-        }
-    },
-
-    async jwt({ token, profile }) {
-        try {
-            if (profile) {
-            await dbConnect()
-            const admin = await Admin.findOne({ 
-                email: profile.email 
-            })
-            if (admin) {
-                token.role = admin.role
-                token.id = admin._id.toString()
-                token.lastLogin = admin.lastLogin
-            }
-            }
-            return token
-        } catch (error) {
-            console.log("JWT error:", error)
-            return token
-        }
         },
 
-    async session({ session, token }) {
-        try {
-            if (token) {
-            session.user.role = token.role   
-            session.user.id = token.id   
-            session.user.lastLogin = token.lastLogin;    
+        async session({ session, token }) {
+            try {
+                if (token) {
+                session.user.role = token.role   
+                session.user.id = token.id   
+                session.user.lastLogin = token.lastLogin;    
+                }
+                return session
+            } catch (error) {
+                console.log("Session error:", error)
+                return session
             }
-            return session
-        } catch (error) {
-            console.log("Session error:", error)
-            return session
-        }
-        }           
+            }           
     },
 
     session: {
