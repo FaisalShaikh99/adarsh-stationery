@@ -10,7 +10,6 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner"; 
 import { Loader2, Search, Trash2, Ban } from "lucide-react";
 
-// 🚨 SHADCN ALERT DIALOG IMPORTS (image_88f23a.png ke folder structure ke hisab se path)
 import {
   AlertDialog,
   AlertDialogAction,
@@ -98,8 +97,8 @@ export default function TeamMembersPage() {
 
       if (response.ok) {
         toast.success(`${selectedMember.name} removed successfully!`);
-        setIsDeleteOpen(false); // Popup close karo
-        fetchTeamMembers(); // Table refresh karo
+        setIsDeleteOpen(false); // Popup close 
+        fetchTeamMembers(); // Table refresh 
       } else {
         toast.error(result.message || "Failed to delete member.");
       }
@@ -292,7 +291,7 @@ export default function TeamMembersPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* ========== INVITATION MODAL FORM ========== */}
+      {/*  INVITATION MODAL FORM  */}
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs p-4">
           <div className="w-full max-w-md rounded-xl border border-zinc-800 bg-zinc-900 p-6 shadow-2xl">

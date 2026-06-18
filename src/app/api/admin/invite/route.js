@@ -60,7 +60,7 @@ export const POST = asyncHandler(async (request) => {
        service_id: process.env.EMAILJS_SERVICE_ID,
        template_id: process.env.EMAILJS_TEMPLATE_ID,
        user_id: process.env.EMAILJS_PUBLIC_KEY,
-       accessToken: process.env.EMAILJS_PRIVATE_KEY, // 👈 Strict mode ke liye yeh line add karein
+       accessToken: process.env.EMAILJS_PRIVATE_KEY, 
        template_params: {
             // include several common variable names to match different template setups
             to_email: email,

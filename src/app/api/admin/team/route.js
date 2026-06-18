@@ -12,7 +12,6 @@ export const GET = asyncHandler(async (request) => {
     const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
     
     if (!token) {
-        // ✅ FIXED: 404 ko badal kar 401 kiya taaki HTML not-found page trigger na ho
         throw new ApiError(401, "Unauthorized access. Please login first.");
     }
     

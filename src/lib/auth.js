@@ -1,6 +1,4 @@
-// when sub admin or staff will login with google then this code will work
 
-import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import { dbConnect } from "./dbConnect";
 import { Admin } from "@/models/admin.model";
@@ -55,9 +53,7 @@ export const authOptions = {
                     return true;
                 }
 
-                // ==========================================
-                // 👥 2. EXISTING SUB-ADMIN / STAFF LOGIN (Dobara Login)
-                // ==========================================
+          
                 const existingAdmin = await Admin.findOne({ email: userEmail });
                 
                 if (existingAdmin) {
@@ -73,9 +69,7 @@ export const authOptions = {
                     return true; 
                 }
 
-                // ==========================================
-                // 📨 3. FIRST TIME INVITED ADMIN CHECK
-                // ==========================================
+              
                 const invite = await AdminInvite.findOne({
                     email: userEmail,
                     isUsed: false,
@@ -112,7 +106,7 @@ export const authOptions = {
                 return false;
             }
         },
-        async jwt({ token, profile, user }) { // 👈 'user' add kiya
+        async jwt({ token, profile, user }) { 
             try {
                 const targetEmail = profile?.email || user?.email || token?.email;
                 
