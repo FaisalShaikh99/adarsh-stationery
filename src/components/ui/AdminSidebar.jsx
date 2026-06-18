@@ -17,33 +17,30 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 
-
 export default function AdminSidebar({ isCollapsed, setIsCollapsed }) {
-    const pathname = usePathname();
-    const { data: session } = useSession();
+  const pathname = usePathname();
+  const { data: session } = useSession();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-    const [isLoggingOut, setIsLoggingOut] = useState(false);
-
-    const handleLogout = async () => {
+  const handleLogout = async () => {
     try {
-        setIsLoggingOut(true);
-        
-        const response = await fetch("/api/auth/logout", {
+      setIsLoggingOut(true);
+      const response = await fetch("/api/admin/auth/logout", {
         method: "POST",
-        });
-
-        if (!response.ok) {
+      });
+      if (!response.ok) {
         console.error("Failed to set status to inactive on backend");
-        }
+      }
     } catch (error) {
-        console.error("Logout status update error:", error);
+      console.error("Logout status update error:", error);
     } finally {
-        signOut({ callbackUrl: "/admin/sign-in" });
+      signOut({ callbackUrl: "/admin/sign-in" });
     }
-    };
+  };
+
   const navLinks = [
     { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
-    { name: "Team Members", href: "/admin/team-members", icon: Users },
+    { name: "Team Members", href: "/admin/team-members", icon: Users, requireSuperAdmin: true },
     { name: "Products & Stock", href: "/admin/products", icon: ShoppingBag },
     { name: "Invoices / Orders", href: "/admin/orders", icon: FileText },
     { name: "Store Settings", href: "/admin/settings", icon: Settings },
@@ -55,11 +52,7 @@ export default function AdminSidebar({ isCollapsed, setIsCollapsed }) {
         isCollapsed ? "w-20" : "w-64"
       }`}
     >
-      
-      {/* Top Brand Block & Open/Close Toggle Button */}
       <div className="space-y-8 relative">
-        
-      
         <button 
           onClick={() => setIsCollapsed(!isCollapsed)}
           className="absolute -right-7 top-2 bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white p-1 rounded-full shadow-md z-50 transition-colors duration-200"
@@ -67,7 +60,6 @@ export default function AdminSidebar({ isCollapsed, setIsCollapsed }) {
           {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
         </button>
 
-        {/* Brand Logo Section */}
         <div className="flex items-center gap-3 px-2 overflow-hidden">
           <div className="h-9 w-9 shrink-0 rounded-xl bg-gradient-to-br from-blue-500 via-indigo-600 to-orange-500 flex items-center justify-center shadow-lg shadow-blue-500/10">
             <PenTool className="h-5 w-5 text-white" />
@@ -81,9 +73,12 @@ export default function AdminSidebar({ isCollapsed, setIsCollapsed }) {
           )}
         </div>
 
-        {/* Navigation Links */}
         <nav className="space-y-1.5">
           {navLinks.map((link) => {
+            if (link.requireSuperAdmin && session?.user?.role !== "superadmin") {
+              return null;
+            }
+
             const Icon = link.icon;
             const isActive = pathname === link.href;
 
@@ -111,7 +106,6 @@ export default function AdminSidebar({ isCollapsed, setIsCollapsed }) {
         </nav>
       </div>
 
-      {/* Bottom Profile & Logout */}
       <div className="border-t border-zinc-900 pt-4 space-y-4 overflow-hidden">
         <div className="flex items-center gap-3 px-2 py-1">
           {session?.user?.image ? (
@@ -136,21 +130,22 @@ export default function AdminSidebar({ isCollapsed, setIsCollapsed }) {
         </div>
 
         <button
-            onClick={handleLogout} 
-            disabled={isLoggingOut}
-            className="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-medium text-rose-400 hover:bg-rose-500/5 transition-colors group disabled:opacity-50"
-            >
-            {isLoggingOut ? (
-                <Loader2 className="h-4 w-4 shrink-0 animate-spin text-rose-400" />
-            ) : (
-                <LogOut className="h-4 w-4 shrink-0 text-rose-400 transition-transform group-hover:-translate-x-0.5" />
-            )}
-            {!isCollapsed && <span className="animate-in fade-in duration-200">
-                {isLoggingOut ? "Logging out..." : "Logout Account"}
-            </span>}
+          onClick={handleLogout} 
+          disabled={isLoggingOut}
+          className="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-medium text-rose-400 hover:bg-rose-500/5 transition-colors group disabled:opacity-50"
+        >
+          {isLoggingOut ? (
+            <Loader2 className="h-4 w-4 shrink-0 animate-spin text-rose-400" />
+          ) : (
+            <LogOut className="h-4 w-4 shrink-0 text-rose-400 transition-transform group-hover:-translate-x-0.5" />
+          )}
+          {!isCollapsed && (
+            <span className="animate-in fade-in duration-200">
+              {isLoggingOut ? "Logging out..." : "Logout Account"}
+            </span>
+          )}
         </button>
       </div>
-
     </aside>
   );
 }
