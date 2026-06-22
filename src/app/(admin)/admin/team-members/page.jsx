@@ -81,7 +81,7 @@ export default function TeamMembersPage() {
     try {
       setConfirmOpen(false);
       setActionLoadingId(id);
-      const response = await fetch(`/api/admin/team/toggle-block?id=${id}`, {
+      const response = await fetch(`/api/admin/toggle-block?id=${id}`, {
         method: "PATCH",
       });
       const result = await response.json();

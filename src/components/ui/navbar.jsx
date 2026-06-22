@@ -22,47 +22,38 @@ const Navbar = () => {
   }
 
   return (
-    <nav className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[95%] max-w-5xl rounded-full border border-gray-200 dark:border-[#2A2A2A] bg-white/70 dark:bg-[#121212]/70 backdrop-blur-md shadow-sm transition-colors">
+    <nav className="fixed top-4 left-1/2 z-50 w-[95%] max-w-5xl -translate-x-1/2 rounded-full border border-black/5 bg-white/75 backdrop-blur-xl shadow-sm transition-colors dark:border-white/10 dark:bg-black/60">
       <div className="mx-auto flex h-16 items-center justify-between px-6 lg:px-8">
-        
-        {/* Logo Section */}
         <Link href="/" className="group flex items-center gap-3">
-          <div className="relative flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-[#EDAE48] to-[#D1495B] text-white transition-transform duration-300 group-hover:-rotate-3 shadow-sm">
+          <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-brand-gradient text-white shadow-lg shadow-brand-purple/15 transition-transform duration-300 group-hover:-rotate-3">
             <Sparkles className="h-4 w-4" />
           </div>
 
           <div className="flex flex-col">
-            <h1 className="text-lg font-bold tracking-tight text-gray-900 dark:text-[#EAEAEA]">
-              True Feedback
+            <h1 className="text-lg font-bold tracking-tight text-black dark:text-white">
+              Adarsh Stationery
             </h1>
           </div>
         </Link>
 
-        {/* Right Section */}
         <div className="flex items-center gap-4">
           {session ? (
             <>
-              {/* Welcome Text */}
-              <div className="hidden md:flex flex-col items-end mr-2">
-                <span className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-[#8A8A8A]">
+              <div className="mr-2 hidden flex-col items-end md:flex">
+                <span className="text-[10px] uppercase tracking-wider text-black/55 dark:text-white/55">
                   Signed in as
                 </span>
-                <h2 className="text-sm font-medium text-gray-900 dark:text-[#D1D1D1]">
+                <h2 className="text-sm font-medium text-black dark:text-white">
                   {user.username || user.email}
                 </h2>
               </div>
               <ModeToggle />
-              {/* Logout Button */}
               <Button
                 onClick={() => signOut({ callbackUrl: '/' })}
                 variant="outline"
-                className="
-                  h-9 px-4 rounded-full border border-gray-200 dark:border-[#2A2A2A] bg-transparent text-gray-900 dark:text-[#EAEAEA]
-                  hover:border-[#D1495B] hover:text-[#D1495B] hover:bg-transparent
-                  transition-colors duration-200
-                "
+                className="h-9 rounded-full border border-black/10 bg-transparent text-black hover:border-brand-purple hover:text-brand-purple dark:border-white/10 dark:text-white dark:hover:border-brand-purple"
               >
-                <LogOut className="h-4 w-4 mr-2 md:mr-0 lg:mr-2" />
+                <LogOut className="mr-2 h-4 w-4 md:mr-0 lg:mr-2" />
                 <span className="hidden lg:inline">Logout</span>
               </Button>
             </>
@@ -70,13 +61,7 @@ const Navbar = () => {
             <>
               <ModeToggle />
               <Link href="/sign-in">
-                <Button
-                  className="
-                    h-9 px-6 rounded-full border-0 
-                    bg-gradient-to-r from-[#EDAE48] to-[#D1495B] text-white font-medium
-                    hover:opacity-90 transition-opacity duration-200
-                  "
-                >
+                <Button className="h-9 rounded-full bg-brand-gradient px-6 text-white hover:opacity-90">
                   Login
                 </Button>
               </Link>

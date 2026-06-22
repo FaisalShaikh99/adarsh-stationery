@@ -24,12 +24,10 @@ export default function RootLayout({ children }) {
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
-        <AuthProvider>
-             {children}
-        </AuthProvider> 
+      <body className="min-h-full bg-background text-foreground transition-colors duration-300">
+        <AuthProvider>{children}</AuthProvider>
         <Toaster richColors closeButton position="bottom-right" />
-        </body>
+      </body>
     </html>
   );
 }
