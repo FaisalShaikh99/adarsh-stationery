@@ -234,6 +234,84 @@ export default function CategoryManagementPage() {
     cat.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // 1. Naya State Suggestion Track Karne Ke Liye (Top Par Add Karein)
+  const [spellingSuggestion, setSpellingSuggestion] = useState(null);
+
+  // 2. Levenshtein Distance Algorithm (Spelling check karne ka engine)
+  const getLevenshteinDistance = (a, b) => {
+    const matrix = [];
+    for (let i = 0; i <= b.length; i++) matrix[i] = [i];
+    for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+
+    for (let i = 1; i <= b.length; i++) {
+      for (let j = 1; j <= a.length; j++) {
+        if (b.charAt(i - 1) === a.charAt(j - 1)) {
+          matrix[i][j] = matrix[i - 1][j - 1];
+        } else {
+          matrix[i][j] = Math.min(
+            matrix[i - 1][j - 1] + 1, // substitution
+            matrix[i][j - 1] + 1,     // insertion
+            matrix[i - 1][j] + 1      // deletion
+          );
+        }
+      }
+    }
+    return matrix[b.length][a.length];
+  };
+
+// 3. Search input change hone par spelling check karne wala framework
+  const handleSearchChange = (query) => {
+    setSearchQuery(query);
+    
+    if (query.trim().length < 2) {
+      setSpellingSuggestion(null);
+      return;
+    }
+
+    const lowerQuery = query.toLowerCase().trim();
+    
+    // 1. Agar direct match ho raha hai, toh suggestion chhupao
+    const directMatchExists = categories.some(cat => 
+      cat.name.toLowerCase().includes(lowerQuery)
+    );
+    if (directMatchExists) {
+      setSpellingSuggestion(null);
+      return;
+    }
+
+    let bestMatch = null;
+    let minDistance = 999; // Isko bada rakhenge taaki door ke words bhi map ho sakein
+
+    categories.forEach((cat) => {
+      const catName = cat.name.toLowerCase();
+      
+      // Feature A: Substring/Words Split Matching (For 'beg' -> 'bag pack')
+      const words = catName.split(/\s+/); // ['bag', 'pack']
+      let closestWordDistance = 999;
+
+      words.forEach((word) => {
+        const wordDist = getLevenshteinDistance(lowerQuery, word);
+        if (wordDist < closestWordDistance) {
+          closestWordDistance = wordDist;
+        }
+      });
+
+      // Feature B: Global string distance checking
+      const globalDistance = getLevenshteinDistance(lowerQuery, catName);
+
+      // Dono distances me se jo sabse chhota (best) ho use lein
+      const finalDistance = Math.min(closestWordDistance, globalDistance);
+
+      // Baseline threshold check: Agar input chhota hai aur match mil raha hai
+      if (finalDistance < minDistance && finalDistance <= 2) { 
+        minDistance = finalDistance;
+        bestMatch = cat.name;
+      }
+    });
+
+    setSpellingSuggestion(bestMatch);
+  };
+
   return (
     <div className="w-full min-h-screen bg-[#09090b] text-white p-6 space-y-6 font-sans">
       
@@ -260,17 +338,35 @@ export default function CategoryManagementPage() {
       {/* Workspace Area Table Arena */}
       <div className="bg-[#0c0c0e] border border-zinc-800 rounded-2xl p-6 space-y-4 shadow-xl">
         
-        {/* Dynamic Client Query Filter Box */}
-        <div className="flex justify-center w-full">
+        {/* Wireframe Center Input Search Box */}
+        <div className="flex flex-col items-center justify-center w-full space-y-2">
           <div className="relative w-full max-w-md">
             <input
               type="text"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)} // 🔥 Trigger fuzzy checker
               placeholder="Search Category with AI search features..."
               className="w-full bg-[#141416] border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-center text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-blue-500 transition-all shadow-inner"
             />
           </div>
+
+          {/* ✨ Smart Did You Mean Ribbon Suggestion Box */}
+          {spellingSuggestion && (
+            <div className="text-xs text-zinc-400 bg-blue-500/10 border border-blue-500/20 px-3 py-1.5 rounded-lg animate-fadeIn">
+              Did you mean:{" "}
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery(spellingSuggestion);
+                  setSpellingSuggestion(null); // Click karte hi suggestion off!
+                }}
+                className="text-blue-400 font-semibold hover:underline capitalize"
+              >
+                {spellingSuggestion}
+              </button>
+              {" "}?
+            </div>
+          )}
         </div>
 
         {/* 📊 CORE DATA TABLE NODE LAYER */}

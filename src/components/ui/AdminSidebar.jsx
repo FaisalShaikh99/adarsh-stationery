@@ -13,7 +13,8 @@ import {
   PenTool,
   ChevronLeft,
   ChevronRight,
-  Loader2
+  Loader2,
+  LayoutGrid
 } from "lucide-react";
 import { useState } from "react";
 
@@ -41,6 +42,7 @@ export default function AdminSidebar({ isCollapsed, setIsCollapsed }) {
   const navLinks = [
     { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
     { name: "Team Members", href: "/admin/team-members", icon: Users, requireSuperAdmin: true },
+    { name: "Category Management", href: "/admin/categories", icon: LayoutGrid},
     { name: "Products & Stock", href: "/admin/products", icon: ShoppingBag },
     { name: "Invoices / Orders", href: "/admin/orders", icon: FileText },
     { name: "Store Settings", href: "/admin/settings", icon: Settings },
