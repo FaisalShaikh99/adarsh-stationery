@@ -7,11 +7,16 @@ export const config = {
 };
 
 export async function middleware(request) {
-  const token = await getToken({ req: request });
-  const {pathname} = request.nextUrl;
+  // 🔥 FIXED LINE: Pass request directly or with explicit object parameters for edge compatibility
+  const token = await getToken({ 
+    req: request, 
+    secret: process.env.NEXTAUTH_SECRET // Ensure your secret is passed explicitly here
+  });
+  
+  const { pathname } = request.nextUrl;
 
-
-  if (token && (pathname.startsWith('/admin/sign-in'))) {
+  // Sign-in page check bypass logic
+  if (token && pathname.startsWith('/admin/sign-in')) {
     return NextResponse.redirect(new URL('/admin/dashboard', request.url));
   }
 
@@ -19,12 +24,12 @@ export async function middleware(request) {
     return NextResponse.redirect(new URL('/admin/sign-in', request.url));
   } 
 
-  // check user role
-
- if (token && pathname !== '/admin/sign-in') {
+  // Check user role matrix safety guard
+  if (token && pathname !== '/admin/sign-in') {
     if (token.role !== 'superadmin' && token.role !== 'admin' && token.role !== 'staff') {
         return NextResponse.redirect(new URL('/admin/sign-in?error=AccessDenied', request.url));
     }
- }
-  return NextResponse.next();
+  }
+
+  return NextResponse.next(); // Yeh Next.js native flow ka next() hai, yeh bilkul perfect chalega!
 }

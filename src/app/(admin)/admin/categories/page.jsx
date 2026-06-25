@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState,useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { Loader2, Trash2, Edit2, Sparkles, UploadCloud } from "lucide-react";
 
@@ -63,6 +63,16 @@ export default function CategoryManagementPage() {
   const [selectedImage, setSelectedImage] = useState("");
   const [uploadMode, setUploadMode] = useState("ai"); // 'ai' or 'manual'
 
+  const fileInputRef = useRef(null);
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const imageUrl = URL.createObjectURL(file); // Local temporary preview URL
+      setSelectedImage(imageUrl);
+      // Note: Production me yahan aap apna Cloudinary/Multer ka upload logic daalenge
+    }
+  };
   // ==================== 📡 BACKEND SERVER API INTERACTIONS ====================
 
   // Fetch Category Log Matrix (GET)
@@ -543,10 +553,24 @@ export default function CategoryManagementPage() {
             {/* Manual Fallback Device Node */}
             {uploadMode === "manual" && (
               <div className="space-y-2">
-                <Label className="text-zinc-400 text-xs font-semibold tracking-wider uppercase">Local Storage File Uploader</Label>
-                <div className="border border-dashed border-zinc-700 rounded-xl p-6 bg-zinc-950/40 text-center flex flex-col items-center justify-center gap-2 hover:bg-zinc-950/80 transition-all cursor-pointer">
+                <Label className="text-zinc-400 text-xs font-semibold tracking-wider uppercase">Local Device Storage Uploader</Label>
+                
+                {/* Hidden Real HTML Input Node */}
+                <input 
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  accept="image/*"
+                  className="hidden"
+                />
+
+                {/* Visible Stylized Trigger Box */}
+                <div 
+                  onClick={() => fileInputRef.current.click()} // 🔥 Click karte hi windows khulega!
+                  className="border border-dashed border-zinc-700 rounded-xl p-6 bg-zinc-950/40 text-center flex flex-col items-center justify-center gap-2 hover:bg-zinc-950/80 transition-all cursor-pointer"
+                >
                   <UploadCloud className="h-6 w-6 text-zinc-500" />
-                  <span className="text-xs text-zinc-400">Click to pick physical layout icon asset</span>
+                  <span className="text-xs text-zinc-400">Click to load physical icon asset</span>
                 </div>
               </div>
             )}
