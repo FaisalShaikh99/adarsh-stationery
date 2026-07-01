@@ -61,7 +61,7 @@ export default function ProductManagementPage() {
 
   // Premium Stationery Directory Assets Sync
   const stationeryBrandsList = [
-    { name: "Adarsh", logo: "https://cdn-icons-png.flaticon.com/512/2541/2541991.png" },
+    { name: "Adarsh", logo: "https://res.cloudinary.com/dfyhsuoc4/image/upload/v1782306895/ChatGPT_Image_Jun_24_2026_06_31_29_PM_avwrxb.png" },
     { name: "Classmate", logo: "https://cdn-icons-png.flaticon.com/512/2541/2541991.png" },
     { name: "Doms", logo: "https://cdn-icons-png.flaticon.com/512/2541/2541991.png" },
     { name: "Apsara", logo: "https://cdn-icons-png.flaticon.com/512/2541/2541991.png" },
@@ -135,34 +135,75 @@ export default function ProductManagementPage() {
     e.preventDefault();
     setFormLoading(true);
 
-    const targetBrandObj = stationeryBrandsList.find(b => b.name === selectedCompany);
-    
-    // Explicit clean mapping key schema objects for standard compliance verification rules
-    const payload = {
-      name: productName,
-      category: selectedCategory,
-      company: selectedCompany,
-      companyLogo: targetBrandObj ? targetBrandObj.logo : "https://cdn-icons-png.flaticon.com/512/2541/2541991.png",
-      stock: Number(stockQuantity),
-      stockUnit: stockUnit,
-      costPrice: Number(costPrice),
-      sellingPrice: Number(sellPrice),
-      description: description,
-      images: uploadedImages.filter(url => url && url.trim() !== ""),
-    };
-
-    const targetUrl = isEditing ? `/api/admin/products?id=${editId}` : "/api/admin/products";
-    const targetMethod = isEditing ? "PUT" : "POST";
-
     try {
+      // Collect actual File objects from hidden inputs
+      const filesToUpload = [];
+      for (let i = 0; i < 3; i++) {
+        const input = fileInputsRef.current[i];
+        if (input && input.files && input.files[0]) {
+          const file = input.files[0];
+          // read as dataURL
+          const dataUrl = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          });
+          filesToUpload.push({ name: file.name, data: dataUrl });
+        }
+      }
+
+      let uploadedUrls = [];
+      if (filesToUpload.length > 0) {
+        const uploadRes = await fetch('/api/admin/uploads', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ files: filesToUpload }),
+        });
+        const uploadResult = await uploadRes.json();
+        if (uploadRes.ok && uploadResult.success) {
+          uploadedUrls = uploadResult.data || [];
+        } else {
+          toast.error(uploadResult.message || 'Image upload failed');
+          setFormLoading(false);
+          return;
+        }
+      }
+
+      // Merge uploadedUrls with any existing remote URLs (when editing or user pasted URLs)
+      const finalImages = [];
+      // keep existing URLs from uploadedImages if they look like absolute paths
+      for (const url of uploadedImages) {
+        if (url && url.startsWith('http')) finalImages.push(url);
+      }
+      // add newly uploaded images
+      uploadedUrls.forEach(u => finalImages.push(u));
+
+      const targetBrandObj = stationeryBrandsList.find(b => b.name === selectedCompany);
+
+      const payload = {
+        name: productName,
+        category: selectedCategory,
+        company: selectedCompany,
+        companyLogo: targetBrandObj ? targetBrandObj.logo : "",
+        stock: Number(stockQuantity),
+        stockUnit: stockUnit,
+        costPrice: Number(costPrice),
+        sellingPrice: Number(sellPrice),
+        description: description,
+        images: finalImages,
+      };
+
+      const targetUrl = isEditing ? `/api/admin/products?id=${editId}` : "/api/admin/products";
+      const targetMethod = isEditing ? "PUT" : "POST";
+
       const res = await fetch(targetUrl, {
         method: targetMethod,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
       const result = await res.json();
-      
-      // 🛡️ CRITICAL RE-VALIDATION ENGINE SAFE GUARD PATCH
+
       if (res.ok && result?.success) {
         toast.success(result.message || "Data pipeline synced!");
         closeAndResetModal();
@@ -170,12 +211,14 @@ export default function ProductManagementPage() {
       } else {
         toast.error(result?.message || "Mismatched validation error parameter response.");
       }
-    } catch { 
-      toast.error("Severe network failure processing transaction model."); 
-    } finally { 
-      setFormLoading(false); 
+    } catch (err) {
+      console.error(err);
+      toast.error("Severe network failure processing transaction model.");
+    } finally {
+      setFormLoading(false);
     }
   };
+
 
   // ==================== 🛠️ EXCEL EXPORT ENGINE (FIXED AS REQUESTED) ====================
   const handleCsvExportSequence = () => {
@@ -365,9 +408,13 @@ export default function ProductManagementPage() {
 
               {/* Company Logo Display Container Box Layer */}
               <div className="flex items-center gap-2">
-                <span className="px-3 py-1 rounded-lg text-xs font-black uppercase tracking-wider border border-zinc-800 bg-zinc-950 text-blue-400">
-                  {product.company || product.brand || "Adarsh"}
-                </span>
+                {product.companyLogo ? (
+                  <img src={product.companyLogo} alt={product.company || product.brand} className="w-8 h-8 rounded-md border border-zinc-800 bg-zinc-900 object-contain p-1" />
+                ) : (
+                  <span className="px-3 py-1 rounded-lg text-xs font-black uppercase tracking-wider border border-zinc-800 bg-zinc-950 text-blue-400">
+                    {product.company || product.brand || "Adarsh"}
+                  </span>
+                )}
               </div>
 
               <div className="font-mono font-bold text-zinc-300 text-xs">

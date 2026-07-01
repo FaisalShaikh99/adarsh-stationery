@@ -1,4 +1,4 @@
-import { Product } from "@/models/product.model"; // Yeh line lookup ko active rakhegi!
+import Product from "@/models/product.model";
 import { dbConnect } from "@/lib/dbConnect";
 import { Category } from "@/models/category.model";
 import { categoryCreateSchema } from "@/schemas/category.schema"; 

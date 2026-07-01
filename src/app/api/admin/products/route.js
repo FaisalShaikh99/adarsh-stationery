@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import fs from "fs";
+import path from "path";
 import { dbConnect } from "@/lib/dbConnect";
 import Product from "@/models/product.model";
 import { Category } from "@/models/category.model";
@@ -93,6 +95,24 @@ export async function POST(req) {
       }, { status: 400 });
     }
 
+    // Auto-detect company logo from public/companyLogo by slugified company name
+    const companyName = (validationResult.data.company || "").toString().trim();
+    if (companyName) {
+      const slug = companyName
+        .toLowerCase()
+        .replace(/\s+/g, "-")
+        .replace(/[^a-z0-9-]/g, "");
+      const exts = ["png", "jpg", "jpeg", "webp", "avif"];
+      for (const ext of exts) {
+        const logoFileName = `${slug}.${ext}`;
+        const logoFullPath = path.join(process.cwd(), "public", "companyLogo", logoFileName);
+        if (fs.existsSync(logoFullPath)) {
+          validationResult.data.companyLogo = `/companyLogo/${logoFileName}`;
+          break;
+        }
+      }
+    }
+
     // Create new mongoose record entry framework
     const newProduct = new Product(validationResult.data);
     await newProduct.save();
@@ -127,6 +147,29 @@ export async function PUT(req) {
     
     if (!validationResult.success) {
       return NextResponse.json({ success: false, message: validationResult.error.errors[0].message }, { status: 400 });
+    }
+
+    // Auto-detect company logo on update too
+    const companyName = (validationResult.data.company || "").toString().trim();
+    if (companyName) {
+      const slug = companyName
+        .toLowerCase()
+        .replace(/\s+/g, "-")
+        .replace(/[^a-z0-9-]/g, "");
+      const exts = ["png", "jpg", "jpeg", "webp", "avif"];
+      let found = false;
+      for (const ext of exts) {
+        const logoFileName = `${slug}.${ext}`;
+        const logoFullPath = path.join(process.cwd(), "public", "companyLogo", logoFileName);
+        if (fs.existsSync(logoFullPath)) {
+          validationResult.data.companyLogo = `/companyLogo/${logoFileName}`;
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        validationResult.data.companyLogo = validationResult.data.companyLogo || "";
+      }
     }
 
     const updatedProduct = await Product.findByIdAndUpdate(id, validationResult.data, { new: true });
