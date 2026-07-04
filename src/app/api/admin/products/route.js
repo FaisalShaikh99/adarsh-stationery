@@ -1,241 +1,229 @@
 import { NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
 import { dbConnect } from "@/lib/dbConnect";
 import Product from "@/models/product.model";
-import { Category } from "@/models/category.model";
-import { productValidationSchema } from "@/schemas/products.schema";
+import Company from "@/models/company.model";
+import { ApiError } from "@/utils/ApiError";
+import { ApiResponse } from "@/utils/ApiResponse";
+import { asyncHandler } from "@/utils/asyncHandler";
+import { getToken } from "next-auth/jwt";
+import crypto from "crypto";
+import mongoose from "mongoose";
 
-// ==================== 📊 1. GET ROUTE (Fetch + Metrics Box Aggregate Core) ====================
-export async function GET(req) {
-  try {
+export const POST = asyncHandler(async (request) => {
     await dbConnect();
-    
-    // A. URL parameters for query filters & paginations
-    const { searchParams } = new URL(req.url);
-    const search = searchParams.get("search") || "";
-    const page = parseInt(searchParams.get("page")) || 1;
-    const limit = 10; // 10 items showing matching diagram specification
-    const skip = (page - 1) * limit;
 
-    // Build dynamic search query matrix
-    let queryFilter = {};
-    if (search) {
-      queryFilter.$or = [
-        { name: { $regex: search, $options: "i" } },
-        { company: { $regex: search, $options: "i" } },
-        { productId: { $regex: search, $options: "i" } }
-      ];
+    // 1. Secure authorization
+    const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
+    if (!token || token.role !== "superadmin") {
+        throw new ApiError(403, "Access Denied. Only superadmins can create products.");
     }
 
-    // B. 🔥 HIGH-END AGGREGATION PIPELINE FOR THE TOP 4 BOXES
-    // Is computational calculations se database single-shot me saare boxes ke data nikal dega
-    const analytics = await Product.aggregate([
-      {
-        $facet: {
-          totalProductsLive: [{ $match: { isActive: true } }, { $count: "count" }],
-          uniqueBrands: [{ $group: { _id: "$company" } }, { $count: "count" }],
-          revenueCalculated: [
-            { $project: { revenue: { $multiply: ["$sellingPrice", "$stock"] } } },
-            { $group: { _id: null, total: { $sum: "$revenue" } } }
-          ],
-          criticalStockAlert: [
-            { $match: { stock: { $lte: 10 } } }, // 10 items limit for alert card trigger
-            { $limit: 1 },
-            { $project: { name: 1 } }
-          ]
+    const body = await request.json();
+
+    // 2. Validate data via your Zod Schema (automatically handles types & arrays min requirements)
+    const validationResult = productValidationSchema.safeParse(body);
+    if (!validationResult.success) {
+        throw new ApiError(400, validationResult.error.errors[0].message);
+    }
+
+    const { 
+        name, category, company, stock, stockUnit, 
+        costPrice, sellingPrice, images, description, isActive 
+    } = validationResult.data;
+
+    // 3. Fetch Company Details to Generate Custom Product ID
+    const companyDoc = await Company.findById(company);
+    if (!companyDoc) {
+        throw new ApiError(404, "Linked company/brand not found in database.");
+    }
+
+    const companyPrefix = companyDoc.name.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, "X");
+    const currentYear = new Date().getFullYear().toString().slice(-2); // "26"
+    const randomHex = crypto.randomBytes(2).toString("hex").toUpperCase(); // "A1B2"
+    const customProductId = `${companyPrefix}-${currentYear}-${randomHex}`;
+
+    // 4. Save cleanly structured product
+    const savedProduct = await Product.create({
+        productId: customProductId,
+        name,
+        category,
+        company,
+        stock,
+        stockUnit,
+        costPrice,
+        sellingPrice,
+        images,
+        description: description || "",
+        isActive: isActive !== undefined ? isActive : true
+    });
+
+    return NextResponse.json(
+        new ApiResponse(201, savedProduct, "New product listed successfully into live inventory matrix!")
+    );
+});
+
+export const GET = asyncHandler(async (request) => {
+    await dbConnect();
+
+    const { searchParams } = new URL(request.url);
+    const categoryFilter = searchParams.get("category");
+    const companyFilter = searchParams.get("company");
+    const searchQuery = searchParams.get("search");
+
+    const matchCriteria = { isActive: true };
+
+    if (categoryFilter && categoryFilter !== "all") {
+        matchCriteria.category = new mongoose.Types.ObjectId(categoryFilter);
+    }
+
+    if (companyFilter && companyFilter !== "all") {
+        matchCriteria.company = new mongoose.Types.ObjectId(companyFilter);
+    }
+
+    if (searchQuery && searchQuery.trim() !== "") {
+        matchCriteria.name = { $regex: searchQuery, $options: "i" };
+    }
+
+    const products = await Product.aggregate([
+        { $match: matchCriteria },
+        {
+            $addFields: {
+                trafficSignalPriority: {
+                    $cond: {
+                        if: { $lte: ["$stock", 20] }, 
+                        then: 1,
+                        else: {
+                            $cond: {
+                                if: { $lte: ["$stock", 50] },
+                                then: 2,
+                                else: 3
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        {
+            $sort: {
+                trafficSignalPriority: 1,
+                stock: 1
+            }
         }
-      }
     ]);
 
-    const metrics = {
-      totalProductsLive: analytics[0]?.totalProductsLive[0]?.count || 0,
-      totalBrands: analytics[0]?.uniqueBrands[0]?.count || 0,
-      totalRevenue: analytics[0]?.revenueCalculated[0]?.total || 0,
-      stockAlertProductName: analytics[0]?.criticalStockAlert[0]?.name || "All Stocks Stable"
+    const populatedProducts = await Product.populate(products, [
+        { path: "category", select: "name" },
+        { path: "company", select: "name logo" }
+    ]);
+
+    return NextResponse.json(
+        new ApiResponse(200, populatedProducts, "Inventory data successfully indexed and optimized!")
+    );
+});
+
+export const PUT = asyncHandler(async (request) => {
+    await dbConnect();
+
+    const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
+    if (!token || token.role !== "superadmin") {
+        throw new ApiError(403, "Access Denied. Only superadmins can update products.");
+    }
+
+    const { searchParams } = new URL(request.url);
+    const productId = searchParams.get("_id");
+
+    if (!productId) {
+        throw new ApiError(400, "Product ID parameter is missing.");
+    }
+
+    const existingProduct = await Product.findById(productId);
+    if (!existingProduct) {
+        throw new ApiError(404, "Product not found in inventory.");
+    }
+
+    const body = await request.json();
+    const { 
+        name, category, company, stock, stockUnit, 
+        costPrice, sellingPrice, images, description, isActive 
+    } = body;
+
+    if (!name || !category || !company || costPrice === undefined || sellingPrice === undefined) {
+        throw new ApiError(400, "Missing required core parameters.");
+    }
+
+    if (!images || !Array.isArray(images) || images.length === 0) {
+        throw new ApiError(400, "Product must have at least 1 image.");
+    }
+
+    if (Number(stock) < 0 || Number(costPrice) < 0 || Number(sellingPrice) < 0) {
+        throw new ApiError(400, "Stock, Cost Price, or Selling Price cannot be negative.");
+    }
+
+    let customProductId = existingProduct.productId;
+
+    if (existingProduct.company.toString() !== company) {
+        const companyDoc = await Company.findById(company);
+        if (!companyDoc) {
+            throw new ApiError(404, "New linked company/brand not found.");
+        }
+        
+        const companyPrefix = companyDoc.name.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, "X");
+        const currentYear = new Date().getFullYear().toString().slice(-2);
+        const randomHex = crypto.randomBytes(2).toString("hex").toUpperCase();
+        customProductId = `${companyPrefix}-${currentYear}-${randomHex}`;
+    }
+
+    const updatedProductPayload = {
+        productId: customProductId,
+        name: name.trim(),
+        category,
+        company,
+        stock: stock !== undefined && stock !== "" ? Number(stock) : 0,
+        stockUnit: stockUnit || "Pcs",
+        costPrice: Number(costPrice),
+        sellingPrice: Number(sellingPrice),
+        images: images.filter(url => url && url.trim() !== ""),
+        description: description ? description.trim() : "",
+        isActive: isActive !== undefined ? isActive : existingProduct.isActive
     };
 
-    // C. Fetch paginated products matrix docs
-    const productsList = await Product.find(queryFilter)
-      .populate("category", "name") // Pulls parent category string references data
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
+    const savedProduct = await Product.findByIdAndUpdate(
+        productId,
+        updatedProductPayload,
+        { new: true, runValidators: true }
+    );
 
-    const totalMatchingDocs = await Product.countDocuments(queryFilter);
+    return NextResponse.json(
+        new ApiResponse(200, savedProduct, "Product specifications updated live into database infrastructure!")
+    );
+});
 
-    return NextResponse.json({
-      success: true,
-      data: productsList,
-      metrics, // Sends dashboard boxes variables array data
-      pagination: {
-        currentPage: page,
-        totalPages: Math.ceil(totalMatchingDocs / limit),
-        totalProducts: totalMatchingDocs
-      }
-    }, { status: 200 });
-
-  } catch (error) {
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
-  }
-}
-
-// ==================== 📥 2. POST ROUTE (Form Document Submission Node) ====================
-export async function POST(req) {
-  try {
+export const DELETE = asyncHandler(async (request) => {
     await dbConnect();
-    const body = await req.json();
 
-    // Run strict Zod interceptor schema parsing layer validation shield
-    const validationResult = productValidationSchema.safeParse(body);
-    if (!validationResult.success) {
-      return NextResponse.json({ 
-        success: false, 
-        message: validationResult.error.errors[0].message 
-      }, { status: 400 });
+    const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
+    if (!token || token.role !== "superadmin") {
+        throw new ApiError(403, "Access Denied. Only superadmins can delete products.");
     }
 
-    // Auto-detect company logo from public/companyLogo by slugified company name
-    const companyName = (validationResult.data.company || "").toString().trim();
-    if (companyName) {
-      const slug = companyName
-        .toLowerCase()
-        .replace(/\s+/g, "-")
-        .replace(/[^a-z0-9-]/g, "");
-      const exts = ["png", "jpg", "jpeg", "webp", "avif"];
-      for (const ext of exts) {
-        const logoFileName = `${slug}.${ext}`;
-        const logoFullPath = path.join(process.cwd(), "public", "companyLogo", logoFileName);
-        if (fs.existsSync(logoFullPath)) {
-          validationResult.data.companyLogo = `/companyLogo/${logoFileName}`;
-          break;
-        }
-      }
+    const { searchParams } = new URL(request.url);
+    const productId = searchParams.get("_id");
+
+    if (!productId) {
+        throw new ApiError(400, "Product ID parameter is mandatory.");
     }
 
-    // Create new mongoose record entry framework
-    const newProduct = new Product(validationResult.data);
-    await newProduct.save();
+    const deletedProduct = await Product.findByIdAndUpdate(
+        productId,
+        { isActive: false },
+        { new: true }
+    );
 
-    // Increment Total products tracker directly onto relative Category doc collection hook
-    await Category.findByIdAndUpdate(validationResult.data.category, {
-      $inc: { totalProducts: 1 }
-    });
-
-    return NextResponse.json({ 
-      success: true, 
-      message: "Asset saved and synced into warehouse logging matrix!",
-      data: newProduct 
-    }, { status: 201 });
-
-  } catch (error) {
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
-  }
-}
-
-// ==================== 🛠️ 3. PUT ROUTE (Complete Row Modification Sync) ====================
-export async function PUT(req) {
-  try {
-    await dbConnect();
-    const { searchParams } = new URL(req.url);
-    const id = searchParams.get("id");
-
-    if (!id) return NextResponse.json({ success: false, message: "Missing system target ID parameter" }, { status: 400 });
-    
-    const body = await req.json();
-    const validationResult = productValidationSchema.safeParse(body);
-    
-    if (!validationResult.success) {
-      return NextResponse.json({ success: false, message: validationResult.error.errors[0].message }, { status: 400 });
+    if (!deletedProduct) {
+        throw new ApiError(404, "Product not found in database registry.");
     }
 
-    // Auto-detect company logo on update too
-    const companyName = (validationResult.data.company || "").toString().trim();
-    if (companyName) {
-      const slug = companyName
-        .toLowerCase()
-        .replace(/\s+/g, "-")
-        .replace(/[^a-z0-9-]/g, "");
-      const exts = ["png", "jpg", "jpeg", "webp", "avif"];
-      let found = false;
-      for (const ext of exts) {
-        const logoFileName = `${slug}.${ext}`;
-        const logoFullPath = path.join(process.cwd(), "public", "companyLogo", logoFileName);
-        if (fs.existsSync(logoFullPath)) {
-          validationResult.data.companyLogo = `/companyLogo/${logoFileName}`;
-          found = true;
-          break;
-        }
-      }
-      if (!found) {
-        validationResult.data.companyLogo = validationResult.data.companyLogo || "";
-      }
-    }
-
-    const updatedProduct = await Product.findByIdAndUpdate(id, validationResult.data, { new: true });
-    
-    if (!updatedProduct) return NextResponse.json({ success: false, message: "Target document footprint not found" }, { status: 404 });
-
-    return NextResponse.json({ 
-      success: true, 
-      message: "Operational modifications permanently committed!",
-      data: updatedProduct 
-    }, { status: 200 });
-
-  } catch (error) {
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
-  }
-}
-
-// ==================== 🎛️ 4. PATCH ROUTE (Binary State Toggle Controller) ====================
-export async function PATCH(req) {
-  try {
-    await dbConnect();
-    const { searchParams } = new URL(req.url);
-    const id = searchParams.get("id");
-
-    if (!id) return NextResponse.json({ success: false, message: "Target row unique identifier missing" }, { status: 400 });
-
-    const targetProduct = await Product.findById(id);
-    if (!targetProduct) return NextResponse.json({ success: false, message: "No operational asset record mapped" }, { status: 404 });
-
-    // Atomic boolean data state reversal transition toggle inversion 🔄
-    targetProduct.isActive = !targetProduct.isActive;
-    await targetProduct.save();
-
-    return NextResponse.json({ 
-      success: true, 
-      message: `Product context visibility switched to ${targetProduct.isActive ? 'ACTIVE' : 'DISABLED'}` 
-    }, { status: 200 });
-
-  } catch (error) {
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
-  }
-}
-
-// ==================== 🗑️ 5. DELETE ROUTE (Purge Asset Record Node) ====================
-export async function DELETE(req) {
-  try {
-    await dbConnect();
-    const { searchParams } = new URL(req.url);
-    const id = searchParams.get("id");
-
-    if (!id) return NextResponse.json({ success: false, message: "Target document removal node string missing" }, { status: 400 });
-
-    const deletedProduct = await Product.findByIdAndDelete(id);
-    if (!deletedProduct) return NextResponse.json({ success: false, message: "Record index missing or already purged" }, { status: 404 });
-
-    // Decrement relative index total values from inside active category documents counter node
-    await Category.findByIdAndUpdate(deletedProduct.category, {
-      $inc: { totalProducts: -1 }
-    });
-
-    return NextResponse.json({ 
-      success: true, 
-      message: "Document entity successfully dropped from cloud cluster records storage layer." 
-    }, { status: 200 });
-
-  } catch (error) {
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
-  }
-}
+    return NextResponse.json(
+        new ApiResponse(200, deletedProduct, "Product successfully archived and removed from live catalog matrix!")
+    );
+});
