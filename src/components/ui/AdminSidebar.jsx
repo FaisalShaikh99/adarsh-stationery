@@ -44,6 +44,7 @@ export default function AdminSidebar({ isCollapsed, setIsCollapsed }) {
     { name: "Team Members", href: "/admin/team-members", icon: Users, requireSuperAdmin: true },
     { name: "Category Management", href: "/admin/categories", icon: LayoutGrid},
     { name: "Products & Stock", href: "/admin/products", icon: ShoppingBag },
+    { name: "Brands & Manufactors", href: "/admin/brands", icon: ShoppingBag },
     { name: "Invoices / Orders", href: "/admin/orders", icon: FileText },
     { name: "Store Settings", href: "/admin/settings", icon: Settings },
   ];

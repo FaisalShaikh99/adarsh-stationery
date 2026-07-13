@@ -21,7 +21,7 @@ export const POST = asyncHandler(async (request) => {
     const validationResult = categoryCreateSchema.safeParse(body);
     
     if (!validationResult.success) {
-        const errorMessage = validationResult.error.errors[0].message;
+        const errorMessage = validationResult.error.issues?.[0]?.message || validationResult.error.message || "Invalid category payload.";
         throw new ApiError(400, errorMessage);
     }
 
@@ -184,7 +184,8 @@ export const PUT = asyncHandler(async (request) => {
     // Zod Schema Validation Secure Validation
     const validationResult = categoryCreateSchema.safeParse(body);
     if (!validationResult.success) {
-        throw new ApiError(400, validationResult.error.errors[0].message);
+        const errorMessage = validationResult.error.issues?.[0]?.message || validationResult.error.message || "Invalid category payload.";
+        throw new ApiError(400, errorMessage);
     }
 
     const { name, imageUrl } = validationResult.data;

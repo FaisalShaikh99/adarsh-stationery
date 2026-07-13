@@ -34,7 +34,8 @@ export const POST = asyncHandler(async (request) => {
     // Zod Validation Check
     const validation = adminInviteSchema.safeParse({ email, role });
     if (!validation.success) {
-        throw new ApiError(400, validation.error.errors[0].message);
+        const message = validation.error.issues?.[0]?.message || validation.error.message || "Invalid invite payload.";
+        throw new ApiError(400, message);
     }
 
     // Check if the user is already a registered team member

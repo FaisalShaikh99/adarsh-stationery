@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 import { dbConnect } from "@/lib/dbConnect";
 import Product from "@/models/product.model";
-import Company from "@/models/company.model";
 import { ApiError } from "@/utils/ApiError";
 import { ApiResponse } from "@/utils/ApiResponse";
 import { asyncHandler } from "@/utils/asyncHandler";
 import { getToken } from "next-auth/jwt";
 import crypto from "crypto";
 import mongoose from "mongoose";
+import { Brand } from "@/models/brand.model";
+import { productValidationSchema } from "@/schemas/products.schema";
 
 export const POST = asyncHandler(async (request) => {
     await dbConnect();
@@ -23,7 +24,8 @@ export const POST = asyncHandler(async (request) => {
     // 2. Validate data via your Zod Schema (automatically handles types & arrays min requirements)
     const validationResult = productValidationSchema.safeParse(body);
     if (!validationResult.success) {
-        throw new ApiError(400, validationResult.error.errors[0].message);
+        const message = validationResult.error.issues?.[0]?.message || validationResult.error.message || "Invalid product payload.";
+        throw new ApiError(400, message);
     }
 
     const { 
@@ -32,7 +34,7 @@ export const POST = asyncHandler(async (request) => {
     } = validationResult.data;
 
     // 3. Fetch Company Details to Generate Custom Product ID
-    const companyDoc = await Company.findById(company);
+    const companyDoc = await Brand.findById(company);
     if (!companyDoc) {
         throw new ApiError(404, "Linked company/brand not found in database.");
     }
@@ -87,10 +89,38 @@ export const GET = asyncHandler(async (request) => {
     const products = await Product.aggregate([
         { $match: matchCriteria },
         {
+            $lookup: {
+                from: "categories",
+                localField: "category",
+                foreignField: "_id",
+                as: "category"
+            }
+        },
+        {
+            $unwind: {
+                path: "$category",
+                preserveNullAndEmptyArrays: true
+            }
+        },
+        {
+            $lookup: {
+                from: "brands",
+                localField: "company",
+                foreignField: "_id",
+                as: "company"
+            }
+        },
+        {
+            $unwind: {
+                path: "$company",
+                preserveNullAndEmptyArrays: true
+            }
+        },
+        {
             $addFields: {
                 trafficSignalPriority: {
                     $cond: {
-                        if: { $lte: ["$stock", 20] }, 
+                        if: { $lte: ["$stock", 20] },
                         then: 1,
                         else: {
                             $cond: {
@@ -111,13 +141,8 @@ export const GET = asyncHandler(async (request) => {
         }
     ]);
 
-    const populatedProducts = await Product.populate(products, [
-        { path: "category", select: "name" },
-        { path: "company", select: "name logo" }
-    ]);
-
     return NextResponse.json(
-        new ApiResponse(200, populatedProducts, "Inventory data successfully indexed and optimized!")
+        new ApiResponse(200, products, "Inventory data successfully indexed and optimized!")
     );
 });
 
@@ -162,7 +187,7 @@ export const PUT = asyncHandler(async (request) => {
     let customProductId = existingProduct.productId;
 
     if (existingProduct.company.toString() !== company) {
-        const companyDoc = await Company.findById(company);
+        const companyDoc = await Brand.findById(company);
         if (!companyDoc) {
             throw new ApiError(404, "New linked company/brand not found.");
         }

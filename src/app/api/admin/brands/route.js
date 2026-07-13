@@ -23,7 +23,8 @@ export const POST = asyncHandler(async (request) => {
     // 2. Validate incoming data using your Zod schema
     const validationResult = brandValidationSchema.safeParse(body);
     if (!validationResult.success) {
-        throw new ApiError(400, validationResult.error.errors[0].message);
+        const message = validationResult.error.issues?.[0]?.message || validationResult.error.message || "Invalid brand payload.";
+        throw new ApiError(400, message);
     }
 
     const { name, categories, primaryContact, websiteURL, logo, description, isActive } = validationResult.data;
