@@ -1,6 +1,6 @@
 "use client";
  
-import { useReducer, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { toast } from "sonner";
 import {
   Loader2,
@@ -21,146 +21,247 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
- 
-// Initial State Architecture
-const initialState = {
-  products: [],
-  categories: [],
-  brands: [],
-  loading: true,
-  searchQuery: "",
-  isModalOpen: false,
-  deleteDialogOpen: false,
-  pendingDeleteId: null,
-  formLoading: false,
-  isEditing: false,
-  editingProductId: null,
- 
-  form: {
-    name: "", category: "", company: "", stock: 0, stockUnit: "Pcs", costPrice: 0, sellingPrice: 0, description: ""
-  },
-  images: ["", "", ""],
-  aiDescriptions: []
+
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import axios from "axios";
+
+const parseNumberField = (value) => {
+  if (value === "" || value === undefined || value === null) return undefined;
+  const parsed = Number(value);
+  return Number.isNaN(parsed) ? value : parsed;
 };
- 
-function productReducer(state, action) {
-  switch (action.type) {
-    case "SET_INITIAL_DATA":
-      return { ...state, ...action.payload, loading: false };
-    case "UPDATE_FIELD":
-      return { ...state, [action.field]: action.payload };
-    case "UPDATE_FORM_FIELD":
-      return { ...state, form: { ...state.form, [action.field]: action.payload } };
-    case "UPDATE_IMAGE_SLOT": {
-      const updatedImages = [...state.images];
-      updatedImages[action.index] = action.payload;
-      return { ...state, images: updatedImages };
-    }
-    case "OPEN_CREATE_MODAL":
-      return { ...state, isModalOpen: true, isEditing: false, images: ["", "", ""], aiDescriptions: [], form: initialState.form };
-    case "OPEN_EDIT_MODAL":
-      return {
-        ...state,
-        isModalOpen: true, isEditing: true, editingProductId: action.payload._id,
-        form: { ...action.payload },
-        images: action.payload.images.concat(["", "", ""]).slice(0, 3)
-      };
-    case "CLOSE_MODAL":
-      return { ...state, isModalOpen: false, isEditing: false, editingProductId: null };
-    default:
-      return state;
-  }
-}
+
+const productSchema = z.object({
+  name: z.string().min(2, "Product name must be at least 2 characters long.").trim(),
+  category: z.string().regex(/^[0-9a-fA-F]{24}$/, "Please select a valid Category."),
+  company: z.string().regex(/^[0-9a-fA-F]{24}$/, "Please select a valid Brand/Company."),
+  stock: z.preprocess(
+    parseNumberField,
+    z.number({ required_error: "Stock is required." }).min(0, "Stock quantity cannot be negative.")
+  ),
+  stockUnit: z.string().min(1, "Stock unit is required.").trim(),
+  costPrice: z.preprocess(
+    parseNumberField,
+    z.number({ required_error: "Cost price is required." }).min(0, "Cost price cannot be negative.")
+  ),
+  sellingPrice: z.preprocess(
+    parseNumberField,
+    z.number({ required_error: "Selling price is required." }).min(0, "Selling price cannot be negative.")
+  ),
+  images: z.array(z.string()).refine((arr) => arr.some(img => img !== ""), {
+    message: "At least one product image is required."
+  }),
+  description: z.string().optional(),
+  isActive: z.boolean().optional().default(true)
+});
  
 export default function ProductManagementPage() {
-  const [state, dispatch] = useReducer(productReducer, initialState);
- 
-  // Ye ref teeno file-input boxes ko hold karta hai (hidden <input type="file">).
-  // "Ref" matlab ek box jisme hum DOM element ka reference rakhte hain, taaki
-  // button click hone par us hidden input ko JS se "click()" kar saken.
+  const queryClient = useQueryClient();
   const fileInputRefs = useRef([null, null, null]);
- 
-  const fetchDashboardData = async () => {
+
+  // States
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState(null);
+  
+  const [editingProduct, setEditingProduct] = useState(null); // null = add, product object = edit
+  const [aiDescriptions, setAiDescriptions] = useState([]);
+
+  // React Hook Form
+  const { register, handleSubmit: handleFormSubmit, reset, setValue, watch, formState: { errors } } = useForm({
+    resolver: zodResolver(productSchema),
+    mode: "onBlur",
+    defaultValues: {
+      name: "",
+      category: "",
+      company: "",
+      stock: "",
+      stockUnit: "Pcs",
+      costPrice: "",
+      sellingPrice: "",
+      description: "",
+      images: ["", "", ""],
+      isActive: true
+    }
+  });
+
+  const watchImages = watch("images");
+  const watchName = watch("name");
+  const watchDescription = watch("description");
+
+  // React Query Fetch data
+  const { 
+    data: productsData, 
+    isLoading: productsLoading, 
+    refetch: refetchProducts 
+  } = useQuery({
+    queryKey: ["products"],
+    queryFn: async () => {
+      const res = await axios.get("/api/admin/products");
+      return res.data?.data || [];
+    }
+  });
+  const products = productsData || [];
+
+  const { 
+    data: categoriesData 
+  } = useQuery({
+    queryKey: ["categoriesDropdown"],
+    queryFn: async () => {
+      const res = await axios.get("/api/admin/categories");
+      return res.data?.data || [];
+    },
+    staleTime: 5 * 60 * 1000
+  });
+  const categories = categoriesData || [];
+
+  const { 
+    data: brandsData 
+  } = useQuery({
+    queryKey: ["brandsDropdown"],
+    queryFn: async () => {
+      const res = await axios.get("/api/admin/brands");
+      return res.data?.data || [];
+    },
+    staleTime: 5 * 60 * 1000
+  });
+  const brands = brandsData || [];
+
+  const handleRefreshAll = async () => {
     try {
-      dispatch({ type: "UPDATE_FIELD", field: "loading", payload: true });
-      const [prodRes, catRes, brandRes] = await Promise.all([
-        fetch("/api/admin/products"), fetch("/api/admin/categories"), fetch("/api/admin/brands")
+      await Promise.all([
+        refetchProducts(),
+        queryClient.invalidateQueries({ queryKey: ["categoriesDropdown"] }),
+        queryClient.invalidateQueries({ queryKey: ["brandsDropdown"] })
       ]);
-      const [prod, cat, brand] = await Promise.all([prodRes.json(), catRes.json(), brandRes.json()]);
- 
-      dispatch({
-        type: "SET_INITIAL_DATA",
-        payload: { products: prod.data || [], categories: cat.data || [], brands: brand.data || [] }
-      });
+      toast.success("Inventory cache synchronized successfully!");
     } catch {
       toast.error("Systems failed to synchronize inventory matrices.");
     }
   };
- 
-  useEffect(() => { fetchDashboardData(); }, []);
- 
-  const formFieldsConfig = [
-    { label: "Product Name", name: "name", type: "text", placeholder: "Enter Product Name" },
-    { label: "Select Category", name: "category", type: "select", options: state.categories },
-    { label: "Select Brand/Company", name: "company", type: "select", options: state.brands },
-    { label: "Enter Stock", name: "stock", type: "number", placeholder: "0" },
-    { label: "Select Units", name: "stockUnit", type: "select", options: [{ _id: "Pcs", name: "Pcs" }, { _id: "Boxes", name: "Boxes" }] },
-    { label: "Cost Price", name: "costPrice", type: "number", placeholder: "0.00" },
-    { label: "Selling Price", name: "sellingPrice", type: "number", placeholder: "0.00" },
-  ];
- 
-  const handleFormSubmit = async (e) => {
-    e.preventDefault();
-    dispatch({ type: "UPDATE_FIELD", field: "formLoading", payload: true });
- 
-    const url = state.isEditing ? `/api/admin/products?_id=${state.editingProductId}` : "/api/admin/products";
-    const method = state.isEditing ? "PUT" : "POST";
- 
-    try {
-      const res = await fetch(url, {
+
+  const productFormMutation = useMutation({
+    mutationFn: async (data) => {
+      const url = editingProduct ? `/api/admin/products?_id=${editingProduct._id}` : "/api/admin/products";
+      const method = editingProduct ? "PUT" : "POST";
+
+      const response = await axios({
+        url,
         method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...state.form,
-          images: state.images.filter(img => img !== "")
-        })
+        data: {
+          name: data.name,
+          category: data.category,
+          company: data.company,
+          stock: data.stock,
+          stockUnit: data.stockUnit,
+          costPrice: data.costPrice,
+          sellingPrice: data.sellingPrice,
+          description: data.description || "",
+          images: data.images.filter(img => img !== ""),
+          isActive: data.isActive
+        }
       });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        toast.success(data.message);
-        dispatch({ type: "CLOSE_MODAL" });
-        fetchDashboardData();
-      } else {
-        toast.error(data.message);
-      }
-    } catch {
-      toast.error("Internal submission failure.");
-    } finally {
-      dispatch({ type: "UPDATE_FIELD", field: "formLoading", payload: false });
+      return response.data;
+    },
+    onSuccess: (data) => {
+      toast.success(data.message);
+      closeModal();
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || "Internal submission failure.");
     }
+  });
+
+  const onSubmit = (data) => {
+    productFormMutation.mutate(data);
   };
- 
-  const handleAiDescriptionGeneration = () => {
-    if (!state.form.name) return toast.error("Enter product name first!");
-    dispatch({
-      type: "UPDATE_FIELD",
-      field: "aiDescriptions",
-      payload: [
-        `Premium quality ${state.form.name} designed for ultimate everyday utility and high durability.`,
-        `Fabulous looking ergonomic ${state.form.name}. Perfect choice for retail and office setup environments.`
-      ]
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id) => {
+      const res = await axios.delete(`/api/admin/products?_id=${id}`);
+      return res.data;
+    },
+    onSuccess: (data) => {
+      toast.success(data.message || "Product successfully deleted!");
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || "Delete failed, please try again.");
+    }
+  });
+
+  const executeDelete = () => {
+    if (!pendingDeleteId) return;
+    setDeleteDialogOpen(false);
+    deleteMutation.mutate(pendingDeleteId, {
+      onSettled: () => {
+        setPendingDeleteId(null);
+      }
     });
   };
+
+  const openCreateModal = () => {
+    setEditingProduct(null);
+    setAiDescriptions([]);
+    reset({
+      name: "",
+      category: "",
+      company: "",
+      stock: "",
+      stockUnit: "Pcs",
+      costPrice: "",
+      sellingPrice: "",
+      description: "",
+      images: ["", "", ""],
+      isActive: true
+    });
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (p) => {
+    setEditingProduct(p);
+    setAiDescriptions([]);
+    const productImages = (p.images || []).concat(["", "", ""]).slice(0, 3);
+    reset({
+      name: p.name,
+      category: p.category?._id || p.category || "",
+      company: p.company?._id || p.company || "",
+      stock: p.stock,
+      stockUnit: p.stockUnit || "Pcs",
+      costPrice: p.costPrice,
+      sellingPrice: p.sellingPrice,
+      description: p.description || "",
+      images: productImages,
+      isActive: p.isActive !== undefined ? p.isActive : true
+    });
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setEditingProduct(null);
+    setAiDescriptions([]);
+    reset();
+  };
+
+  const handleAiDescriptionGeneration = () => {
+    const nameVal = watchName?.trim();
+    if (!nameVal) return toast.error("Enter product name first!");
+    setAiDescriptions([
+      `Premium quality ${nameVal} designed for ultimate everyday utility and high durability.`,
+      `Fabulous looking ergonomic ${nameVal}. Perfect choice for retail and office setup environments.`
+    ]);
+  };
  
-  // Slot par click hone par hidden file input ko trigger karta hai -> OS ka
-  // real file explorer khulega (jaisa normal "Choose File" button karta hai).
   const triggerFilePicker = (index) => {
     fileInputRefs.current[index]?.click();
   };
  
-  // File select hone ke baad, use base64 string me convert karke preview + state
-  // dono me daal dete hain. Base64 = image data ko text ki tarah encode karna,
-  // taaki hum ise seedha <img src="..."> me use kar saken bina server upload ke.
   const handleFileSelected = (index, e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -172,21 +273,24 @@ export default function ProductManagementPage() {
  
     const reader = new FileReader();
     reader.onload = () => {
-      dispatch({ type: "UPDATE_IMAGE_SLOT", index, payload: reader.result });
+      const updatedImages = [...watchImages];
+      updatedImages[index] = reader.result;
+      setValue("images", updatedImages);
     };
     reader.readAsDataURL(file);
  
-    // Same file dobara select karne par bhi onChange fire ho, isliye reset:
     e.target.value = "";
   };
  
   const handleRemoveImage = (index, e) => {
     e.stopPropagation();
-    dispatch({ type: "UPDATE_IMAGE_SLOT", index, payload: "" });
+    const updatedImages = [...watchImages];
+    updatedImages[index] = "";
+    setValue("images", updatedImages);
   };
  
-  const filteredProducts = state.products.filter(p =>
-    p.name.toLowerCase().includes(state.searchQuery.toLowerCase())
+  const filteredProducts = products.filter(p =>
+    p.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
  
   return (
@@ -200,7 +304,7 @@ export default function ProductManagementPage() {
         </div>
         <div className="flex items-center gap-3">
           <Button variant="outline" className="border-zinc-800 bg-zinc-900 text-zinc-300 rounded-xl px-4 h-9 text-xs font-semibold"><Download className="w-3.5 h-3.5 mr-2" /> Export</Button>
-          <Button onClick={() => dispatch({ type: "OPEN_CREATE_MODAL" })} className="bg-white text-black font-semibold hover:bg-zinc-200 rounded-xl px-4 h-9 text-xs shadow-md"><Plus className="w-3.5 h-3.5 mr-1.5" /> Add New Product</Button>
+          <Button onClick={openCreateModal} className="bg-white text-black font-semibold hover:bg-zinc-200 rounded-xl px-4 h-9 text-xs shadow-md"><Plus className="w-3.5 h-3.5 mr-1.5" /> Add New Product</Button>
         </div>
       </div>
  
@@ -209,7 +313,7 @@ export default function ProductManagementPage() {
         {["Product Counter", "Revenue", "Total Sold", "Active Catalog"].map((metric, i) => (
           <div key={i} className="bg-[#0c0c0e] border border-zinc-800/80 p-5 rounded-2xl shadow-sm">
             <p className="text-xs text-zinc-500 uppercase tracking-wider font-bold">{metric}</p>
-            <p className="text-2xl font-bold mt-2 font-mono tracking-tight">{i === 1 ? "₹45,250" : String(state.products.length + (i * 12)).padStart(2, '0')}</p>
+            <p className="text-2xl font-bold mt-2 font-mono tracking-tight">{i === 1 ? "₹45,250" : String(products.length + (i * 12)).padStart(2, '0')}</p>
           </div>
         ))}
       </div>
@@ -218,12 +322,12 @@ export default function ProductManagementPage() {
       <div className="bg-[#0c0c0e] border border-zinc-800 rounded-2xl p-4 sm:p-6 space-y-4 shadow-xl">
         <div className="flex items-center justify-between gap-4">
           <Input
-            value={state.searchQuery}
-            onChange={(e) => dispatch({ type: "UPDATE_FIELD", field: "searchQuery", payload: e.target.value })}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search products..."
             className="bg-[#141416] border-zinc-700 rounded-xl h-11 text-zinc-300 placeholder-zinc-500 focus-visible:ring-zinc-600 transition-all"
           />
-          <Button onClick={fetchDashboardData} variant="outline" className="h-11 w-11 p-0 border-zinc-700 bg-zinc-900 shrink-0 rounded-xl hover:bg-zinc-800"><RefreshCw className="w-4 h-4" /></Button>
+          <Button onClick={handleRefreshAll} variant="outline" className="h-11 w-11 p-0 border-zinc-700 bg-zinc-900 shrink-0 rounded-xl hover:bg-zinc-800"><RefreshCw className="w-4 h-4" /></Button>
         </div>
  
         {/* 4. CORE INVENTORY TABLE MATRIX */}
@@ -241,7 +345,7 @@ export default function ProductManagementPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {state.loading ? (
+              {productsLoading ? (
                 <TableRow><TableCell colSpan={7} className="text-center h-32 text-zinc-500"><Loader2 className="w-5 h-5 animate-spin mx-auto mr-2 inline text-blue-500" />Loading items from network cluster...</TableCell></TableRow>
               ) : filteredProducts.map((p, index) => (
                 <TableRow key={p._id} className="border-b border-zinc-800/60 hover:bg-zinc-900/20 transition-colors">
@@ -258,8 +362,8 @@ export default function ProductManagementPage() {
                   <TableCell className="font-mono text-sm">₹{p.sellingPrice}/-</TableCell>
                   <TableCell className="text-center">
                     <div className="flex justify-center gap-3">
-                      <Button onClick={() => dispatch({ type: "OPEN_EDIT_MODAL", payload: p })} variant="ghost" className="p-1 h-auto text-zinc-400 hover:text-white transition-colors"><Edit2 className="w-4 h-4" /></Button>
-                      <Button onClick={() => { dispatch({ type: "UPDATE_FIELD", field: "pendingDeleteId", payload: p._id }); dispatch({ type: "UPDATE_FIELD", field: "deleteDialogOpen", payload: true }); }} variant="ghost" className="p-1 h-auto text-zinc-500 hover:text-rose-400 transition-colors"><Trash2 className="w-4 h-4" /></Button>
+                      <Button onClick={() => openEditModal(p)} variant="ghost" className="p-1 h-auto text-zinc-400 hover:text-white transition-colors"><Edit2 className="w-4 h-4" /></Button>
+                      <Button onClick={() => { setPendingDeleteId(p._id); setDeleteDialogOpen(true); }} variant="ghost" className="p-1 h-auto text-zinc-500 hover:text-rose-400 transition-colors"><Trash2 className="w-4 h-4" /></Button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -269,22 +373,21 @@ export default function ProductManagementPage() {
         </div>
       </div>
  
-      {/* 5. ADD / EDIT PRODUCT MODAL — rebuilt as header / scroll-body / footer
-          so the footer can never sit on top of a form field again. */}
-      <Dialog open={state.isModalOpen} onOpenChange={(val) => !val && dispatch({ type: "CLOSE_MODAL" })}>
+      {/* 5. ADD / EDIT PRODUCT MODAL */}
+      <Dialog open={isModalOpen} onOpenChange={(val) => !val && closeModal()}>
         <DialogContent className="max-w-[88vw] w-full sm:max-w-6xl bg-slate-950/95 border border-slate-800 text-white rounded-[32px] overflow-hidden shadow-[0_40px_120px_rgba(15,23,42,0.35)] flex flex-col max-h-[88vh]">
  
-          {/* Header — always visible */}
+          {/* Header */}
           <DialogHeader className="flex items-center justify-between gap-4 p-5 border-b border-slate-800 bg-slate-950/95 shrink-0">
             <div className="flex items-center gap-2">
               <Sparkles className="text-blue-400 w-4 h-4" />
               <DialogTitle className="text-lg font-semibold text-white tracking-wide">
-                {state.isEditing ? "Edit Product" : "Add Product"}
+                {editingProduct ? "Edit Product" : "Add Product"}
               </DialogTitle>
             </div>
           </DialogHeader>
  
-          <form onSubmit={handleFormSubmit} className="flex flex-col flex-1 min-h-0">
+          <form onSubmit={handleFormSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0">
             <div className="flex flex-col lg:flex-row flex-1 min-h-0">
               <div className="lg:w-[58%] min-h-0 overflow-y-auto p-6 space-y-6">
                 <div className="rounded-[28px] border border-slate-800/80 bg-slate-900/95 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.16)]">
@@ -293,43 +396,120 @@ export default function ProductManagementPage() {
                     <h2 className="mt-2 text-2xl font-semibold text-white">Basic product information</h2>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {formFieldsConfig.map((f) => (
-                      <div key={f.name} className={`space-y-2 ${f.name === "name" ? "sm:col-span-2" : ""}`}>
-                        <Label className="text-sm text-slate-300 font-semibold">
-                          {f.label}
-                        </Label>
-                        {f.type === "select" ? (
-                          <select
-                            value={state.form[f.name] || ""}
-                            required
-                            onChange={(e) => dispatch({ type: "UPDATE_FORM_FIELD", field: f.name, payload: e.target.value })}
-                            className="w-full bg-slate-950 border border-slate-800 rounded-3xl h-12 px-4 text-sm text-slate-200 focus:outline-none focus:border-blue-500/70 focus:ring-1 focus:ring-blue-500/20 transition-all appearance-none cursor-pointer"
-                            style={{
-                              backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>")`,
-                              backgroundRepeat: 'no-repeat',
-                              backgroundPosition: 'right 16px center',
-                              backgroundSize: '14px'
-                            }}
-                          >
-                            <option value="" className="bg-slate-950 text-slate-500">-- Choose Option --</option>
-                            {f.options?.map(opt => (
-                              <option key={opt._id} value={opt._id} className="bg-slate-950 text-slate-200">
-                                {opt.name}
-                              </option>
-                            ))}
-                          </select>
-                        ) : (
-                          <Input
-                            type={f.type}
-                            placeholder={f.placeholder}
-                            required
-                            value={state.form[f.name] || ""}
-                            onChange={(e) => dispatch({ type: "UPDATE_FORM_FIELD", field: f.name, payload: e.target.value })}
-                            className="bg-slate-950 border border-slate-800 rounded-3xl h-12 text-slate-200 placeholder-slate-500 focus-visible:ring-1 focus-visible:ring-blue-500/20 focus-visible:border-blue-500/60 transition-all"
-                          />
-                        )}
-                      </div>
-                    ))}
+                    {/* Name */}
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label className="text-sm text-slate-300 font-semibold">Product Name</Label>
+                      <Input
+                        type="text"
+                        placeholder="Enter Product Name"
+                        {...register("name")}
+                        className="bg-slate-950 border border-slate-800 rounded-3xl h-12 text-slate-200 placeholder-slate-500 focus-visible:ring-1 focus-visible:ring-blue-500/20 focus-visible:border-blue-500/60 transition-all"
+                      />
+                      {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name.message}</p>}
+                    </div>
+
+                    {/* Category */}
+                    <div className="space-y-2">
+                      <Label className="text-sm text-slate-300 font-semibold">Select Category</Label>
+                      <select
+                        {...register("category")}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-3xl h-12 px-4 text-sm text-slate-200 focus:outline-none focus:border-blue-500/70 focus:ring-1 focus:ring-blue-500/20 transition-all appearance-none cursor-pointer"
+                        style={{
+                          backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>")`,
+                          backgroundRepeat: 'no-repeat',
+                          backgroundPosition: 'right 16px center',
+                          backgroundSize: '14px'
+                        }}
+                      >
+                        <option value="" className="bg-slate-950 text-slate-500">-- Choose Option --</option>
+                        {categories.map(opt => (
+                          <option key={opt._id} value={opt._id} className="bg-slate-950 text-slate-200">
+                            {opt.name}
+                          </option>
+                        ))}
+                      </select>
+                      {errors.category && <p className="text-xs text-red-500 mt-1">{errors.category.message}</p>}
+                    </div>
+
+                    {/* Brand */}
+                    <div className="space-y-2">
+                      <Label className="text-sm text-slate-300 font-semibold">Select Brand/Company</Label>
+                      <select
+                        {...register("company")}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-3xl h-12 px-4 text-sm text-slate-200 focus:outline-none focus:border-blue-500/70 focus:ring-1 focus:ring-blue-500/20 transition-all appearance-none cursor-pointer"
+                        style={{
+                          backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>")`,
+                          backgroundRepeat: 'no-repeat',
+                          backgroundPosition: 'right 16px center',
+                          backgroundSize: '14px'
+                        }}
+                      >
+                        <option value="" className="bg-slate-950 text-slate-500">-- Choose Option --</option>
+                        {brands.map(opt => (
+                          <option key={opt._id} value={opt._id} className="bg-slate-950 text-slate-200">
+                            {opt.name}
+                          </option>
+                        ))}
+                      </select>
+                      {errors.company && <p className="text-xs text-red-500 mt-1">{errors.company.message}</p>}
+                    </div>
+
+                    {/* Stock */}
+                    <div className="space-y-2">
+                      <Label className="text-sm text-slate-300 font-semibold">Enter Stock</Label>
+                      <Input
+                        type="number"
+                        placeholder="0"
+                        {...register("stock")}
+                        className="bg-slate-950 border border-slate-800 rounded-3xl h-12 text-slate-200 placeholder-slate-500 focus-visible:ring-1 focus-visible:ring-blue-500/20 focus-visible:border-blue-500/60 transition-all"
+                      />
+                      {errors.stock && <p className="text-xs text-red-500 mt-1">{errors.stock.message}</p>}
+                    </div>
+
+                    {/* Units */}
+                    <div className="space-y-2">
+                      <Label className="text-sm text-slate-300 font-semibold">Select Units</Label>
+                      <select
+                        {...register("stockUnit")}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-3xl h-12 px-4 text-sm text-slate-200 focus:outline-none focus:border-blue-500/70 focus:ring-1 focus:ring-blue-500/20 transition-all appearance-none cursor-pointer"
+                        style={{
+                          backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>")`,
+                          backgroundRepeat: 'no-repeat',
+                          backgroundPosition: 'right 16px center',
+                          backgroundSize: '14px'
+                        }}
+                      >
+                        <option value="Pcs" className="bg-slate-950 text-slate-200">Pcs</option>
+                        <option value="Boxes" className="bg-slate-950 text-slate-200">Boxes</option>
+                      </select>
+                      {errors.stockUnit && <p className="text-xs text-red-500 mt-1">{errors.stockUnit.message}</p>}
+                    </div>
+
+                    {/* Cost Price */}
+                    <div className="space-y-2">
+                      <Label className="text-sm text-slate-300 font-semibold">Cost Price</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="0.00"
+                        {...register("costPrice")}
+                        className="bg-slate-950 border border-slate-800 rounded-3xl h-12 text-slate-200 placeholder-slate-500 focus-visible:ring-1 focus-visible:ring-blue-500/20 focus-visible:border-blue-500/60 transition-all"
+                      />
+                      {errors.costPrice && <p className="text-xs text-red-500 mt-1">{errors.costPrice.message}</p>}
+                    </div>
+
+                    {/* Selling Price */}
+                    <div className="space-y-2">
+                      <Label className="text-sm text-slate-300 font-semibold">Selling Price</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="0.00"
+                        {...register("sellingPrice")}
+                        className="bg-slate-950 border border-slate-800 rounded-3xl h-12 text-slate-200 placeholder-slate-500 focus-visible:ring-1 focus-visible:ring-blue-500/20 focus-visible:border-blue-500/60 transition-all"
+                      />
+                      {errors.sellingPrice && <p className="text-xs text-red-500 mt-1">{errors.sellingPrice.message}</p>}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -344,7 +524,7 @@ export default function ProductManagementPage() {
                     <span className="rounded-full bg-blue-500/10 px-3 py-1 text-xs font-semibold text-blue-200">Enhance</span>
                   </div>
                   <div className="grid grid-cols-3 gap-3">
-                    {state.images.map((img, i) => (
+                    {watchImages.map((img, i) => (
                       <div key={i} className="relative aspect-square overflow-hidden rounded-3xl border border-dashed border-slate-700 bg-slate-950 cursor-pointer transition hover:border-blue-500/80 hover:bg-slate-900" onClick={() => triggerFilePicker(i)}>
                         <input
                           ref={(el) => (fileInputRefs.current[i] = el)}
@@ -374,6 +554,7 @@ export default function ProductManagementPage() {
                       </div>
                     ))}
                   </div>
+                  {errors.images && <p className="text-xs text-red-500 mt-2">{errors.images.message}</p>}
                   <Button
                     type="button"
                     variant="secondary"
@@ -389,8 +570,7 @@ export default function ProductManagementPage() {
                     <h3 className="mt-2 text-lg font-semibold text-white">Product summary</h3>
                   </div>
                   <Textarea
-                    value={state.form.description}
-                    onChange={(e) => dispatch({ type: "UPDATE_FORM_FIELD", field: "description", payload: e.target.value })}
+                    {...register("description")}
                     placeholder="Write a short product description..."
                     className="min-h-[210px] w-full rounded-3xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-slate-200 placeholder-slate-500 focus-visible:border-blue-500/70 focus-visible:ring-1 focus-visible:ring-blue-500/20 resize-none"
                   />
@@ -401,12 +581,12 @@ export default function ProductManagementPage() {
                   >
                     <Sparkles className="h-4 w-4" /> Generate description
                   </Button>
-                  {state.aiDescriptions.length > 0 && (
+                  {aiDescriptions.length > 0 && (
                     <div className="mt-4 space-y-3">
-                      {state.aiDescriptions.map((desc, idx) => (
+                      {aiDescriptions.map((desc, idx) => (
                         <div
                           key={idx}
-                          onClick={() => dispatch({ type: "UPDATE_FORM_FIELD", field: "description", payload: desc })}
+                          onClick={() => setValue("description", desc)}
                           className="cursor-pointer rounded-3xl border border-slate-800/70 bg-slate-950 p-4 text-sm text-slate-300 transition hover:border-blue-500/60 hover:bg-slate-900"
                         >
                           {desc}
@@ -422,19 +602,19 @@ export default function ProductManagementPage() {
               <Button
                 type="button"
                 variant="ghost"
-                onClick={() => dispatch({ type: "CLOSE_MODAL" })}
+                onClick={closeModal}
                 className="rounded-2xl border border-slate-800 bg-slate-900/80 px-4 py-2 text-sm font-semibold text-slate-300 hover:bg-slate-800"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
-                disabled={state.formLoading}
+                disabled={productFormMutation.isPending}
                 className="rounded-2xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-950/30 hover:bg-blue-700"
               >
-                {state.formLoading ? (
+                {productFormMutation.isPending ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
-                ) : state.isEditing ? (
+                ) : editingProduct ? (
                   "Save changes"
                 ) : (
                   "Publish product"
@@ -446,7 +626,7 @@ export default function ProductManagementPage() {
       </Dialog>
  
       {/* 6. DELETE CONFIRMATION */}
-      <AlertDialog open={state.deleteDialogOpen} onOpenChange={(v) => dispatch({ type: "UPDATE_FIELD", field: "deleteDialogOpen", payload: v })}>
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent className="bg-zinc-900 border border-zinc-800 text-white rounded-2xl">
           <AlertDialogHeader>
             <AlertDialogTitle>Confirm Removal</AlertDialogTitle>
@@ -454,12 +634,7 @@ export default function ProductManagementPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel className="bg-zinc-800 text-zinc-300 rounded-xl border-zinc-700">Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={async () => {
-              try {
-                const res = await fetch(`/api/admin/products?_id=${state.pendingDeleteId}`, { method: "DELETE" });
-                if (res.ok) { toast.success("Product successfully deleted!"); fetchDashboardData(); }
-              } catch { toast.error("Delete failed, please try again."); }
-            }} className="bg-rose-600 hover:bg-rose-700 font-bold rounded-xl">Delete</AlertDialogAction>
+            <AlertDialogAction onClick={executeDelete} className="bg-rose-600 hover:bg-rose-700 font-bold rounded-xl">Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

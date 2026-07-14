@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,22 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import axios from "axios";
+
+const memberSchema = z.object({
+  email: z
+    .string()
+    .min(1, { message: "Email is required." })
+    .email({ message: "Invalid email format." }),
+  role: z.enum(["admin", "staff"], {
+    errorMap: () => ({ message: "Role must be either admin or staff." })
+  }),
+  message: z.string().optional()
+});
 
 const formatLastLogin = (dateString) => {
   if (!dateString) return "Never logged in";
@@ -31,73 +47,96 @@ const formatLastLogin = (dateString) => {
 
 export default function TeamMembersPage() {
   const { data: session, status } = useSession();
+  const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
-  const [loading, setLoading] = useState(false); 
-  const [teamLoading, setTeamLoading] = useState(true); 
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [team, setTeam] = useState([]); 
   const [searchQuery, setSearchQuery] = useState("");
-  const [actionLoadingId, setActionLoadingId] = useState("");
 
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingTarget, setPendingTarget] = useState(null);
 
-  const [formData, setFormData] = useState({ email: "", role: "staff", message: "" });
+  const { register, handleSubmit: handleFormSubmit, reset, formState: { errors } } = useForm({
+    resolver: zodResolver(memberSchema),
+    mode: "onBlur",
+    defaultValues: {
+      email: "",
+      role: "staff",
+      message: ""
+    }
+  });
 
-  const fetchTeamMembers = async (silent = false) => {
+  const { 
+    data: teamData, 
+    isLoading: teamLoading, 
+    isRefetching: isRefreshing, 
+    refetch: refetchTeam 
+  } = useQuery({
+    queryKey: ["teamMembers"],
+    queryFn: async () => {
+      const response = await axios.get("/api/admin/team");
+      return response.data?.data || [];
+    },
+    enabled: status === "authenticated"
+  });
+
+  const team = teamData || [];
+
+  const handleRefresh = async () => {
     try {
-      if (!silent) setTeamLoading(true);
-      else setIsRefreshing(true);
-
-      const response = await fetch("/api/admin/team");
-      const result = await response.json();
-      if (response.ok) {
-        setTeam(result.data || []); 
-        if (silent) toast.success("Team data refreshed successfully!");
-      } else {
-        toast.error(result.message || "Failed to load team data.");
-      }
+      await refetchTeam();
+      toast.success("Team data refreshed successfully!");
     } catch {
       toast.error("Something went wrong while fetching team.");
-    } finally {
-      setTeamLoading(false);
-      setIsRefreshing(false);
     }
   };
 
-  useEffect(() => {
-    if (status === "authenticated") fetchTeamMembers();
-  }, [status]);
-
-  const handleToggleClick = (id, name, isBlocked) => {
-    setPendingTarget({ id, name, isBlocked });
-    setConfirmOpen(true);
-  };
+  const toggleBlockMutation = useMutation({
+    mutationFn: async (id) => {
+      const response = await axios.patch(`/api/admin/toggle-block?id=${id}`);
+      return response.data;
+    },
+    onSuccess: (data) => {
+      toast.success(data.message);
+      queryClient.invalidateQueries({ queryKey: ["teamMembers"] });
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || "Action failed.");
+    }
+  });
 
   const executeToggleBlock = async () => {
     if (!pendingTarget) return;
     const { id } = pendingTarget;
-
-    try {
-      setConfirmOpen(false);
-      setActionLoadingId(id);
-      const response = await fetch(`/api/admin/toggle-block?id=${id}`, {
-        method: "PATCH",
-      });
-      const result = await response.json();
-
-      if (response.ok) {
-        toast.success(result.message);
-        fetchTeamMembers(false);
-      } else {
-        toast.error(result.message || "Action failed.");
+    setConfirmOpen(false);
+    toggleBlockMutation.mutate(id, {
+      onSettled: () => {
+        setPendingTarget(null);
       }
-    } catch {
-      toast.error("Server error encountered.");
-    } finally {
-      setActionLoadingId("");
-      setPendingTarget(null);
+    });
+  };
+
+  const inviteMutation = useMutation({
+    mutationFn: async (data) => {
+      const response = await axios.post("/api/admin/invite", data);
+      return response.data;
+    },
+    onSuccess: (data) => {
+      toast.success(data.message || "Invitation sent!");
+      setIsOpen(false);
+      reset({ email: "", role: "staff", message: "" });
+      queryClient.invalidateQueries({ queryKey: ["teamMembers"] });
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || "Invitation failed.");
     }
+  });
+
+  const onSubmit = (data) => {
+    inviteMutation.mutate(data);
+  };
+
+  const handleToggleClick = (id, name, isBlocked) => {
+    setPendingTarget({ id, name, isBlocked });
+    setConfirmOpen(true);
   };
 
   if (status === "loading") {
@@ -112,26 +151,6 @@ export default function TeamMembersPage() {
     member.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     member.email?.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      const response = await fetch("/api/admin/invite", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.message || "Something went wrong");
-      toast.success(result.message || "Invitation sent!");
-      setIsOpen(false);
-      setFormData({ email: "", role: "staff", message: "" });
-      fetchTeamMembers();
-    } catch (error) {
-      toast.error(error.message || "Invitation failed.");
-    } finally { setLoading(false); }
-  };
 
   if (status === "authenticated" && session?.user?.role !== "superadmin") {
     return (
@@ -173,7 +192,7 @@ export default function TeamMembersPage() {
         </div>
         
         <button 
-          onClick={() => fetchTeamMembers(true)}
+          onClick={handleRefresh}
           disabled={isRefreshing || teamLoading}
           className="p-3.5 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all active:scale-95 disabled:opacity-40 shrink-0"
           title="Refresh Team Data"
@@ -243,7 +262,7 @@ export default function TeamMembersPage() {
                   <td className="p-4 text-center">
                     {member.role === "superadmin" ? (
                       <div className="flex justify-center text-zinc-600"><Ban className="h-4 w-4" /></div>
-                    ) : actionLoadingId === member._id ? (
+                    ) : (toggleBlockMutation.isPending && toggleBlockMutation.variables === member._id) ? (
                       <div className="flex justify-center"><Loader2 className="h-4 w-4 animate-spin text-blue-500" /></div>
                     ) : (
                       <div className="flex items-center justify-center gap-3">
@@ -272,7 +291,7 @@ export default function TeamMembersPage() {
               {pendingTarget?.isBlocked ? "Confirm Account Unblock" : "Confirm Account Suspension"}
             </AlertDialogTitle>
             <AlertDialogDescription className="text-zinc-400">
-              Are you sure you want to {pendingTarget?.isBlocked ? "unblock" : "block"} <span className="text-white font-semibold capitalize">"{pendingTarget?.name}"</span>? 
+              Are you sure you want to {pendingTarget?.isBlocked ? "unblock" : "block"} <span className="text-white font-semibold capitalize">&quot;{pendingTarget?.name}&quot;</span>? 
               {pendingTarget?.isBlocked 
                 ? " This will immediately restore their full operational access back to the system dashboard panels." 
                 : " This structural block revokes all control dashboard permissions instantly."}
@@ -299,20 +318,23 @@ export default function TeamMembersPage() {
               <h2 className="text-xl font-bold text-white">New Member Invitation</h2>
               <Button variant="ghost" size="sm" onClick={() => setIsOpen(false)} className="text-zinc-400 hover:text-white">✕</Button>
             </div>
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleFormSubmit(onSubmit)} className="space-y-5">
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-zinc-400">Email Address</Label>
-                <Input id="email" type="email" required placeholder="name@example.com" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="bg-zinc-950 border-zinc-800 text-white rounded-xl" />
+                <Input id="email" type="email" placeholder="name@example.com" {...register("email")} className="bg-zinc-950 border-zinc-800 text-white rounded-xl" />
+                {errors.email && <p className="text-xs text-red-500 mt-1">{errors.email.message}</p>}
               </div>
               <div className="space-y-2">
                 <Label className="text-zinc-400">Select System Role</Label>
-                <select value={formData.role} onChange={(e) => setFormData({ ...formData, role: e.target.value })} className="flex h-10 w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-white cursor-pointer"><option value="admin">Admin</option><option value="staff">Staff</option></select>
+                <select {...register("role")} className="flex h-10 w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-white cursor-pointer"><option value="admin">Admin</option><option value="staff">Staff</option></select>
+                {errors.role && <p className="text-xs text-red-500 mt-1">{errors.role.message}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="message" className="text-zinc-400">Personal Note (Optional)</Label>
-                <Textarea id="message" placeholder="Type an optional message..." value={formData.message} onChange={(e) => setFormData({ ...formData, message: e.target.value })} className="bg-zinc-950 border-zinc-800 text-white rounded-xl resize-none" />
+                <Textarea id="message" placeholder="Type an optional message..." {...register("message")} className="bg-zinc-950 border-zinc-800 text-white rounded-xl resize-none" />
+                {errors.message && <p className="text-xs text-red-500 mt-1">{errors.message.message}</p>}
               </div>
-              <Button type="submit" disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl h-11">{loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending...</> : "Send Invitation"}</Button>
+              <Button type="submit" disabled={inviteMutation.isPending} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl h-11">{inviteMutation.isPending ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending...</> : "Send Invitation"}</Button>
             </form>
           </div>
         </div>

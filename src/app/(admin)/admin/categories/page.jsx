@@ -1,6 +1,6 @@
 "use client";
 
-import { useReducer, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { toast } from "sonner";
 import { Loader2, Trash2, Edit2, Sparkles, UploadCloud } from "lucide-react";
 
@@ -34,6 +34,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import axios from "axios";
+
 // Levenshtein Distance Algorithm (Spelling checker)
 const getLevenshteinDistance = (a, b) => {
   const matrix = [];
@@ -56,214 +62,203 @@ const getLevenshteinDistance = (a, b) => {
   return matrix[b.length][a.length];
 };
 
-// Centralized Architecture State Blueprint
-const initialCategoryState = {
-  categories: [],
-  loading: true,
-  searchQuery: "",
-  spellingSuggestion: null,
-  
-  isModalOpen: false,
-  deleteDialogOpen: false,
-  pendingDeleteId: null,
-  
-  actionId: "",
-  formLoading: false,
-  aiLoading1: false,
-  aiLoading2: false,
-
-  isEditing: false,
-  editingCategoryId: null,
-
-  categoryName: "",
-  aiOptions: null,
-  selectedImage: "",
-  uploadMode: "ai",
-};
-
-// Central Logic State Reducer Engine
-function categoryReducer(state, action) {
-  switch (action.type) {
-    case "SET_CATEGORIES":
-      return { ...state, categories: action.payload, loading: false };
-      
-    case "UPDATE_FIELD":
-      return { ...state, [action.field]: action.payload };
-      
-    case "OPEN_CREATE_MODAL":
-      return { 
-        ...state, 
-        isModalOpen: true, 
-        isEditing: false, 
-        categoryName: "", 
-        selectedImage: "", 
-        aiOptions: null, 
-        uploadMode: "ai" 
-      };
-      
-    case "OPEN_EDIT_MODAL":
-      return { 
-        ...state, 
-        isModalOpen: true, 
-        isEditing: true, 
-        editingCategoryId: action.payload._id,
-        categoryName: action.payload.name,
-        selectedImage: action.payload.image,
-        aiOptions: { optionOne: action.payload.image, optionTwo: action.payload.image },
-        uploadMode: action.payload.image ? "manual" : "ai"
-      };
-      
-    case "CLOSE_AND_RESET_MODAL":
-      return { 
-        ...state, 
-        isModalOpen: false, 
-        isEditing: false, 
-        editingCategoryId: null,
-        categoryName: "",
-        aiOptions: null,
-        selectedImage: "",
-        uploadMode: "ai",
-        aiLoading1: false,
-        aiLoading2: false
-      };
-      
-    default:
-      return state;
-  }
-}
+const categorySchema = z.object({
+  name: z
+    .string()
+    .min(1, { message: "Category name is required." })
+    .trim()
+    .min(2, { message: "Category name must be at least 2 characters long." })
+    .max(50, { message: "Category name cannot exceed 50 characters." }),
+  imageUrl: z
+    .string()
+    .url({ message: "Invalid image URL format." })
+    .or(z.literal(""))
+    .optional()
+});
 
 export default function CategoryManagementPage() {
-  const [state, dispatch] = useReducer(categoryReducer, initialCategoryState);
+  const queryClient = useQueryClient();
   const fileInputRef = useRef(null);
 
-  // Dynamic Field Input Sync Mapping
-  const handleInputChange = (field, value) => {
-    dispatch({ type: "UPDATE_FIELD", field, payload: value });
+  // States
+  const [searchQuery, setSearchQuery] = useState("");
+  const [spellingSuggestion, setSpellingSuggestion] = useState(null);
+  
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState(null);
+  
+  const [aiOptions, setAiOptions] = useState(null);
+  const [aiLoading1, setAiLoading1] = useState(false);
+  const [aiLoading2, setAiLoading2] = useState(false);
+  const [uploadMode, setUploadMode] = useState("ai");
+
+  const [editingCategory, setEditingCategory] = useState(null); // null = add mode, object = edit mode
+
+  // React Hook Form
+  const { register, handleSubmit: handleFormSubmit, reset, setValue, watch, formState: { errors } } = useForm({
+    resolver: zodResolver(categorySchema),
+    mode: "onBlur",
+    defaultValues: {
+      name: "",
+      imageUrl: ""
+    }
+  });
+
+  const selectedImage = watch("imageUrl");
+  const categoryName = watch("name");
+
+  // React Query Fetch categories
+  const { 
+    data: categoriesData, 
+    isLoading: categoriesLoading, 
+    refetch: refetchCategories 
+  } = useQuery({
+    queryKey: ["categories"],
+    queryFn: async () => {
+      const res = await axios.get("/api/admin/categories");
+      return res.data?.data || [];
+    }
+  });
+
+  const categories = categoriesData || [];
+
+  // Toggle status mutation
+  const statusToggleMutation = useMutation({
+    mutationFn: async (id) => {
+      const res = await axios.patch(`/api/admin/categories?id=${id}`);
+      return res.data;
+    },
+    onSuccess: (data) => {
+      toast.success(data.message);
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || "Operation failed.");
+    }
+  });
+
+  const handleStatusToggle = (id) => {
+    statusToggleMutation.mutate(id);
+  };
+
+  // Delete category mutation
+  const deleteMutation = useMutation({
+    mutationFn: async (id) => {
+      const res = await axios.delete(`/api/admin/categories?id=${id}`);
+      return res.data;
+    },
+    onSuccess: (data) => {
+      toast.success(data.message);
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || "Deletion sequence rejected.");
+    }
+  });
+
+  const triggerDeleteCheck = (id) => {
+    setPendingDeleteId(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const executeDeleteNode = () => {
+    if (!pendingDeleteId) return;
+    setDeleteDialogOpen(false);
+    deleteMutation.mutate(pendingDeleteId, {
+      onSettled: () => {
+        setPendingDeleteId(null);
+      }
+    });
+  };
+
+  // Form Submit Mutation
+  const categoryFormMutation = useMutation({
+    mutationFn: async (data) => {
+      const targetUrl = editingCategory 
+        ? `/api/admin/categories?id=${editingCategory._id}` 
+        : "/api/admin/categories";
+      const method = editingCategory ? "PUT" : "POST";
+      
+      const response = await axios({
+        url: targetUrl,
+        method,
+        data: {
+          name: data.name,
+          imageUrl: data.imageUrl
+        }
+      });
+      return response.data;
+    },
+    onSuccess: (data) => {
+      toast.success(data.message);
+      closeAndResetModal();
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || "Database validation failed.");
+    }
+  });
+
+  const onSubmit = (data) => {
+    categoryFormMutation.mutate(data);
+  };
+
+  const openCreateModal = () => {
+    setEditingCategory(null);
+    setAiOptions(null);
+    setUploadMode("ai");
+    reset({
+      name: "",
+      imageUrl: ""
+    });
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (cat) => {
+    setEditingCategory(cat);
+    setAiOptions({ optionOne: cat.image, optionTwo: cat.image });
+    setUploadMode(cat.image ? "manual" : "ai");
+    reset({
+      name: cat.name,
+      imageUrl: cat.image
+    });
+    setIsModalOpen(true);
+  };
+
+  const closeAndResetModal = () => {
+    setIsModalOpen(false);
+    setEditingCategory(null);
+    setAiOptions(null);
+    setUploadMode("ai");
+    reset({
+      name: "",
+      imageUrl: ""
+    });
   };
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       const imageUrl = URL.createObjectURL(file);
-      handleInputChange("selectedImage", imageUrl);
-    }
-  };
-
-  // ==================== 📡 BACKEND SERVER API INTERACTIONS ====================
-
-  const fetchCategories = async () => {
-    try {
-      handleInputChange("loading", true);
-      const res = await fetch("/api/admin/categories");
-      const data = await res.json();
-      if (res.ok && data.success) {
-        dispatch({ type: "SET_CATEGORIES", payload: data.data });
-      } else {
-        toast.error(data.message || "Failed to load categories catalog.");
-      }
-    } catch {
-      toast.error("Network communication failure with server matrix.");
-    } finally {
-      handleInputChange("loading", false);
-    }
-  };
-
-  useEffect(() => {
-    fetchCategories();
-  }, []);
-
-  const handleStatusToggle = async (id) => {
-    try {
-      handleInputChange("actionId", id);
-      const res = await fetch(`/api/admin/categories?id=${id}`, { method: "PATCH" });
-      const result = await res.json();
-      if (res.ok && result.success) {
-        toast.success(result.message);
-        fetchCategories();
-      } else {
-        toast.error(result.message || "Operation failed.");
-      }
-    } catch {
-      toast.error("Internal state transmission failure.");
-    } finally {
-      handleInputChange("actionId", "");
-    }
-  };
-
-  const triggerDeleteCheck = (id) => {
-    handleInputChange("pendingDeleteId", id);
-    handleInputChange("deleteDialogOpen", true);
-  };
-
-  const executeDeleteNode = async () => {
-    if (!state.pendingDeleteId) return;
-    try {
-      handleInputChange("actionId", state.pendingDeleteId);
-      handleInputChange("deleteDialogOpen", false);
-      
-      const res = await fetch(`/api/admin/categories?id=${state.pendingDeleteId}`, { method: "DELETE" });
-      const result = await res.json();
-      
-      if (res.ok && result.success) {
-        toast.success(result.message);
-        fetchCategories();
-      } else {
-        toast.error(result.message || "Deletion sequence rejected.");
-      }
-    } catch {
-      toast.error("Server synchronization timed out.");
-    } finally {
-      handleInputChange("actionId", "");
-      handleInputChange("pendingDeleteId", null);
-    }
-  };
-
-  const handleMasterSubmit = async (e) => {
-    e.preventDefault();
-    if (!state.categoryName.trim()) return;
-
-    handleInputChange("formLoading", true);
-    const targetUrl = state.isEditing ? `/api/admin/categories?id=${state.editingCategoryId}` : "/api/admin/categories";
-    const targetMethod = state.isEditing ? "PUT" : "POST";
-
-    try {
-      const res = await fetch(targetUrl, {
-        method: targetMethod,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: state.categoryName,
-          imageUrl: state.selectedImage,
-        }),
-      });
-
-      const result = await res.json();
-      if (res.ok && result.success) {
-        toast.success(result.message);
-        dispatch({ type: "CLOSE_AND_RESET_MODAL" });
-        fetchCategories();
-      } else {
-        toast.error(result.message || "Database validation failed.");
-      }
-    } catch {
-      toast.error("Server submission failure.");
-    } finally {
-      handleInputChange("formLoading", false);
+      setValue("imageUrl", imageUrl);
     }
   };
 
   // ==================== 🎨 INDEPENDENT SPLIT AI GENERATOR ENGINE ====================
 
   const generateAiIcons = () => {
-    if (!state.categoryName || state.categoryName.trim() === "") {
+    const nameVal = categoryName?.trim();
+    if (!nameVal) {
       toast.error("Please fill the name input before invoking AI core.");
       return;
     }
     
-    handleInputChange("aiLoading1", true);
-    handleInputChange("aiLoading2", true);
-    handleInputChange("uploadMode", "ai");
+    setAiLoading1(true);
+    setAiLoading2(true);
+    setUploadMode("ai");
     
-    const cleanTerm = state.categoryName.trim().toLowerCase().replace(/\s+/g, "-");
+    const cleanTerm = nameVal.toLowerCase().replace(/\s+/g, "-");
     const promptCore = `cute clean vector flat illustration of ${cleanTerm} item, minimalist stationery design concept, vibrant friendly colors, isolated on solid pure white background, digital 2d art style, smooth clipart asset`;
     
     const seed1 = Math.floor(Math.random() * 2000) + 1;
@@ -272,35 +267,35 @@ export default function CategoryManagementPage() {
     const optionOne = `https://image.pollinations.ai/p/${encodeURIComponent(promptCore + " primary colors")}?width=300&height=300&seed=${seed1}&nologo=true`;
     const optionTwo = `https://image.pollinations.ai/p/${encodeURIComponent(promptCore + " pastel colors")}?width=300&height=300&seed=${seed2}&nologo=true`;
 
-    handleInputChange("aiOptions", { optionOne, optionTwo });
-    handleInputChange("selectedImage", optionOne);
+    setAiOptions({ optionOne, optionTwo });
+    setValue("imageUrl", optionOne);
 
-    setTimeout(() => handleInputChange("aiLoading1", false), 2000);
-    setTimeout(() => handleInputChange("aiLoading2", false), 3500);
+    setTimeout(() => setAiLoading1(false), 2000);
+    setTimeout(() => setAiLoading2(false), 3500);
   };
 
   const handleSearchChange = (query) => {
-    handleInputChange("searchQuery", query);
+    setSearchQuery(query);
     
     if (query.trim().length < 2) {
-      handleInputChange("spellingSuggestion", null);
+      setSpellingSuggestion(null);
       return;
     }
 
     const lowerQuery = query.toLowerCase().trim();
-    const directMatchExists = state.categories.some(cat => 
+    const directMatchExists = categories.some(cat => 
       cat.name.toLowerCase().includes(lowerQuery)
     );
 
     if (directMatchExists) {
-      handleInputChange("spellingSuggestion", null);
+      setSpellingSuggestion(null);
       return;
     }
 
     let bestMatch = null;
     let minDistance = 999;
 
-    state.categories.forEach((cat) => {
+    categories.forEach((cat) => {
       const catName = cat.name.toLowerCase();
       const words = catName.split(/\s+/);
       let closestWordDistance = 999;
@@ -319,11 +314,11 @@ export default function CategoryManagementPage() {
       }
     });
 
-    handleInputChange("spellingSuggestion", bestMatch);
+    setSpellingSuggestion(bestMatch);
   };
 
-  const filteredCategories = state.categories.filter((cat) =>
-    cat.name.toLowerCase().includes(state.searchQuery.toLowerCase())
+  const filteredCategories = categories.filter((cat) =>
+    cat.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -336,13 +331,13 @@ export default function CategoryManagementPage() {
           <p className="text-sm text-zinc-400 mt-1">
             Category counter :{" "}
             <span className="text-blue-400 font-mono font-bold text-base tracking-widest">
-              {String(state.categories.length).padStart(3, "0")}
+              {String(categories.length).padStart(3, "0")}
             </span>
           </p>
         </div>
         
         <Button
-          onClick={() => dispatch({ type: "OPEN_CREATE_MODAL" })}
+          onClick={openCreateModal}
           className="bg-white text-black font-semibold hover:bg-zinc-200 rounded-xl px-4 py-2 text-sm shadow-md"
         >
           + Add Category
@@ -357,7 +352,7 @@ export default function CategoryManagementPage() {
           <div className="relative w-full max-w-md">
             <input
               type="text"
-              value={state.searchQuery}
+              value={searchQuery}
               onChange={(e) => handleSearchChange(e.target.value)}
               placeholder="Search Category with AI search features..."
               className="w-full bg-[#141416] border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-center text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-blue-500 transition-all shadow-inner"
@@ -365,18 +360,18 @@ export default function CategoryManagementPage() {
           </div>
 
           {/* ✨ Smart Did You Mean Ribbon Suggestion Box */}
-          {state.spellingSuggestion && (
+          {spellingSuggestion && (
             <div className="text-xs text-zinc-400 bg-blue-500/10 border border-blue-500/20 px-3 py-1.5 rounded-lg">
               Did you mean:{" "}
               <button
                 type="button"
                 onClick={() => {
-                  handleInputChange("searchQuery", state.spellingSuggestion);
-                  handleInputChange("spellingSuggestion", null);
+                  handleSearchChange(spellingSuggestion);
+                  setSpellingSuggestion(null);
                 }}
                 className="text-blue-400 font-semibold hover:underline capitalize"
               >
-                {state.spellingSuggestion}
+                {spellingSuggestion}
               </button>
               {" "}?
             </div>
@@ -398,7 +393,7 @@ export default function CategoryManagementPage() {
               </TableRow>
             </TableHeader>
             <TableBody className="text-zinc-300">
-              {state.loading ? (
+              {categoriesLoading ? (
                 <TableRow>
                   <TableCell colSpan={7} className="h-32 text-center text-zinc-500">
                     <div className="flex items-center justify-center gap-2">
@@ -435,7 +430,7 @@ export default function CategoryManagementPage() {
                       </span>
                     </TableCell>
                     <TableCell>
-                      {state.actionId === category._id ? (
+                      {((statusToggleMutation.isPending && statusToggleMutation.variables === category._id) || (deleteMutation.isPending && deleteMutation.variables === category._id)) ? (
                         <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
                       ) : (
                         <div className="flex items-center gap-3">
@@ -456,7 +451,7 @@ export default function CategoryManagementPage() {
                     <TableCell>
                       <div className="flex items-center justify-center gap-4">
                         <button 
-                          onClick={() => dispatch({ type: "OPEN_EDIT_MODAL", payload: category })}
+                          onClick={() => openEditModal(category)}
                           className="text-zinc-400 hover:text-white transition-colors p-1"
                         >
                           <Edit2 className="h-4 w-4" />
@@ -478,25 +473,23 @@ export default function CategoryManagementPage() {
       </div>
 
       {/* 🔲 COMPOSITE MULTI-OPERATIONAL DIALOG BOX FORMS */}
-      <Dialog open={state.isModalOpen} onOpenChange={() => dispatch({ type: "CLOSE_AND_RESET_MODAL" })}>
+      <Dialog open={isModalOpen} onOpenChange={(val) => !val && closeAndResetModal()}>
         <DialogContent className="w-full max-w-md border border-zinc-800 bg-zinc-900 p-6 text-white rounded-2xl shadow-2xl">
           <DialogHeader className="border-b border-zinc-800 pb-4 mb-4">
             <DialogTitle className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-blue-400" /> {state.isEditing ? "Edit Category Details" : "New Category"}
+              <Sparkles className="h-5 w-5 text-blue-400" /> {editingCategory ? "Edit Category Details" : "New Category"}
             </DialogTitle>
           </DialogHeader>
 
-          <form onSubmit={handleMasterSubmit} className="space-y-5">
+          <form onSubmit={handleFormSubmit(onSubmit)} className="space-y-5">
             <div className="space-y-2">
               <Label htmlFor="categoryName" className="text-zinc-400 text-xs font-semibold tracking-wider uppercase">Category Name</Label>
               <div className="flex gap-2">
                 <Input
                   id="categoryName"
                   type="text"
-                  required
                   placeholder="Enter Category name"
-                  value={state.categoryName}
-                  onChange={(e) => handleInputChange("categoryName", e.target.value)}
+                  {...register("name")}
                   className="bg-zinc-950 border-zinc-800 text-white rounded-xl focus-visible:ring-blue-500"
                 />
                 <Button
@@ -507,42 +500,43 @@ export default function CategoryManagementPage() {
                   Generate Icon
                 </Button>
               </div>
+              {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name.message}</p>}
             </div>
 
-            {state.aiOptions && state.uploadMode === "ai" && (
+            {aiOptions && uploadMode === "ai" && (
               <div className="space-y-2">
                 <Label className="text-zinc-400 text-xs font-semibold tracking-wider uppercase">Choose Brand Icon Options</Label>
                 <div className="grid grid-cols-2 gap-3">
                   
                   {/* Option Card 1 */}
                   <div 
-                    onClick={() => !state.aiLoading1 && handleInputChange("selectedImage", state.aiOptions.optionOne)}
+                    onClick={() => !aiLoading1 && setValue("imageUrl", aiOptions.optionOne)}
                     className={`relative cursor-pointer aspect-square rounded-xl overflow-hidden border flex items-center justify-center p-2 transition-all bg-white ${
-                      state.selectedImage === state.aiOptions.optionOne ? "border-blue-500 ring-2 ring-blue-500/50" : "border-zinc-800"
+                      selectedImage === aiOptions.optionOne ? "border-blue-500 ring-2 ring-blue-500/50" : "border-zinc-800"
                     }`}
                   >
-                    {state.aiLoading1 ? (
+                    {aiLoading1 ? (
                       <div className="absolute inset-0 bg-[#141416] flex items-center justify-center rounded-lg w-full h-full">
                         <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
                       </div>
                     ) : (
-                      <img src={state.aiOptions.optionOne} alt="Option 1" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+                      <img src={aiOptions.optionOne} alt="Option 1" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
                     )}
                   </div>
 
                   {/* Option Card 2 */}
                   <div 
-                    onClick={() => !state.aiLoading2 && handleInputChange("selectedImage", state.aiOptions.optionTwo)}
+                    onClick={() => !aiLoading2 && setValue("imageUrl", aiOptions.optionTwo)}
                     className={`relative cursor-pointer aspect-square rounded-xl overflow-hidden border flex items-center justify-center p-2 transition-all bg-white ${
-                      state.selectedImage === state.aiOptions.optionTwo ? "border-blue-500 ring-2 ring-blue-500/50" : "border-zinc-800"
+                      selectedImage === aiOptions.optionTwo ? "border-blue-500 ring-2 ring-blue-500/50" : "border-zinc-800"
                     }`}
                   >
-                    {state.aiLoading2 ? (
+                    {aiLoading2 ? (
                       <div className="absolute inset-0 bg-[#141416] flex items-center justify-center rounded-lg w-full h-full">
                         <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
                       </div>
                     ) : (
-                      <img src={state.aiOptions.optionTwo} alt="Option 2" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+                      <img src={aiOptions.optionTwo} alt="Option 2" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
                     )}
                   </div>
 
@@ -550,7 +544,7 @@ export default function CategoryManagementPage() {
               </div>
             )}
 
-            {state.uploadMode === "manual" && (
+            {uploadMode === "manual" && (
               <div className="space-y-2">
                 <Label className="text-zinc-400 text-xs font-semibold tracking-wider uppercase">Local Device Storage Uploader</Label>
                 <input 
@@ -573,21 +567,21 @@ export default function CategoryManagementPage() {
             <div className="pt-1">
               <button
                 type="button"
-                onClick={() => handleInputChange("uploadMode", state.uploadMode === "ai" ? "manual" : "ai")}
+                onClick={() => setUploadMode(uploadMode === "ai" ? "manual" : "ai")}
                 className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors underline"
               >
-                {state.uploadMode === "ai" ? "Or upload manually from browser file system" : "Back to AI illustration options panel"}
+                {uploadMode === "ai" ? "Or upload manually from browser file system" : "Back to AI illustration options panel"}
               </button>
             </div>
 
             <Button 
               type="submit" 
-              disabled={state.formLoading} 
+              disabled={categoryFormMutation.isPending} 
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl h-11 shadow-lg shadow-blue-600/10"
             >
-              {state.formLoading ? (
+              {categoryFormMutation.isPending ? (
                 <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Transmitting Document...</>
-              ) : state.isEditing ? (
+              ) : editingCategory ? (
                 "Save Operational Changes"
               ) : (
                 "Add Category"
@@ -598,7 +592,7 @@ export default function CategoryManagementPage() {
       </Dialog>
 
       {/* 🛡️ STRICT PRODUCT BLOCK GUARD SHIELD */}
-      <AlertDialog open={state.deleteDialogOpen} onOpenChange={(val) => handleInputChange("deleteDialogOpen", val)}>
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent className="bg-zinc-900 border border-zinc-800 text-white rounded-2xl">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-zinc-100">Confirm Asset Removal</AlertDialogTitle>
