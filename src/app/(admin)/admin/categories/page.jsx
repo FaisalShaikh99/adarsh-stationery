@@ -3,6 +3,8 @@
 import { useState, useRef } from "react";
 import { toast } from "sonner";
 import { Loader2, Trash2, Edit2, Sparkles, UploadCloud } from "lucide-react";
+import IconLibraryPicker from "@/components/admin/IconLibraryPicker";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 // Shadcn UI Components
 import {
@@ -39,6 +41,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
+import { categoryCreateSchema } from "@/schemas/category.schema";
 
 // Levenshtein Distance Algorithm (Spelling checker)
 const getLevenshteinDistance = (a, b) => {
@@ -62,20 +65,6 @@ const getLevenshteinDistance = (a, b) => {
   return matrix[b.length][a.length];
 };
 
-const categorySchema = z.object({
-  name: z
-    .string()
-    .min(1, { message: "Category name is required." })
-    .trim()
-    .min(2, { message: "Category name must be at least 2 characters long." })
-    .max(50, { message: "Category name cannot exceed 50 characters." }),
-  imageUrl: z
-    .string()
-    .url({ message: "Invalid image URL format." })
-    .or(z.literal(""))
-    .optional()
-});
-
 export default function CategoryManagementPage() {
   const queryClient = useQueryClient();
   const fileInputRef = useRef(null);
@@ -88,18 +77,18 @@ export default function CategoryManagementPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
   
-  const [aiOptions, setAiOptions] = useState(null);
-  const [aiLoading1, setAiLoading1] = useState(false);
-  const [aiLoading2, setAiLoading2] = useState(false);
-  const [uploadMode, setUploadMode] = useState("ai");
+  const [uploadMode, setUploadMode] = useState("manual");
 
   const [editingCategory, setEditingCategory] = useState(null); // null = add mode, object = edit mode
 
   // React Hook Form
   const { register, handleSubmit: handleFormSubmit, reset, setValue, watch, formState: { errors } } = useForm({
-    resolver: zodResolver(categorySchema),
+    resolver: zodResolver(categoryCreateSchema),
     mode: "onBlur",
-    defaultValues: {
+    values: editingCategory ? {
+      name: editingCategory.name || "",
+      imageUrl: editingCategory.image || ""
+    } : {
       name: "",
       imageUrl: ""
     }
@@ -118,7 +107,8 @@ export default function CategoryManagementPage() {
     queryFn: async () => {
       const res = await axios.get("/api/admin/categories");
       return res.data?.data || [];
-    }
+    },
+    refetchOnMount: true
   });
 
   const categories = categoriesData || [];
@@ -129,12 +119,38 @@ export default function CategoryManagementPage() {
       const res = await axios.patch(`/api/admin/categories?id=${id}`);
       return res.data;
     },
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ["categories"] });
+      const previousCategories = queryClient.getQueryData(["categories"]);
+
+      queryClient.setQueryData(["categories"], (old) => {
+        if (!old) return old;
+        const currentData = Array.isArray(old) ? old : (old.data || []);
+        
+        const toggled = currentData.map((c) => {
+          if (c._id === id) {
+            return { ...c, isActive: c.isActive === false };
+          }
+          return c;
+        });
+
+        if (Array.isArray(old)) return toggled;
+        return { ...old, data: toggled };
+      });
+
+      return { previousCategories };
+    },
+    onError: (err, id, context) => {
+      if (context?.previousCategories) {
+        queryClient.setQueryData(["categories"], context.previousCategories);
+      }
+      toast.error(err.response?.data?.message || "Operation failed.");
+    },
     onSuccess: (data) => {
       toast.success(data.message);
-      queryClient.invalidateQueries({ queryKey: ["categories"] });
     },
-    onError: (error) => {
-      toast.error(error.response?.data?.message || "Operation failed.");
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
     }
   });
 
@@ -206,8 +222,7 @@ export default function CategoryManagementPage() {
 
   const openCreateModal = () => {
     setEditingCategory(null);
-    setAiOptions(null);
-    setUploadMode("ai");
+    setUploadMode("manual");
     reset({
       name: "",
       imageUrl: ""
@@ -217,8 +232,7 @@ export default function CategoryManagementPage() {
 
   const openEditModal = (cat) => {
     setEditingCategory(cat);
-    setAiOptions({ optionOne: cat.image, optionTwo: cat.image });
-    setUploadMode(cat.image ? "manual" : "ai");
+    setUploadMode("manual");
     reset({
       name: cat.name,
       imageUrl: cat.image
@@ -229,8 +243,7 @@ export default function CategoryManagementPage() {
   const closeAndResetModal = () => {
     setIsModalOpen(false);
     setEditingCategory(null);
-    setAiOptions(null);
-    setUploadMode("ai");
+    setUploadMode("manual");
     reset({
       name: "",
       imageUrl: ""
@@ -240,38 +253,16 @@ export default function CategoryManagementPage() {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      const imageUrl = URL.createObjectURL(file);
-      setValue("imageUrl", imageUrl);
+      if (!file.type.startsWith("image/")) {
+        toast.error("Please select a valid image file.");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        setValue("imageUrl", reader.result);
+      };
+      reader.readAsDataURL(file);
     }
-  };
-
-  // ==================== 🎨 INDEPENDENT SPLIT AI GENERATOR ENGINE ====================
-
-  const generateAiIcons = () => {
-    const nameVal = categoryName?.trim();
-    if (!nameVal) {
-      toast.error("Please fill the name input before invoking AI core.");
-      return;
-    }
-    
-    setAiLoading1(true);
-    setAiLoading2(true);
-    setUploadMode("ai");
-    
-    const cleanTerm = nameVal.toLowerCase().replace(/\s+/g, "-");
-    const promptCore = `cute clean vector flat illustration of ${cleanTerm} item, minimalist stationery design concept, vibrant friendly colors, isolated on solid pure white background, digital 2d art style, smooth clipart asset`;
-    
-    const seed1 = Math.floor(Math.random() * 2000) + 1;
-    const seed2 = Math.floor(Math.random() * 2000) + 2500;
-
-    const optionOne = `https://image.pollinations.ai/p/${encodeURIComponent(promptCore + " primary colors")}?width=300&height=300&seed=${seed1}&nologo=true`;
-    const optionTwo = `https://image.pollinations.ai/p/${encodeURIComponent(promptCore + " pastel colors")}?width=300&height=300&seed=${seed2}&nologo=true`;
-
-    setAiOptions({ optionOne, optionTwo });
-    setValue("imageUrl", optionOne);
-
-    setTimeout(() => setAiLoading1(false), 2000);
-    setTimeout(() => setAiLoading2(false), 3500);
   };
 
   const handleSearchChange = (query) => {
@@ -320,6 +311,8 @@ export default function CategoryManagementPage() {
   const filteredCategories = categories.filter((cat) =>
     cat.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+
 
   return (
     <div className="w-full min-h-screen bg-[#09090b] text-white p-6 space-y-6 font-sans">
@@ -395,11 +388,8 @@ export default function CategoryManagementPage() {
             <TableBody className="text-zinc-300">
               {categoriesLoading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-32 text-center text-zinc-500">
-                    <div className="flex items-center justify-center gap-2">
-                      <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
-                      <span>Loading warehouse catalog indexes...</span>
-                    </div>
+                  <TableCell colSpan={7} className="text-center py-6 text-zinc-550 font-medium">
+                    <LoadingSpinner size={140} label="Loading items..." className="mx-auto" />
                   </TableCell>
                 </TableRow>
               ) : filteredCategories.length === 0 ? (
@@ -414,22 +404,22 @@ export default function CategoryManagementPage() {
                     key={category._id} 
                     className={`border-b border-zinc-800 hover:bg-zinc-900/40 transition-colors ${!category.isActive ? "opacity-60 bg-zinc-950/20" : ""}`}
                   >
-                    <TableCell className="text-center font-medium text-zinc-500">{index + 1}</TableCell>
-                    <TableCell>
+                    <TableCell className="text-center font-medium text-zinc-500 py-4">{index + 1}</TableCell>
+                    <TableCell className="py-4">
                       <img 
                         src={category.image} 
                         alt="" 
-                        className="w-10 h-10 rounded-xl object-cover border border-zinc-800 bg-white" 
+                        className="w-12 h-12 rounded-xl object-contain border border-zinc-800 bg-white p-0.5" 
                         referrerPolicy="no-referrer"
                       />
                     </TableCell>
-                    <TableCell className="font-semibold text-white capitalize">{category.name}</TableCell>
-                    <TableCell className="font-mono text-sm">
+                    <TableCell className="font-bold tracking-tight text-sm text-zinc-100 capitalize py-4">{category.name}</TableCell>
+                    <TableCell className="font-mono text-sm py-4">
                       <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${category.totalProducts > 0 ? "bg-blue-500/10 text-blue-400 border border-blue-500/20" : "bg-zinc-800 text-zinc-500"}`}>
                         {String(category.totalProducts).padStart(2, '0')} Products
                       </span>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="py-4">
                       {((statusToggleMutation.isPending && statusToggleMutation.variables === category._id) || (deleteMutation.isPending && deleteMutation.variables === category._id)) ? (
                         <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
                       ) : (
@@ -445,10 +435,10 @@ export default function CategoryManagementPage() {
                         </div>
                       )}
                     </TableCell>
-                    <TableCell className="text-xs text-zinc-400 font-mono">
+                    <TableCell className="text-xs text-zinc-400 font-mono py-4">
                       {new Date(category.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="py-4">
                       <div className="flex items-center justify-center gap-4">
                         <button 
                           onClick={() => openEditModal(category)}
@@ -484,62 +474,39 @@ export default function CategoryManagementPage() {
           <form onSubmit={handleFormSubmit(onSubmit)} className="space-y-5">
             <div className="space-y-2">
               <Label htmlFor="categoryName" className="text-zinc-400 text-xs font-semibold tracking-wider uppercase">Category Name</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="categoryName"
-                  type="text"
-                  placeholder="Enter Category name"
-                  {...register("name")}
-                  className="bg-zinc-950 border-zinc-800 text-white rounded-xl focus-visible:ring-blue-500"
-                />
-                <Button
-                  type="button"
-                  onClick={generateAiIcons}
-                  className="bg-zinc-800 hover:bg-zinc-700 text-blue-400 font-medium rounded-xl shrink-0"
-                >
-                  Generate Icon
-                </Button>
-              </div>
+              <Input
+                id="categoryName"
+                type="text"
+                placeholder="Enter Category name"
+                {...register("name")}
+                className="bg-zinc-950 border-zinc-800 text-white rounded-xl focus-visible:ring-blue-500 w-full"
+              />
               {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name.message}</p>}
             </div>
 
-            {aiOptions && uploadMode === "ai" && (
+            {/* Unified Preview Container - ALWAYS renders based on selectedImage (imageUrl) */}
+            {selectedImage && (
               <div className="space-y-2">
-                <Label className="text-zinc-400 text-xs font-semibold tracking-wider uppercase">Choose Brand Icon Options</Label>
-                <div className="grid grid-cols-2 gap-3">
-                  
-                  {/* Option Card 1 */}
-                  <div 
-                    onClick={() => !aiLoading1 && setValue("imageUrl", aiOptions.optionOne)}
-                    className={`relative cursor-pointer aspect-square rounded-xl overflow-hidden border flex items-center justify-center p-2 transition-all bg-white ${
-                      selectedImage === aiOptions.optionOne ? "border-blue-500 ring-2 ring-blue-500/50" : "border-zinc-800"
-                    }`}
-                  >
-                    {aiLoading1 ? (
-                      <div className="absolute inset-0 bg-[#141416] flex items-center justify-center rounded-lg w-full h-full">
-                        <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
-                      </div>
-                    ) : (
-                      <img src={aiOptions.optionOne} alt="Option 1" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
-                    )}
+                <Label className="text-zinc-400 text-xs font-semibold tracking-wider uppercase">Current Icon Preview</Label>
+                <div className="flex items-center gap-3 p-3 bg-zinc-950/40 border border-zinc-800 rounded-xl w-fit">
+                  <img 
+                    src={selectedImage} 
+                    alt="Selected category preview" 
+                    className="w-10 h-10 rounded-xl object-contain bg-white border border-zinc-800 p-0.5"
+                    referrerPolicy="no-referrer"
+                  />
+                  <div>
+                    <p className="text-[10px] text-zinc-400 font-semibold uppercase tracking-wider font-mono truncate max-w-[180px]">
+                      {selectedImage.includes("api.iconify.design") ? "Library Icon (SVG)" : selectedImage.startsWith("data:") ? "Manual Upload (Base64)" : "Saved Icon URL"}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setValue("imageUrl", "")}
+                      className="text-[10px] text-rose-400 hover:text-rose-300 font-semibold underline mt-0.5 block text-left"
+                    >
+                      Remove Icon
+                    </button>
                   </div>
-
-                  {/* Option Card 2 */}
-                  <div 
-                    onClick={() => !aiLoading2 && setValue("imageUrl", aiOptions.optionTwo)}
-                    className={`relative cursor-pointer aspect-square rounded-xl overflow-hidden border flex items-center justify-center p-2 transition-all bg-white ${
-                      selectedImage === aiOptions.optionTwo ? "border-blue-500 ring-2 ring-blue-500/50" : "border-zinc-800"
-                    }`}
-                  >
-                    {aiLoading2 ? (
-                      <div className="absolute inset-0 bg-[#141416] flex items-center justify-center rounded-lg w-full h-full">
-                        <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
-                      </div>
-                    ) : (
-                      <img src={aiOptions.optionTwo} alt="Option 2" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
-                    )}
-                  </div>
-
                 </div>
               </div>
             )}
@@ -556,23 +523,37 @@ export default function CategoryManagementPage() {
                 />
                 <div 
                   onClick={() => fileInputRef.current.click()}
-                  className="border border-dashed border-zinc-700 rounded-xl p-6 bg-zinc-950/40 text-center flex flex-col items-center justify-center gap-2 hover:bg-zinc-950/80 transition-all cursor-pointer"
+                  className="border border-dashed border-zinc-700 rounded-xl p-5 bg-zinc-950/40 text-center flex flex-col items-center justify-center gap-2 hover:bg-zinc-950/80 transition-all cursor-pointer min-h-[100px]"
                 >
-                  <UploadCloud className="h-6 w-6 text-zinc-500" />
-                  <span className="text-xs text-zinc-400">Click to load physical icon asset</span>
+                  <UploadCloud className="h-5 w-5 text-zinc-500" />
+                  <span className="text-xs text-zinc-400">
+                    {selectedImage ? "Click to replace file manually" : "Click to upload manual icon file"}
+                  </span>
+                </div>
+                
+                <div className="pt-1 text-center">
+                  <button
+                    type="button"
+                    onClick={() => setUploadMode("picker")}
+                    className="text-xs text-blue-400 hover:text-blue-300 transition-colors underline"
+                  >
+                    Or browse icon library instead
+                  </button>
                 </div>
               </div>
             )}
 
-            <div className="pt-1">
-              <button
-                type="button"
-                onClick={() => setUploadMode(uploadMode === "ai" ? "manual" : "ai")}
-                className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors underline"
-              >
-                {uploadMode === "ai" ? "Or upload manually from browser file system" : "Back to AI illustration options panel"}
-              </button>
-            </div>
+            {uploadMode === "picker" && (
+              <div className="space-y-2">
+                <IconLibraryPicker
+                  onSelect={(iconUrl) => {
+                    setValue("imageUrl", iconUrl);
+                    setUploadMode("manual");
+                  }}
+                  onClose={() => setUploadMode("manual")}
+                />
+              </div>
+            )}
 
             <Button 
               type="submit" 

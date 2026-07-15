@@ -1,6 +1,6 @@
 "use client";
  
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import {
   Loader2,
@@ -13,6 +13,8 @@ import {
   Wand2,
   UploadCloud,
   X,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -21,46 +23,46 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { Switch } from "@/components/ui/switch";
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
-
-const parseNumberField = (value) => {
-  if (value === "" || value === undefined || value === null) return undefined;
-  const parsed = Number(value);
-  return Number.isNaN(parsed) ? value : parsed;
-};
-
-const productSchema = z.object({
-  name: z.string().min(2, "Product name must be at least 2 characters long.").trim(),
-  category: z.string().regex(/^[0-9a-fA-F]{24}$/, "Please select a valid Category."),
-  company: z.string().regex(/^[0-9a-fA-F]{24}$/, "Please select a valid Brand/Company."),
-  stock: z.preprocess(
-    parseNumberField,
-    z.number({ required_error: "Stock is required." }).min(0, "Stock quantity cannot be negative.")
-  ),
-  stockUnit: z.string().min(1, "Stock unit is required.").trim(),
-  costPrice: z.preprocess(
-    parseNumberField,
-    z.number({ required_error: "Cost price is required." }).min(0, "Cost price cannot be negative.")
-  ),
-  sellingPrice: z.preprocess(
-    parseNumberField,
-    z.number({ required_error: "Selling price is required." }).min(0, "Selling price cannot be negative.")
-  ),
-  images: z.array(z.string()).refine((arr) => arr.some(img => img !== ""), {
-    message: "At least one product image is required."
-  }),
-  description: z.string().optional(),
-  isActive: z.boolean().optional().default(true)
-});
+import { productSchema } from "@/schemas/products.schema";
  
 export default function ProductManagementPage() {
   const queryClient = useQueryClient();
-  const fileInputRefs = useRef([null, null, null]);
+  const fileInputRefs = useRef([]);
+
+  // React Query Dropdown Data Queries (defined first for useForm values default sync)
+  const { 
+    data: categoriesData,
+    isLoading: categoriesLoading
+  } = useQuery({
+    queryKey: ["categoriesDropdown"],
+    queryFn: async () => {
+      const res = await axios.get("/api/admin/categories");
+      return res.data?.data || [];
+    },
+    staleTime: 5 * 60 * 1000
+  });
+  const categories = categoriesData || [];
+
+  const { 
+    data: brandsData,
+    isLoading: brandsLoading
+  } = useQuery({
+    queryKey: ["brandsDropdown"],
+    queryFn: async () => {
+      const res = await axios.get("/api/admin/brands");
+      return res.data?.data || [];
+    },
+    staleTime: 5 * 60 * 1000
+  });
+  const brands = brandsData || [];
 
   // States
   const [searchQuery, setSearchQuery] = useState("");
@@ -70,15 +72,37 @@ export default function ProductManagementPage() {
   
   const [editingProduct, setEditingProduct] = useState(null); // null = add, product object = edit
   const [aiDescriptions, setAiDescriptions] = useState([]);
+  const [viewMode, setViewMode] = useState("table"); // "table" or "grid"
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState("All");
+  const [isEnhancingImage, setIsEnhancingImage] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
+
+  // Reset pagination on filter parameter change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedCategoryFilter]);
 
   // React Hook Form
   const { register, handleSubmit: handleFormSubmit, reset, setValue, watch, formState: { errors } } = useForm({
     resolver: zodResolver(productSchema),
     mode: "onBlur",
-    defaultValues: {
+    values: editingProduct ? {
+      name: editingProduct.name || "",
+      category: editingProduct.category?._id || editingProduct.category || "",
+      company: editingProduct.company?._id || editingProduct.company || "",
+      stock: editingProduct.stock,
+      stockUnit: editingProduct.stockUnit || "Pcs",
+      costPrice: editingProduct.costPrice,
+      sellingPrice: editingProduct.sellingPrice,
+      description: editingProduct.description || "",
+      images: (editingProduct.images || []).concat(["", "", ""]).slice(0, 3),
+      isActive: editingProduct.isActive !== undefined ? editingProduct.isActive : true
+    } : {
       name: "",
-      category: "",
-      company: "",
+      category: categories[0]?._id || "",
+      company: brands[0]?._id || "",
       stock: "",
       stockUnit: "Pcs",
       costPrice: "",
@@ -103,33 +127,10 @@ export default function ProductManagementPage() {
     queryFn: async () => {
       const res = await axios.get("/api/admin/products");
       return res.data?.data || [];
-    }
+    },
+    refetchOnMount: true
   });
   const products = productsData || [];
-
-  const { 
-    data: categoriesData 
-  } = useQuery({
-    queryKey: ["categoriesDropdown"],
-    queryFn: async () => {
-      const res = await axios.get("/api/admin/categories");
-      return res.data?.data || [];
-    },
-    staleTime: 5 * 60 * 1000
-  });
-  const categories = categoriesData || [];
-
-  const { 
-    data: brandsData 
-  } = useQuery({
-    queryKey: ["brandsDropdown"],
-    queryFn: async () => {
-      const res = await axios.get("/api/admin/brands");
-      return res.data?.data || [];
-    },
-    staleTime: 5 * 60 * 1000
-  });
-  const brands = brandsData || [];
 
   const handleRefreshAll = async () => {
     try {
@@ -181,6 +182,57 @@ export default function ProductManagementPage() {
     productFormMutation.mutate(data);
   };
 
+  const handleCsvExport = () => {
+    if (filteredProducts.length === 0) {
+      toast.error("No products available to export.");
+      return;
+    }
+
+    const headers = [
+      "Product Name",
+      "Category",
+      "Brand",
+      "Stock",
+      "Price",
+      "Visibility",
+      "Date Added"
+    ];
+
+    const rows = filteredProducts.map((p) => {
+      const dateStr = p.createdAt
+        ? new Date(p.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+        : "—";
+      return [
+        `"${p.name.replace(/"/g, '""')}"`,
+        `"${(p.category?.name || "Uncategorized").replace(/"/g, '""')}"`,
+        `"${(p.company?.name || "No Brand").replace(/"/g, '""')}"`,
+        p.stock,
+        p.sellingPrice,
+        p.isVisible !== false ? "Visible" : "Hidden",
+        `"${dateStr}"`
+      ];
+    });
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map(r => r.join(","))
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const today = new Date().toISOString().slice(0, 10);
+    
+    link.setAttribute("href", url);
+    link.setAttribute("download", `products-export-${today}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast.success("CSV export downloaded successfully!");
+  };
+
   const deleteMutation = useMutation({
     mutationFn: async (id) => {
       const res = await axios.delete(`/api/admin/products?_id=${id}`);
@@ -192,6 +244,52 @@ export default function ProductManagementPage() {
     },
     onError: (error) => {
       toast.error(error.response?.data?.message || "Delete failed, please try again.");
+    }
+  });
+
+  const toggleVisibilityMutation = useMutation({
+    mutationFn: async (id) => {
+      const res = await axios.patch(`/api/admin/products/toggle-visibility?id=${id}`);
+      return res.data;
+    },
+    onMutate: async (id) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ["products"] });
+
+      // Snapshot the current list
+      const previousProducts = queryClient.getQueryData(["products"]);
+
+      // Optimistically update products cache
+      queryClient.setQueryData(["products"], (old) => {
+        if (!old) return old;
+        const currentData = Array.isArray(old) ? old : (old.data || []);
+        
+        const toggled = currentData.map((p) => {
+          if (p._id === id) {
+            return { ...p, isVisible: p.isVisible === false };
+          }
+          return p;
+        });
+
+        if (Array.isArray(old)) return toggled;
+        return { ...old, data: toggled };
+      });
+
+      return { previousProducts };
+    },
+    onError: (err, id, context) => {
+      // Roll back to previous cached list
+      if (context?.previousProducts) {
+        queryClient.setQueryData(["products"], context.previousProducts);
+      }
+      toast.error(err.response?.data?.message || "Visibility toggle failed.");
+    },
+    onSuccess: (data) => {
+      toast.success(data.message);
+    },
+    onSettled: () => {
+      // Re-synchronize with database in background
+      queryClient.invalidateQueries({ queryKey: ["products"] });
     }
   });
 
@@ -210,14 +308,14 @@ export default function ProductManagementPage() {
     setAiDescriptions([]);
     reset({
       name: "",
-      category: "",
-      company: "",
+      category: categories[0]?._id || "",
+      company: brands[0]?._id || "",
       stock: "",
       stockUnit: "Pcs",
       costPrice: "",
       sellingPrice: "",
       description: "",
-      images: ["", "", ""],
+      images: [""],
       isActive: true
     });
     setIsModalOpen(true);
@@ -226,7 +324,6 @@ export default function ProductManagementPage() {
   const openEditModal = (p) => {
     setEditingProduct(p);
     setAiDescriptions([]);
-    const productImages = (p.images || []).concat(["", "", ""]).slice(0, 3);
     reset({
       name: p.name,
       category: p.category?._id || p.category || "",
@@ -236,7 +333,7 @@ export default function ProductManagementPage() {
       costPrice: p.costPrice,
       sellingPrice: p.sellingPrice,
       description: p.description || "",
-      images: productImages,
+      images: p.images && p.images.length > 0 ? p.images : [""],
       isActive: p.isActive !== undefined ? p.isActive : true
     });
     setIsModalOpen(true);
@@ -246,16 +343,179 @@ export default function ProductManagementPage() {
     setIsModalOpen(false);
     setEditingProduct(null);
     setAiDescriptions([]);
-    reset();
+    reset({
+      name: "",
+      category: "",
+      company: "",
+      stock: "",
+      stockUnit: "Pcs",
+      costPrice: "",
+      sellingPrice: "",
+      description: "",
+      images: [""],
+      isActive: true
+    });
   };
 
-  const handleAiDescriptionGeneration = () => {
+  const handleAiDescriptionGeneration = async () => {
     const nameVal = watchName?.trim();
     if (!nameVal) return toast.error("Enter product name first!");
-    setAiDescriptions([
-      `Premium quality ${nameVal} designed for ultimate everyday utility and high durability.`,
-      `Fabulous looking ergonomic ${nameVal}. Perfect choice for retail and office setup environments.`
-    ]);
+    
+    const categoryId = watch("category");
+    const brandId = watch("company");
+    const categoryObj = categories.find(c => c._id === categoryId);
+    const brandObj = brands.find(b => b._id === brandId);
+
+    setAiLoading(true);
+    try {
+      const response = await axios.post("/api/admin/ai-generate", {
+        productName: nameVal,
+        brand: brandObj?.name || "Generic",
+        category: categoryObj?.name || "Stationery"
+      }, { timeout: 8000 });
+      
+      if (response.data?.success && Array.isArray(response.data?.options)) {
+        setAiDescriptions(response.data.options);
+        toast.success("AI descriptions generated successfully!");
+        return;
+      }
+    } catch (err) {
+      console.warn("AI Generate API failed, falling back to local description generator", err);
+    } finally {
+      setAiLoading(false);
+    }
+
+    // Dynamic offline fallback generator to make sure different descriptions are generated every time
+    const brandName = brandObj?.name || "Generic";
+    const categoryName = categoryObj?.name || "Stationery";
+    const adjectives = ["Premium", "Professional-grade", "Ergonomic", "Classic", "Deluxe", "Heavy-duty"];
+    const verbs = ["crafted for smooth writing and drawing", "designed for daily workspace productivity", "engineered for high durability and precision", "perfect for school, office, and creative art projects"];
+    
+    // Choose 3 random combinations
+    const fallbackOptions = [
+      `${adjectives[Math.floor(Math.random() * adjectives.length)]} ${nameVal} by ${brandName}. This high-quality item is ${verbs[0]}, delivering maximum reliability and a superior feel.`,
+      `${adjectives[Math.floor(Math.random() * adjectives.length)]} ${nameVal} is the ultimate addition to your ${categoryName} catalog. ${verbs[1]} and engineered to stand the test of time.`,
+      `Bring professional results with ${brandName}'s ${adjectives[Math.floor(Math.random() * adjectives.length)]} ${nameVal}. Specifically ${verbs[2]} for students and professionals alike.`
+    ];
+    setAiDescriptions(fallbackOptions);
+    toast.info("Offline fallback descriptions generated successfully.");
+  };
+
+  const handleImageEnhancement = async () => {
+    const currentImg = watchImages[0];
+
+    // Case 1: If user already uploaded a product photo, enhance it client-side to preserve colors, logo, and actual product
+    if (currentImg && (currentImg.startsWith("data:image/") || currentImg.startsWith("http"))) {
+      setIsEnhancingImage(true);
+      const enhancementToast = toast.loading("Applying studio lighting and clarity filters to your photo...");
+
+      try {
+        const img = new Image();
+        img.crossOrigin = "anonymous"; // bypass CORS for external URLs
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+          canvas.width = img.width;
+          canvas.height = img.height;
+
+          // Draw original image
+          ctx.drawImage(img, 0, 0);
+
+          // Get image data
+          const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const data = imgData.data;
+
+          // Apply studio enhancement: Brightness (+20), Contrast (+25), Saturation (+10)
+          const brightness = 20;
+          const contrast = 25;
+          const factor = (259 * (contrast + 255)) / (255 * (259 - contrast));
+
+          for (let i = 0; i < data.length; i += 4) {
+            // Brightness
+            let r = data[i] + brightness;
+            let g = data[i + 1] + brightness;
+            let b = data[i + 2] + brightness;
+
+            // Contrast
+            r = factor * (r - 128) + 128;
+            g = factor * (g - 128) + 128;
+            b = factor * (b - 128) + 128;
+
+            // Saturation boost
+            const gray = 0.2989 * r + 0.587 * g + 0.114 * b;
+            r = gray + 1.1 * (r - gray);
+            g = gray + 1.1 * (g - gray);
+            b = gray + 1.1 * (b - gray);
+
+            // Clamp values
+            data[i] = Math.min(255, Math.max(0, r));
+            data[i + 1] = Math.min(255, Math.max(0, g));
+            data[i + 2] = Math.min(255, Math.max(0, b));
+          }
+
+          // Put adjusted data back
+          ctx.putImageData(imgData, 0, 0);
+
+          // Convert back to base64 Data URL and save
+          const enhancedDataUrl = canvas.toDataURL("image/jpeg", 0.95);
+          const updated = [...watchImages];
+          updated[0] = enhancedDataUrl;
+          setValue("images", updated);
+
+          toast.dismiss(enhancementToast);
+          toast.success("Photo enhanced with studio lighting and contrast!");
+        };
+        img.onerror = () => {
+          toast.dismiss(enhancementToast);
+          toast.error("Could not load image format for enhancement.");
+        };
+        img.src = currentImg;
+      } catch (err) {
+        toast.dismiss(enhancementToast);
+        toast.error("Failed to enhance photo. Please try again.");
+      } finally {
+        setIsEnhancingImage(false);
+      }
+      return;
+    }
+
+    // Case 2: If the slot is empty, generate a new mockup via Pollinations AI
+    const nameVal = watchName?.trim();
+    if (!nameVal) {
+      toast.error("Please upload a photo first to enhance, or enter a Product Name to generate a mockup.");
+      return;
+    }
+
+    setIsEnhancingImage(true);
+    const enhancementToast = toast.loading("Generating professional product mockup via AI engine...");
+
+    try {
+      const categoryId = watch("category");
+      const categoryObj = categories.find(c => c._id === categoryId);
+      const categoryName = categoryObj?.name || "Stationery";
+      const brandId = watch("company");
+      const brandObj = brands.find(b => b._id === brandId);
+      const brandName = brandObj?.name || "";
+
+      const prompt = encodeURIComponent(
+        `E-commerce product listing photo of a premium ${brandName} ${nameVal} ${categoryName}, clean white background, extremely attractive, modern marketing layout, conversion highlights, features list callouts, studio lighting, high resolution, stable diffusion, like amazon or flipkart`
+      );
+      
+      const enhancedImageUrl = `https://image.pollinations.ai/prompt/${prompt}?nologo=true&private=true&width=1024&height=1024&seed=${Math.floor(Math.random() * 100008)}`;
+
+      const updatedImages = [...watchImages];
+      updatedImages[0] = enhancedImageUrl;
+      setValue("images", updatedImages);
+      
+      toast.dismiss(enhancementToast);
+      toast.success("AI product mockup generated successfully!");
+
+    } catch (error) {
+      toast.dismiss(enhancementToast);
+      toast.error("AI image generation failed. Please try again.");
+    } finally {
+      setIsEnhancingImage(false);
+    }
   };
  
   const triggerFilePicker = (index) => {
@@ -289,88 +549,349 @@ export default function ProductManagementPage() {
     setValue("images", updatedImages);
   };
  
-  const filteredProducts = products.filter(p =>
-    p.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredProducts = products.filter(p => {
+    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = selectedCategoryFilter === "All" || p.category?._id === selectedCategoryFilter || p.category === selectedCategoryFilter;
+    return matchesSearch && matchesCategory;
+  });
  
+  const metrics = [
+    { title: "Product Counter", value: String(products.length).padStart(2, "0") },
+    { title: "Revenue", value: "₹0", subtext: "Available after Orders module" },
+    { title: "Total Sold", value: "0", subtext: "Available after Orders module" },
+    { title: "Active Catalog", value: String(products.filter(p => p.isVisible !== false).length).padStart(2, "0") }
+  ];
+
+  const totalItems = filteredProducts.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const paginatedProducts = filteredProducts.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+
   return (
-    <div className="w-full min-h-screen bg-[#09090b] text-white p-4 sm:p-6 space-y-6 font-sans">
+    <div className="w-full max-w-full min-h-screen bg-[#09090b] text-white p-4 sm:p-6 space-y-6 font-sans overflow-x-hidden">
  
       {/* 1. TOP NAVBAR / ROW METRICS */}
       <div className="flex flex-wrap gap-3 justify-between items-center border-b border-zinc-800 pb-5">
         <div className="flex items-center gap-4">
           <h1 className="text-xl font-bold tracking-tight">Product Management</h1>
-          <span className="text-xs bg-zinc-800 text-zinc-400 px-3 py-1 rounded-lg border border-zinc-700 font-medium">Table view</span>
+          <span className="text-xs bg-zinc-800 text-zinc-400 px-3 py-1 rounded-lg border border-zinc-700 font-medium capitalize">{viewMode} view</span>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="border-zinc-800 bg-zinc-900 text-zinc-300 rounded-xl px-4 h-9 text-xs font-semibold"><Download className="w-3.5 h-3.5 mr-2" /> Export</Button>
+          <Button onClick={handleCsvExport} variant="outline" className="border-zinc-800 bg-zinc-900 text-zinc-300 rounded-xl px-4 h-9 text-xs font-semibold"><Download className="w-3.5 h-3.5 mr-2" /> Export</Button>
           <Button onClick={openCreateModal} className="bg-white text-black font-semibold hover:bg-zinc-200 rounded-xl px-4 h-9 text-xs shadow-md"><Plus className="w-3.5 h-3.5 mr-1.5" /> Add New Product</Button>
         </div>
       </div>
  
       {/* 2. STATS CARDS GRID ROW */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {["Product Counter", "Revenue", "Total Sold", "Active Catalog"].map((metric, i) => (
-          <div key={i} className="bg-[#0c0c0e] border border-zinc-800/80 p-5 rounded-2xl shadow-sm">
-            <p className="text-xs text-zinc-500 uppercase tracking-wider font-bold">{metric}</p>
-            <p className="text-2xl font-bold mt-2 font-mono tracking-tight">{i === 1 ? "₹45,250" : String(products.length + (i * 12)).padStart(2, '0')}</p>
+        {metrics.map((metric, i) => (
+          <div key={i} className="bg-[#0c0c0e] border border-zinc-800/80 p-5 rounded-2xl shadow-sm flex flex-col justify-between min-h-[105px]">
+            <div>
+              <p className="text-xs text-zinc-500 uppercase tracking-wider font-bold">{metric.title}</p>
+              <p className="text-2xl font-bold mt-2 font-mono tracking-tight text-white">{metric.value}</p>
+            </div>
+            {metric.subtext && (
+              <span className="text-[10px] text-zinc-500 mt-1.5 block italic">{metric.subtext}</span>
+            )}
           </div>
         ))}
       </div>
  
       {/* 3. SEARCH & REFRESH WORKSPACE LAYER */}
       <div className="bg-[#0c0c0e] border border-zinc-800 rounded-2xl p-4 sm:p-6 space-y-4 shadow-xl">
-        <div className="flex items-center justify-between gap-4">
-          <Input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search products..."
-            className="bg-[#141416] border-zinc-700 rounded-xl h-11 text-zinc-300 placeholder-zinc-500 focus-visible:ring-zinc-600 transition-all"
-          />
-          <Button onClick={handleRefreshAll} variant="outline" className="h-11 w-11 p-0 border-zinc-700 bg-zinc-900 shrink-0 rounded-xl hover:bg-zinc-800"><RefreshCw className="w-4 h-4" /></Button>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3 w-full">
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search products..."
+              className="bg-[#141416] border-zinc-700 rounded-xl h-11 text-zinc-300 placeholder-zinc-500 focus-visible:ring-zinc-600 transition-all w-full"
+            />
+            <Button onClick={handleRefreshAll} variant="outline" className="h-11 w-11 p-0 border-zinc-700 bg-zinc-900 shrink-0 rounded-xl hover:bg-zinc-800"><RefreshCw className="w-4 h-4" /></Button>
+          </div>
+          
+          {/* View Mode Toggle Switcher */}
+          <div className="flex items-center gap-1 bg-[#141416] border border-zinc-800 p-1 rounded-xl shrink-0 self-stretch sm:self-auto justify-center">
+            <button
+              type="button"
+              onClick={() => setViewMode("table")}
+              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === "table" ? "bg-zinc-800 text-white" : "text-zinc-500 hover:text-zinc-350"}`}
+            >
+              Table
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("grid")}
+              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === "grid" ? "bg-zinc-800 text-white" : "text-zinc-500 hover:text-zinc-350"}`}
+            >
+              Grid
+            </button>
+          </div>
         </div>
  
-        {/* 4. CORE INVENTORY TABLE MATRIX */}
-        <div className="overflow-x-auto rounded-xl border border-zinc-800 bg-zinc-900/10">
-          <Table>
-            <TableHeader className="bg-zinc-900/40">
-              <TableRow className="border-b border-zinc-800">
-                <TableHead className="w-16 font-semibold text-zinc-400">Sr No.</TableHead>
-                <TableHead className="font-semibold text-zinc-400">Product Name</TableHead>
-                <TableHead className="font-semibold text-zinc-400">Category</TableHead>
-                <TableHead className="font-semibold text-zinc-400">Company Logo</TableHead>
-                <TableHead className="font-semibold text-zinc-400">Stock</TableHead>
-                <TableHead className="font-semibold text-zinc-400">Price</TableHead>
-                <TableHead className="text-center w-32 font-semibold text-zinc-400">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {productsLoading ? (
-                <TableRow><TableCell colSpan={7} className="text-center h-32 text-zinc-500"><Loader2 className="w-5 h-5 animate-spin mx-auto mr-2 inline text-blue-500" />Loading items from network cluster...</TableCell></TableRow>
-              ) : filteredProducts.map((p, index) => (
-                <TableRow key={p._id} className="border-b border-zinc-800/60 hover:bg-zinc-900/20 transition-colors">
-                  <TableCell className="font-mono text-zinc-500">{index + 1}</TableCell>
-                  <TableCell className="font-semibold capitalize flex items-center gap-2">
-                    {p.images?.[0] && <img src={p.images[0]} className="w-7 h-7 object-cover rounded bg-white border border-zinc-800" alt="" />}
-                    {p.name}
-                  </TableCell>
-                  <TableCell className="text-zinc-400">{p.category?.name || "Uncategorized"}</TableCell>
-                  <TableCell>
-                    {p.company?.logo ? <img src={p.company.logo} className="h-5 object-contain max-w-[80px]" alt="" /> : <span className="text-xs font-mono text-zinc-600">No Brand</span>}
-                  </TableCell>
-                  <TableCell className="font-mono text-sm"><span className="text-emerald-400 font-bold">{p.stock}</span> {p.stockUnit}</TableCell>
-                  <TableCell className="font-mono text-sm">₹{p.sellingPrice}/-</TableCell>
-                  <TableCell className="text-center">
-                    <div className="flex justify-center gap-3">
-                      <Button onClick={() => openEditModal(p)} variant="ghost" className="p-1 h-auto text-zinc-400 hover:text-white transition-colors"><Edit2 className="w-4 h-4" /></Button>
-                      <Button onClick={() => { setPendingDeleteId(p._id); setDeleteDialogOpen(true); }} variant="ghost" className="p-1 h-auto text-zinc-500 hover:text-rose-400 transition-colors"><Trash2 className="w-4 h-4" /></Button>
-                    </div>
-                  </TableCell>
+        {/* 4. CORE INVENTORY DISPLAY (TABLE / GRID) */}
+        {viewMode === "table" ? (
+          <div className="overflow-x-auto rounded-xl border border-zinc-800 bg-zinc-900/10">
+            <Table>
+              <TableHeader className="bg-zinc-900/40">
+                <TableRow className="border-b border-zinc-800">
+                  <TableHead className="w-16 font-semibold text-zinc-400">Sr No.</TableHead>
+                  <TableHead className="font-semibold text-zinc-400">Product Name</TableHead>
+                  <TableHead className="font-semibold text-zinc-400">Category</TableHead>
+                  <TableHead className="font-semibold text-zinc-400">Brand</TableHead>
+                  <TableHead className="font-semibold text-zinc-400">Stock</TableHead>
+                  <TableHead className="font-semibold text-zinc-400">Price</TableHead>
+                  <TableHead className="font-semibold text-zinc-400">Visibility</TableHead>
+                  <TableHead className="font-semibold text-zinc-400">Date Added</TableHead>
+                  <TableHead className="text-center w-32 font-semibold text-zinc-400">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+              </TableHeader>
+              <TableBody>
+                {productsLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={9} className="text-center py-6 text-zinc-550 font-medium">
+                      <LoadingSpinner size={140} label="Loading items..." className="mx-auto" />
+                    </TableCell>
+                  </TableRow>
+                ) : filteredProducts.length === 0 ? (
+                  <TableRow><TableCell colSpan={9} className="text-center h-32 text-zinc-500">No products found matching criteria.</TableCell></TableRow>
+                ) : (
+                  paginatedProducts.map((p, index) => (
+                    <TableRow key={p._id} className="border-b border-zinc-800/60 hover:bg-zinc-900/20 transition-colors">
+                      <TableCell className="font-mono text-zinc-500 py-4">{(currentPage - 1) * itemsPerPage + index + 1}</TableCell>
+                      <TableCell className="font-semibold capitalize py-4">
+                        <div className="flex items-center gap-3">
+                          {p.images?.[0] && (
+                            <img 
+                              src={p.images[0]} 
+                              className="w-12 h-12 object-contain rounded-xl bg-white border border-zinc-800 p-0.5 shadow-sm shrink-0" 
+                              alt={p.name} 
+                              referrerPolicy="no-referrer"
+                            />
+                          )}
+                          <span className="font-bold tracking-tight text-sm text-zinc-100 capitalize">{p.name}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-zinc-400 py-4">{p.category?.name || "Uncategorized"}</TableCell>
+                      <TableCell className="py-4">
+                        {p.company?.logo ? (
+                          <img 
+                            src={p.company.logo} 
+                            className="w-12 h-12 object-contain rounded-xl bg-white border border-zinc-800 p-0.5 shadow-sm shrink-0" 
+                            alt={p.company?.name} 
+                            referrerPolicy="no-referrer"
+                          />
+                        ) : (
+                          <span className="text-xs font-mono text-zinc-500">{p.company?.name || "No Brand"}</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="font-mono text-sm py-4">
+                        <span className="text-emerald-400 font-bold">{p.stock}</span> {p.stockUnit}
+                      </TableCell>
+                      <TableCell className="font-mono text-sm py-4">₹{p.sellingPrice}/-</TableCell>
+                      <TableCell className="py-4">
+                        <div className="flex items-center gap-2">
+                          <Switch 
+                            checked={p.isVisible !== false}
+                            onCheckedChange={() => toggleVisibilityMutation.mutate(p._id)}
+                            className="data-[state=checked]:bg-emerald-600 scale-90"
+                          />
+                          <span className={`text-[10px] font-bold uppercase min-w-[50px] ${p.isVisible !== false ? "text-emerald-400" : "text-zinc-500"}`}>
+                            {p.isVisible !== false ? "Visible" : "Hidden"}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-mono text-xs text-zinc-400 py-4">
+                        {p.createdAt ? (
+                          new Date(p.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+                        ) : "—"}
+                      </TableCell>
+                      <TableCell className="text-center py-4">
+                        <div className="flex justify-center gap-3">
+                          <Button onClick={() => openEditModal(p)} variant="ghost" className="p-1 h-auto text-zinc-400 hover:text-white transition-colors"><Edit2 className="w-4 h-4" /></Button>
+                          <Button onClick={() => { setPendingDeleteId(p._id); setDeleteDialogOpen(true); }} variant="ghost" className="p-1 h-auto text-zinc-500 hover:text-rose-400 transition-colors"><Trash2 className="w-4 h-4" /></Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        ) : (
+          /* Grid View Cards Frame */
+          <div className="space-y-6">
+            {/* Horizontal Category-wise View filter */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none border-b border-zinc-800/60">
+              <button
+                type="button"
+                onClick={() => setSelectedCategoryFilter("All")}
+                className={`px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all border ${selectedCategoryFilter === "All" ? "bg-white text-black border-white shadow-md scale-[1.02]" : "bg-zinc-900/50 text-zinc-400 border-zinc-800 hover:text-zinc-200"}`}
+              >
+                All Categories ({products.length})
+              </button>
+              {categories.map((cat) => {
+                const count = products.filter(p => p.category?._id === cat._id || p.category === cat._id).length;
+                return (
+                  <button
+                    key={cat._id}
+                    type="button"
+                    onClick={() => setSelectedCategoryFilter(cat._id)}
+                    className={`px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all border ${selectedCategoryFilter === cat._id ? "bg-white text-black border-white shadow-md scale-[1.02]" : "bg-zinc-900/50 text-zinc-400 border-zinc-800 hover:text-zinc-200"}`}
+                  >
+                    {cat.name} ({count})
+                  </button>
+                );
+              })}
+            </div>
+
+            {productsLoading ? (
+              <div className="text-center py-12 text-zinc-550 font-medium">
+                <LoadingSpinner size={160} label="Loading items..." className="mx-auto" />
+              </div>
+            ) : paginatedProducts.length === 0 ? (
+              <div className="text-center py-20 text-zinc-500 border border-dashed border-zinc-800 rounded-2xl bg-zinc-900/10">
+                No products found matching criteria.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {paginatedProducts.map((p) => {
+                  const dateStr = p.createdAt
+                    ? new Date(p.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+                    : "—";
+
+                  return (
+                    <div key={p._id} className="bg-zinc-900/40 border border-zinc-800 rounded-2xl p-4 flex flex-col justify-between hover:border-zinc-700 hover:bg-zinc-900/60 transition-all group">
+                      <div className="space-y-3">
+                        {/* Product Image Frame */}
+                        <div className="relative h-44 w-full bg-white rounded-xl border border-zinc-850 flex items-center justify-center p-3 overflow-hidden shadow-sm shrink-0">
+                          {p.images?.[0] ? (
+                            <img 
+                              src={p.images[0]} 
+                              alt={p.name} 
+                              className="h-full w-full object-contain group-hover:scale-105 transition-transform" 
+                              referrerPolicy="no-referrer"
+                            />
+                          ) : (
+                            <div className="text-zinc-400 text-xs font-mono">No Image</div>
+                          )}
+                          {p.company?.logo && (
+                            <img 
+                              src={p.company.logo} 
+                              alt="" 
+                              className="absolute top-2.5 left-2.5 h-8 object-contain max-w-[85px] bg-white p-1 rounded-lg border border-zinc-200 shadow-sm" 
+                              referrerPolicy="no-referrer"
+                            />
+                          )}
+                        </div>
+
+                        {/* Info Section */}
+                        <div>
+                          <span className="text-[10px] bg-zinc-800/80 text-zinc-400 px-2 py-0.5 rounded-md font-semibold tracking-wide uppercase">
+                            {p.category?.name || "Uncategorized"}
+                          </span>
+                          <h3 className="font-bold text-zinc-100 mt-1.5 text-base capitalize line-clamp-1">{p.name}</h3>
+                          <div className="flex items-center justify-between text-xs text-zinc-400 mt-2 font-mono">
+                            <span>Stock: <span className="text-emerald-400 font-bold">{p.stock}</span> {p.stockUnit}</span>
+                            <span className="text-zinc-500 text-[10px]">{dateStr}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Footer Controls */}
+                      <div className="border-t border-zinc-800/80 pt-3 mt-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-base font-bold text-white font-mono">₹{p.sellingPrice}/-</span>
+                          
+                          {/* Visibility Switch */}
+                          <div className="flex items-center gap-1.5">
+                            <Switch 
+                              checked={p.isVisible !== false}
+                              onCheckedChange={() => toggleVisibilityMutation.mutate(p._id)}
+                              className="data-[state=checked]:bg-emerald-600 scale-90"
+                            />
+                            <span className={`text-[9px] font-bold uppercase ${p.isVisible !== false ? "text-emerald-400" : "text-zinc-500"}`}>
+                              {p.isVisible !== false ? "Visible" : "Hidden"}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center justify-end gap-2 border-t border-zinc-800/50 pt-2.5">
+                          <Button 
+                            onClick={() => openEditModal(p)} 
+                            variant="outline" 
+                            className="h-8 px-2.5 border-zinc-800 bg-zinc-950 text-zinc-400 hover:text-white rounded-lg text-xs"
+                          >
+                            <Edit2 className="w-3.5 h-3.5 mr-1" /> Edit
+                          </Button>
+                          <Button 
+                            onClick={() => { setPendingDeleteId(p._id); setDeleteDialogOpen(true); }} 
+                            variant="ghost" 
+                            className="h-8 px-2.5 text-zinc-500 hover:text-rose-400 hover:bg-rose-950/10 rounded-lg text-xs"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 4.5 MODERN PAGINATION CONTROLS BAR */}
+        {totalPages > 1 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-zinc-800/80 pt-5 mt-4">
+            <p className="text-xs text-zinc-500 font-mono">
+              Showing <span className="text-zinc-300 font-bold">{Math.min((currentPage - 1) * itemsPerPage + 1, totalItems)}</span> to{" "}
+              <span className="text-zinc-300 font-bold">{Math.min(currentPage * itemsPerPage, totalItems)}</span> of{" "}
+              <span className="text-zinc-300 font-bold">{totalItems}</span> products
+            </p>
+            
+            <div className="flex items-center gap-1.5">
+              {/* Previous Page */}
+              <button
+                type="button"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                className="h-8 w-8 rounded-lg border border-zinc-800 bg-zinc-900/40 flex items-center justify-center text-zinc-400 hover:text-white disabled:opacity-30 disabled:hover:text-zinc-400 transition-all cursor-pointer hover:border-zinc-700"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+
+              {/* Numbered Pages */}
+              {Array.from({ length: totalPages }, (_, idx) => {
+                const pageNum = idx + 1;
+                return (
+                  <button
+                    key={pageNum}
+                    type="button"
+                    onClick={() => setCurrentPage(pageNum)}
+                    className={`h-8 min-w-8 px-2 rounded-lg text-xs font-bold transition-all border cursor-pointer ${currentPage === pageNum ? "bg-white text-black border-white" : "border-zinc-800 bg-zinc-900/20 text-zinc-400 hover:text-white hover:border-zinc-700"}`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+
+              {/* Next Page */}
+              <button
+                type="button"
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                className="h-8 w-8 rounded-lg border border-zinc-800 bg-zinc-900/40 flex items-center justify-center text-zinc-400 hover:text-white disabled:opacity-30 disabled:hover:text-zinc-400 transition-all cursor-pointer hover:border-zinc-700"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
  
       {/* 5. ADD / EDIT PRODUCT MODAL */}
@@ -523,9 +1044,50 @@ export default function ProductManagementPage() {
                     </div>
                     <span className="rounded-full bg-blue-500/10 px-3 py-1 text-xs font-semibold text-blue-200">Enhance</span>
                   </div>
-                  <div className="grid grid-cols-3 gap-3">
+                                {/* Bulk Add URL Box */}
+                  <div className="flex gap-2 items-center bg-slate-950 p-2.5 rounded-2xl border border-slate-800/80 mb-4">
+                    <Input 
+                      type="text" 
+                      id="bulk-url-input"
+                      placeholder="Paste image address (Google / URL)..." 
+                      className="h-10 text-xs rounded-xl bg-slate-900 border-slate-800 text-slate-200 placeholder-slate-500 focus-visible:ring-1 focus-visible:ring-blue-500"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          const url = e.target.value.trim();
+                          if (url) {
+                            const updated = [...watchImages, url];
+                            setValue("images", updated);
+                            e.target.value = "";
+                            toast.success("Image URL added successfully!");
+                          }
+                        }
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      className="h-10 px-3 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 shrink-0 flex items-center gap-1.5"
+                      onClick={() => {
+                        const inputEl = document.getElementById("bulk-url-input");
+                        const url = inputEl?.value?.trim();
+                        if (url) {
+                          const updated = [...watchImages, url];
+                          setValue("images", updated);
+                          inputEl.value = "";
+                          toast.success("Image URL added successfully!");
+                        } else {
+                          toast.error("Please paste a URL first.");
+                        }
+                      }}
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Add URL
+                    </Button>
+                  </div>
+
+                  {/* Grid layout of image slots */}
+                  <div className="grid grid-cols-2 gap-3">
                     {watchImages.map((img, i) => (
-                      <div key={i} className="relative aspect-square overflow-hidden rounded-3xl border border-dashed border-slate-700 bg-slate-950 cursor-pointer transition hover:border-blue-500/80 hover:bg-slate-900" onClick={() => triggerFilePicker(i)}>
+                      <div key={i} className="relative aspect-square rounded-3xl border border-dashed border-slate-700 bg-slate-950 hover:bg-slate-900/60 overflow-hidden flex flex-col items-center justify-center p-2.5 transition-all">
                         <input
                           ref={(el) => (fileInputRefs.current[i] = el)}
                           type="file"
@@ -534,33 +1096,99 @@ export default function ProductManagementPage() {
                           onChange={(e) => handleFileSelected(i, e)}
                         />
                         {img ? (
-                          <img src={img} className="h-full w-full object-cover" alt="Product" />
+                          <>
+                            <img src={img} className="h-full w-full object-contain rounded-2xl" alt="Product" />
+                            <button
+                              type="button"
+                              onClick={(e) => handleRemoveImage(i, e)}
+                              className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-950/90 text-white shadow-lg border border-slate-800 hover:text-rose-400 hover:scale-105 transition-all"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </>
                         ) : (
-                          <div className="flex h-full flex-col items-center justify-center gap-2 px-2 text-center">
-                            <UploadCloud className="h-5 w-5 text-slate-500" />
-                            <p className="text-xs font-semibold text-slate-400">Upload</p>
-                            <p className="text-[11px] text-slate-500">Slot {i + 1}</p>
+                          <div className="flex h-full w-full flex-col items-center justify-between py-1 text-center">
+                            {/* Upload Trigger Click */}
+                            <div 
+                              onClick={() => triggerFilePicker(i)}
+                              className="flex flex-col items-center gap-1 cursor-pointer w-full group py-2"
+                            >
+                              <UploadCloud className="h-6 w-6 text-slate-500 group-hover:text-blue-400 group-hover:scale-105 transition-all" />
+                              <p className="text-xs font-semibold text-slate-400">Upload File</p>
+                              <p className="text-[10px] text-slate-600">Slot {i + 1}</p>
+                            </div>
+
+                            {/* Paste URL for this Slot */}
+                            <div className="w-full flex items-center gap-1 bg-slate-900 border border-slate-800 rounded-xl p-1 mt-1" onClick={(e) => e.stopPropagation()}>
+                              <Input 
+                                type="text" 
+                                id={`slot-url-input-${i}`}
+                                placeholder="Paste slot URL..." 
+                                className="h-6 text-[9px] rounded-lg bg-slate-950 border-none text-slate-200 placeholder-slate-500 w-full px-2 focus-visible:ring-0 focus-visible:ring-offset-0"
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    const url = e.target.value.trim();
+                                    if (url) {
+                                      const updated = [...watchImages];
+                                      updated[i] = url;
+                                      setValue("images", updated);
+                                      toast.success("Slot URL loaded!");
+                                    }
+                                  }
+                                }}
+                              />
+                              <Button
+                                type="button"
+                                size="sm"
+                                className="h-6 px-2 bg-blue-600 text-white rounded-lg text-[9px] font-bold hover:bg-blue-700 shrink-0"
+                                onClick={() => {
+                                  const inputEl = document.getElementById(`slot-url-input-${i}`);
+                                  const url = inputEl?.value?.trim();
+                                  if (url) {
+                                    const updated = [...watchImages];
+                                    updated[i] = url;
+                                    setValue("images", updated);
+                                    toast.success("Slot URL loaded!");
+                                  } else {
+                                    toast.error("Paste image URL first.");
+                                  }
+                                }}
+                              >
+                                Load
+                              </Button>
+                            </div>
                           </div>
-                        )}
-                        {img && (
-                          <button
-                            type="button"
-                            onClick={(e) => handleRemoveImage(i, e)}
-                            className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-950/90 text-white shadow-lg"
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
                         )}
                       </div>
                     ))}
+
+                    {/* Add Slot "+" Button */}
+                    <div 
+                      onClick={() => {
+                        const updated = [...watchImages, ""];
+                        setValue("images", updated);
+                      }}
+                      className="relative aspect-square border border-dashed border-slate-700 bg-slate-950 hover:bg-slate-900/60 hover:border-blue-500/80 rounded-3xl flex flex-col items-center justify-center cursor-pointer group transition-all"
+                    >
+                      <Plus className="h-6 w-6 text-slate-500 group-hover:text-blue-400 group-hover:scale-110 transition-all" />
+                      <p className="text-xs font-semibold text-slate-450 mt-1.5 group-hover:text-slate-350">Add Slot</p>
+                    </div>
                   </div>
                   {errors.images && <p className="text-xs text-red-500 mt-2">{errors.images.message}</p>}
                   <Button
                     type="button"
                     variant="secondary"
+                    onClick={handleImageEnhancement}
+                    disabled={isEnhancingImage}
                     className="mt-4 w-full h-11 rounded-3xl border border-blue-700/50 bg-slate-950 text-sm text-blue-200 hover:bg-slate-900"
                   >
-                    <Wand2 className="h-4 w-4" /> Enhance product image
+                    {isEnhancingImage ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin inline" />
+                    ) : (
+                      <Wand2 className="h-4 w-4 mr-2 inline" />
+                    )}
+                    {isEnhancingImage ? "Generating mockup..." : "Enhance product image"}
                   </Button>
                 </div>
  
@@ -577,9 +1205,15 @@ export default function ProductManagementPage() {
                   <Button
                     type="button"
                     onClick={handleAiDescriptionGeneration}
+                    disabled={aiLoading}
                     className="mt-4 w-full h-11 rounded-3xl bg-blue-950 text-sm font-semibold text-blue-100 hover:bg-blue-900"
                   >
-                    <Sparkles className="h-4 w-4" /> Generate description
+                    {aiLoading ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin inline" />
+                    ) : (
+                      <Sparkles className="h-4 w-4 mr-2 inline" />
+                    )}
+                    {aiLoading ? "Generating..." : "Generate description"}
                   </Button>
                   {aiDescriptions.length > 0 && (
                     <div className="mt-4 space-y-3">

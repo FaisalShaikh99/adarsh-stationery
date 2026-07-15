@@ -155,7 +155,7 @@ export const PUT = asyncHandler(async (request) => {
     }
 
     const { searchParams } = new URL(request.url);
-    const productId = searchParams.get("_id");
+    const productId = searchParams.get("_id") || searchParams.get("id");
 
     if (!productId) {
         throw new ApiError(400, "Product ID parameter is missing.");
@@ -232,7 +232,7 @@ export const DELETE = asyncHandler(async (request) => {
     }
 
     const { searchParams } = new URL(request.url);
-    const productId = searchParams.get("_id");
+    const productId = searchParams.get("_id") || searchParams.get("id");
 
     if (!productId) {
         throw new ApiError(400, "Product ID parameter is mandatory.");

@@ -61,6 +61,10 @@ const ProductSchema = new mongoose.Schema(
     isActive: {
       type: Boolean,
       default: true
+    },
+    isVisible: {
+      type: Boolean,
+      default: true
     }
   },
   { 
@@ -68,4 +72,9 @@ const ProductSchema = new mongoose.Schema(
   }
 );
 
-export default mongoose.models.Product || mongoose.model("Product", ProductSchema);
+// Force fresh schema registration on reload to avoid schema cache conflicts in Next.js dev server
+if (mongoose.models.Product) {
+  delete mongoose.models.Product;
+}
+
+export default mongoose.model("Product", ProductSchema);

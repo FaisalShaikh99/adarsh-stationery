@@ -24,17 +24,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
-
-const memberSchema = z.object({
-  email: z
-    .string()
-    .min(1, { message: "Email is required." })
-    .email({ message: "Invalid email format." }),
-  role: z.enum(["admin", "staff"], {
-    errorMap: () => ({ message: "Role must be either admin or staff." })
-  }),
-  message: z.string().optional()
-});
+import { adminInviteSchema } from "@/schemas/invite.schema";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 const formatLastLogin = (dateString) => {
   if (!dateString) return "Never logged in";
@@ -55,7 +46,7 @@ export default function TeamMembersPage() {
   const [pendingTarget, setPendingTarget] = useState(null);
 
   const { register, handleSubmit: handleFormSubmit, reset, formState: { errors } } = useForm({
-    resolver: zodResolver(memberSchema),
+    resolver: zodResolver(adminInviteSchema),
     mode: "onBlur",
     defaultValues: {
       email: "",
@@ -75,7 +66,8 @@ export default function TeamMembersPage() {
       const response = await axios.get("/api/admin/team");
       return response.data?.data || [];
     },
-    enabled: status === "authenticated"
+    enabled: status === "authenticated",
+    refetchOnMount: true
   });
 
   const team = teamData || [];
@@ -94,12 +86,38 @@ export default function TeamMembersPage() {
       const response = await axios.patch(`/api/admin/toggle-block?id=${id}`);
       return response.data;
     },
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ["teamMembers"] });
+      const previousTeam = queryClient.getQueryData(["teamMembers"]);
+
+      queryClient.setQueryData(["teamMembers"], (old) => {
+        if (!old) return old;
+        const currentData = Array.isArray(old) ? old : (old.data || []);
+        
+        const toggled = currentData.map((m) => {
+          if (m._id === id) {
+            return { ...m, isBlocked: !m.isBlocked };
+          }
+          return m;
+        });
+
+        if (Array.isArray(old)) return toggled;
+        return { ...old, data: toggled };
+      });
+
+      return { previousTeam };
+    },
+    onError: (err, id, context) => {
+      if (context?.previousTeam) {
+        queryClient.setQueryData(["teamMembers"], context.previousTeam);
+      }
+      toast.error(err.response?.data?.message || "Action failed.");
+    },
     onSuccess: (data) => {
       toast.success(data.message);
-      queryClient.invalidateQueries({ queryKey: ["teamMembers"] });
     },
-    onError: (error) => {
-      toast.error(error.response?.data?.message || "Action failed.");
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["teamMembers"] });
     }
   });
 
@@ -139,13 +157,7 @@ export default function TeamMembersPage() {
     setConfirmOpen(true);
   };
 
-  if (status === "loading") {
-    return (
-      <div className="flex h-screen items-center justify-center bg-zinc-950">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-      </div>
-    );
-  }
+
 
   const filteredTeam = team.filter((member) => 
     member.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -218,34 +230,34 @@ export default function TeamMembersPage() {
           <tbody className="divide-y divide-zinc-800 text-zinc-300">
             {teamLoading ? (
               <tr>
-                <td colSpan="8" className="p-8 text-center text-zinc-500">
-                  <div className="flex items-center justify-center gap-2"><Loader2 className="h-5 w-5 animate-spin text-blue-500" /><span>Loading workers...</span></div>
+                <td colSpan="8" className="text-center py-6 text-zinc-550 font-medium">
+                  <LoadingSpinner size={140} label="Loading items..." className="mx-auto" />
                 </td>
               </tr>
             ) : filteredTeam.length === 0 ? (
               <tr><td colSpan="8" className="p-8 text-center text-zinc-500">No workers found matching your search.</td></tr>
             ) : (
               filteredTeam.map((member, index) => (
-                <tr key={member._id} className={`hover:bg-zinc-900/40 transition-colors ${member.isBlocked ? "opacity-50 bg-rose-950/5" : ""}`}>
-                  <td className="p-4 text-center font-medium text-zinc-500">{index + 1}</td>
-                  <td className="p-4">
+                <tr key={member._id} className={`hover:bg-zinc-900/40 transition-colors border-b border-zinc-800/60 ${member.isBlocked ? "opacity-50 bg-rose-950/5" : ""}`}>
+                  <td className="p-4 py-4 text-center font-medium text-zinc-500">{(index + 1)}</td>
+                  <td className="p-4 py-4">
                     {member.image ? (
-                      <img src={member.image} alt={member.name} className="w-9 h-9 rounded-full object-cover border border-zinc-800" referrerPolicy="no-referrer" />
+                      <img src={member.image} alt={member.name} className="w-12 h-12 rounded-full object-cover border border-zinc-800 bg-white p-0.5" referrerPolicy="no-referrer" />
                     ) : (
-                      <div className="w-9 h-9 rounded-full bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-sm font-bold text-blue-400 capitalize">{member.name ? member.name[0] : "W"}</div>
+                      <div className="w-12 h-12 rounded-full bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-base font-bold text-blue-400 capitalize">{member.name ? member.name[0] : "W"}</div>
                     )}
                   </td>
-                  <td className="p-4 capitalize font-medium text-white">
+                  <td className="p-4 py-4 capitalize font-bold tracking-tight text-sm text-zinc-100">
                     {member.name || "N/A"} 
                     {member.isBlocked && <span className="ml-2 text-[10px] bg-rose-500/20 text-rose-400 border border-rose-500/30 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Blocked</span>}
                   </td>
-                  <td className="p-4 text-zinc-400 font-mono text-sm">{member.email}</td>
-                  <td className="p-4">
+                  <td className="p-4 py-4 text-zinc-400 font-mono text-sm">{member.email}</td>
+                  <td className="p-4 py-4">
                     <span className={`px-2.5 py-1 text-xs font-semibold rounded-md uppercase border ${
                       member.role === 'superadmin' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' : member.role === 'admin' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20'
                     }`}>{member.role}</span>
                   </td>
-                  <td className="p-4">
+                  <td className="p-4 py-4">
                     {member.isBlocked ? (
                       <div className="flex items-center gap-2 text-zinc-500 font-medium text-sm">
                         <span className="w-3 h-3 rounded-sm border border-zinc-700 bg-zinc-800"></span>
@@ -258,8 +270,8 @@ export default function TeamMembersPage() {
                       </div>
                     )}
                   </td>
-                  <td className="p-4 text-xs text-zinc-400 font-mono">{formatLastLogin(member.lastLogin)}</td>
-                  <td className="p-4 text-center">
+                  <td className="p-4 py-4 text-xs text-zinc-400 font-mono">{formatLastLogin(member.lastLogin)}</td>
+                  <td className="p-4 py-4 text-center">
                     {member.role === "superadmin" ? (
                       <div className="flex justify-center text-zinc-600"><Ban className="h-4 w-4" /></div>
                     ) : (toggleBlockMutation.isPending && toggleBlockMutation.variables === member._id) ? (

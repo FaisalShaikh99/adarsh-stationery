@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import BrandTable from "./BrandTable"; 
 import BrandFormModal from "./BrandFormModal";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 // Categories fetch karne ke liye pipeline helper
@@ -32,9 +33,18 @@ export default function BrandManagementPage() {
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
 
   // 3. Categories Fetch via TanStack Query
-  const { data: categories = [] } = useQuery({
+  const { data: categories = [], isLoading: categoriesLoading } = useQuery({
     queryKey: ["categories"],
     queryFn: fetchCategories,
+  });
+
+  // Fetch brands to obtain unified loading state for initial load screen
+  const { isLoading: brandsLoading } = useQuery({
+    queryKey: ["brands", categoryFilter, searchQuery],
+    queryFn: async () => {
+      const response = await axiosClient.get(`/api/admin/brands?category=${categoryFilter}&search=${searchQuery}`);
+      return response.data || [];
+    },
   });
 
   // 4. Delete Mutation using TanStack Query & Axios
@@ -62,6 +72,8 @@ export default function BrandManagementPage() {
     setPendingDeleteId(id);
     setDeleteDialogOpen(true);
   };
+
+
 
   return (
     <div className="w-full min-h-screen bg-[#09090b] text-white p-6 space-y-6 font-sans">

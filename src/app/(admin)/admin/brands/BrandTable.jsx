@@ -5,6 +5,7 @@ import axiosClient from "@/lib/axios";
 import { Loader2, Edit2, Trash2, PhoneCall, Globe } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 // Axios dynamic data fetcher function
 const fetchBrandsData = async (category, search) => {
@@ -23,9 +24,8 @@ export default function BrandTable({ categoryFilter, searchQuery, onEdit, onDele
 
   if (isLoading) {
     return (
-      <div className="text-center h-32 text-zinc-500 flex items-center justify-center gap-2">
-        <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
-        Synchronizing brand profile caches...
+      <div className="text-center py-10 text-zinc-550 font-medium">
+        <LoadingSpinner size={140} label="Loading items..." className="mx-auto" />
       </div>
     );
   }
@@ -54,16 +54,16 @@ export default function BrandTable({ categoryFilter, searchQuery, onEdit, onDele
         <TableBody>
           {brands.map((b, index) => (
             <TableRow key={b._id} className="border-b border-zinc-800/60 hover:bg-zinc-900/20 transition-colors">
-              <TableCell className="font-mono text-zinc-500">{index + 1}</TableCell>
-              <TableCell>
+              <TableCell className="font-mono text-zinc-500 py-4">{index + 1}</TableCell>
+              <TableCell className="py-4">
                 <img 
                   src={b.logo || "https://placehold.co/100"} 
-                  className="w-10 h-10 object-contain rounded-xl bg-white border border-zinc-800 p-1" 
+                  className="w-12 h-12 object-contain rounded-xl bg-white border border-zinc-800 p-0.5 shadow-sm" 
                   alt="" 
                 />
               </TableCell>
-              <TableCell className="font-semibold text-zinc-100 tracking-wide capitalize">{b.name}</TableCell>
-              <TableCell className="max-w-xs">
+              <TableCell className="font-bold tracking-tight text-sm text-zinc-100 capitalize py-4">{b.name}</TableCell>
+              <TableCell className="max-w-xs py-4">
                 <div className="flex flex-wrap gap-1">
                   {b.categories?.map((cat) => (
                     <span key={cat._id} className="text-[10px] bg-zinc-800 text-zinc-400 border border-zinc-700/60 px-2 py-0.5 rounded-md font-medium capitalize">
@@ -72,11 +72,11 @@ export default function BrandTable({ categoryFilter, searchQuery, onEdit, onDele
                   ))}
                 </div>
               </TableCell>
-              <TableCell className="space-y-1 text-xs text-zinc-400">
+              <TableCell className="space-y-1 text-xs text-zinc-400 py-4">
                 {b.primaryContact && <p className="flex items-center gap-1.5"><PhoneCall className="w-3 h-3 text-zinc-500"/> {b.primaryContact}</p>}
                 {b.websiteURL && <a href={b.websiteURL} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-blue-400 hover:underline"><Globe className="w-3 h-3"/> Web Profile</a>}
               </TableCell>
-              <TableCell className="text-center">
+              <TableCell className="text-center py-4">
                 <div className="flex justify-center gap-3">
                   <Button onClick={() => onEdit(b)} variant="ghost" className="p-1 h-auto text-zinc-400 hover:text-white transition-colors">
                     <Edit2 className="w-4 h-4"/>
