@@ -26,6 +26,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { adminInviteSchema } from "@/schemas/invite.schema";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import VoiceSearchButton from "@/components/ui/voice-search-button";
 
 const formatLastLogin = (dateString) => {
   if (!dateString) return "Never logged in";
@@ -172,6 +173,14 @@ export default function TeamMembersPage() {
     );
   }
 
+  if (teamLoading) {
+    return (
+      <div className="fixed inset-0 bg-zinc-950 z-50 flex items-center justify-center">
+        <LoadingSpinner size={240} label="Loading team catalog..." />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-zinc-950 p-8 text-white font-sans">
       
@@ -194,12 +203,16 @@ export default function TeamMembersPage() {
       </div>
 
       <div className="mt-6 flex justify-center items-center gap-3 w-full max-w-xl mx-auto">
-        <div className="relative flex-1">
-          <Search className="absolute left-4 top-3.5 h-4 w-4 text-zinc-500" />
+        <div className="flex-1 flex items-center bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 transition-all gap-2 h-11 focus-within:border-zinc-700 focus-within:ring-1 focus-within:ring-zinc-700">
+          <Search className="h-4 w-4 text-zinc-500 shrink-0" />
           <Input 
-            type="text" placeholder="Search workers by name or email..." value={searchQuery}
+            type="text" placeholder="Search..." value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-11 pr-4 py-5 w-full bg-zinc-900 border-zinc-800 text-zinc-200 rounded-xl focus-visible:ring-blue-500 transition-all"
+            className="flex-1 bg-transparent border-none text-zinc-200 placeholder-zinc-500 focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none focus:ring-0 text-xs h-full p-0 shadow-none"
+          />
+          <VoiceSearchButton 
+            onResult={(text) => setSearchQuery(text)} 
+            className="shrink-0 h-8 w-8"
           />
         </div>
         

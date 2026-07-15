@@ -15,6 +15,7 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  Search,
 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -582,6 +583,14 @@ export default function ProductManagementPage() {
   );
 
 
+  if (productsLoading || categoriesLoading || brandsLoading) {
+    return (
+      <div className="fixed inset-0 bg-[#09090b] z-50 flex items-center justify-center">
+        <LoadingSpinner size={240} label="Loading products inventory..." />
+      </div>
+    );
+  }
+
   return (
     <div className="w-full max-w-full min-h-screen bg-[#09090b] text-white p-4 sm:p-6 space-y-6 font-sans overflow-x-hidden">
  
@@ -616,16 +625,17 @@ export default function ProductManagementPage() {
       <div className="bg-[#0c0c0e] border border-zinc-800 rounded-2xl p-4 sm:p-6 space-y-4 shadow-xl">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3 w-full">
-            <div className="relative w-full flex items-center">
+            <div className="flex items-center w-full bg-[#141416] border border-zinc-700 rounded-xl px-3.5 transition-all gap-2 h-11 focus-within:border-zinc-500 focus-within:ring-1 focus-within:ring-zinc-500">
+              <Search className="h-4 w-4 text-zinc-500 shrink-0" />
               <Input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search products..."
-                className="bg-[#141416] border-zinc-700 rounded-xl h-11 text-zinc-300 placeholder-zinc-500 focus-visible:ring-zinc-600 transition-all w-full text-xs pl-4 pr-12"
+                placeholder="Search..."
+                className="flex-1 bg-transparent border-none text-zinc-300 placeholder-zinc-500 focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none focus:ring-0 text-xs h-full p-0 shadow-none"
               />
               <VoiceSearchButton 
                 onResult={(text) => setSearchQuery(text)} 
-                className="absolute right-1.5 top-1/2 -translate-y-1/2 h-8 w-8"
+                className="shrink-0 h-8 w-8"
               />
             </div>
             <Button onClick={handleRefreshAll} variant="outline" className="h-11 w-11 p-0 border-zinc-700 bg-zinc-900 shrink-0 rounded-xl hover:bg-zinc-800"><RefreshCw className="w-4 h-4" /></Button>

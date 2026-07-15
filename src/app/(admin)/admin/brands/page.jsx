@@ -111,6 +111,14 @@ export default function BrandManagementPage() {
   const totalCategories = categories.length;
   const avgProducts = totalBrands > 0 ? (totalProducts / totalBrands).toFixed(1) : 0;
 
+  if (brandsLoading || categoriesLoading || allBrandsLoading) {
+    return (
+      <div className="fixed inset-0 bg-[#09090b] z-50 flex items-center justify-center">
+        <LoadingSpinner size={240} label="Loading brands catalog..." />
+      </div>
+    );
+  }
+
   return (
     <div className="w-full min-h-screen bg-[#09090b] text-white p-6 space-y-6 font-sans">
       
@@ -168,17 +176,17 @@ export default function BrandManagementPage() {
         {/* Controls Row */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3 w-full">
-            <div className="relative w-full flex items-center">
-              <Search className="absolute left-3 top-3.5 h-4 w-4 text-zinc-500 z-10" />
+            <div className="flex items-center w-full bg-[#141416] border border-zinc-700 rounded-xl px-3.5 transition-all gap-2 h-10 focus-within:border-zinc-500 focus-within:ring-1 focus-within:ring-zinc-500">
+              <Search className="h-4 w-4 text-zinc-500 shrink-0" />
               <Input 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search Brand Registry Index..."
-                className="bg-[#141416] border-zinc-700 rounded-xl h-10 pl-10 pr-12 text-zinc-300 placeholder-zinc-500 focus-visible:ring-zinc-600 transition-all w-full text-xs"
+                placeholder="Search..."
+                className="flex-1 bg-transparent border-none text-zinc-300 placeholder-zinc-500 focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none focus:ring-0 text-xs h-full p-0 shadow-none"
               />
               <VoiceSearchButton 
                 onResult={(text) => setSearchQuery(text)} 
-                className="absolute right-1.5 top-1/2 -translate-y-1/2 h-8 w-8"
+                className="shrink-0 h-8 w-8"
               />
             </div>
             <Button onClick={handleRefreshAll} variant="outline" className="h-10 w-10 p-0 border-zinc-700 bg-[#141416] shrink-0 rounded-xl hover:bg-zinc-850"><RefreshCw className="w-4 h-4" /></Button>

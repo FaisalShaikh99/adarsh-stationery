@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Mic } from "lucide-react";
 import useVoiceSearch from "@/hooks/useVoiceSearch";
 import { toast } from "sonner";
@@ -11,6 +11,11 @@ import { toast } from "sonner";
  * @param {string} className - Optional styling classes.
  */
 export default function VoiceSearchButton({ onResult, className = "" }) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   const { 
     isSupported, 
     isListening, 
@@ -20,12 +25,17 @@ export default function VoiceSearchButton({ onResult, className = "" }) {
     stopListening 
   } = useVoiceSearch("en-IN");
 
+  const onResultRef = useRef(onResult);
+  useEffect(() => {
+    onResultRef.current = onResult;
+  }, [onResult]);
+
   // Fire callback on successful transcription
   useEffect(() => {
     if (transcript) {
-      onResult(transcript);
+      onResultRef.current(transcript);
     }
-  }, [transcript, onResult]);
+  }, [transcript]);
 
   // Gracefully toast Speech API errors
   useEffect(() => {
@@ -40,23 +50,23 @@ export default function VoiceSearchButton({ onResult, className = "" }) {
     }
   }, [error]);
 
-  if (!isSupported) return null;
+  if (!mounted || !isSupported) return null;
 
   return (
     <button
       type="button"
       onClick={isListening ? stopListening : startListening}
-      className={`relative inline-flex items-center justify-center p-2 rounded-xl transition-all duration-300 ${
+      className={`relative inline-flex items-center justify-center p-2 rounded-full transition-all duration-300 bg-transparent border-none outline-none ${
         isListening
-          ? "bg-red-500/25 text-red-500 border border-red-500/40 shadow-[0_0_12px_rgba(239,68,68,0.25)] animate-pulse"
-          : "bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 border border-zinc-750"
+          ? "text-red-500 scale-110"
+          : "text-zinc-500 hover:text-zinc-300"
       } ${className}`}
       title={isListening ? "Listening... Click to stop" : "Voice Search (en-IN)"}
     >
-      <Mic className={`w-4 h-4 ${isListening ? "scale-110" : ""}`} />
+      <Mic className={`w-4 h-4 ${isListening ? "animate-pulse" : ""}`} />
       
       {isListening && (
-        <span className="absolute -inset-0.5 rounded-xl border border-red-500/30 animate-ping pointer-events-none" />
+        <span className="absolute inset-1 rounded-full border border-red-500/30 animate-ping pointer-events-none" />
       )}
     </button>
   );

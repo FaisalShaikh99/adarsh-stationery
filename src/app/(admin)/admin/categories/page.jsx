@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import { toast } from "sonner";
-import { Loader2, Trash2, Edit2, Sparkles, UploadCloud } from "lucide-react";
+import { Loader2, Trash2, Edit2, Sparkles, UploadCloud, Search } from "lucide-react";
 import IconLibraryPicker from "@/components/admin/IconLibraryPicker";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
@@ -252,6 +252,14 @@ export default function CategoryManagementPage() {
 
 
 
+  if (categoriesLoading) {
+    return (
+      <div className="fixed inset-0 bg-[#09090b] z-50 flex items-center justify-center">
+        <LoadingSpinner size={240} label="Loading categories catalog..." />
+      </div>
+    );
+  }
+
   return (
     <div className="w-full min-h-screen bg-[#09090b] text-white p-6 space-y-6 font-sans">
       
@@ -278,19 +286,20 @@ export default function CategoryManagementPage() {
       {/* Workspace Area Table Arena */}
       <div className="bg-[#0c0c0e] border border-zinc-800 rounded-2xl p-6 space-y-4 shadow-xl">
         
-        {/* Wireframe Center Input Search Box */}
+        {/* Wireframe Input Search Box */}
         <div className="flex flex-col items-center justify-center w-full space-y-2">
-          <div className="relative w-full max-w-md flex items-center">
+          <div className="flex items-center w-full max-w-md bg-[#141416] border border-zinc-700 rounded-xl px-3.5 transition-all gap-2 h-11 focus-within:border-zinc-500 focus-within:ring-1 focus-within:ring-zinc-500">
+            <Search className="h-4 w-4 text-zinc-500 shrink-0" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search Category with AI search features..."
-              className="w-full bg-[#141416] border border-zinc-700 rounded-xl pl-4 pr-12 py-2.5 text-sm text-center text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-blue-500 transition-all shadow-inner"
+              placeholder="Search..."
+              className="flex-1 bg-transparent border-none text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-full py-0 shadow-none"
             />
             <VoiceSearchButton 
               onResult={(text) => setSearchQuery(text)} 
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 h-8 w-8"
+              className="shrink-0 h-8 w-8"
             />
           </div>
 

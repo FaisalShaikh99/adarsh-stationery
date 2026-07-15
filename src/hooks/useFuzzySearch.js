@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import Fuse from "fuse.js";
 
 // Pure JS Levenshtein Distance Algorithm (spelling checker)
@@ -25,25 +25,15 @@ const getLevenshteinDistance = (a, b) => {
   return matrix[b.length][a.length];
 };
 
-/**
- * Custom hook for fuzzy search with Fuse.js and Levenshtein distance fallback.
- * @param {Array} items - The list of items to filter
- * @param {string} searchQuery - The active query string
- * @param {string|Array} keys - The key or array of keys in each item to search on
- */
-export default function useFuzzySearch(items = [], searchQuery = "", keys = ["name"]) {
-  const [results, setResults] = useState(items);
-  const [suggestion, setSuggestion] = useState(null);
 
+export default function useFuzzySearch(items = [], searchQuery = "", keys = ["name"]) {
   // Normalize search keys to array format
   const searchKeys = useMemo(() => (Array.isArray(keys) ? keys : [keys]), [keys]);
 
-  useEffect(() => {
+  const { results, suggestion } = useMemo(() => {
     const query = searchQuery.trim();
     if (!query) {
-      setResults(items);
-      setSuggestion(null);
-      return;
+      return { results: items, suggestion: null };
     }
 
     const lowerQuery = query.toLowerCase();
@@ -57,13 +47,8 @@ export default function useFuzzySearch(items = [], searchQuery = "", keys = ["na
     });
 
     if (exactMatches.length > 0) {
-      setResults(exactMatches);
-      setSuggestion(null);
-      return;
+      return { results: exactMatches, suggestion: null };
     }
-
-    // When exact match yields nothing, set results to empty and run fuzzy search
-    setResults([]);
 
     // 2. Fuse.js Fuzzy Search Setup
     const fuseOptions = {
@@ -82,8 +67,7 @@ export default function useFuzzySearch(items = [], searchQuery = "", keys = ["na
       const bestMatch = fuseResults[0];
       const matchItem = bestMatch.item;
       const displayVal = typeof matchItem === "string" ? matchItem : matchItem[searchKeys[0]];
-      setSuggestion(displayVal);
-      return;
+      return { results: [], suggestion: displayVal };
     }
 
     // 3. Hand-written Levenshtein-distance fallback (if Fuse.js returns nothing)
@@ -119,7 +103,7 @@ export default function useFuzzySearch(items = [], searchQuery = "", keys = ["na
       });
     });
 
-    setSuggestion(bestMatchItemName);
+    return { results: [], suggestion: bestMatchItemName };
   }, [items, searchQuery, searchKeys]);
 
   return { results, suggestion };

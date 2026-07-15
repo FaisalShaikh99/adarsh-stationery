@@ -6,7 +6,6 @@ if (!process.env.MONGODB_URI) {
      }
 
      let cached = global.mongoose;
-     console.log(cached);
      
      if(!cached){
         cached = global.mongoose = {

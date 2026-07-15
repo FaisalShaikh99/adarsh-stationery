@@ -220,8 +220,7 @@ export function LoadingSpinner({ size = 140, label = "Loading page...", classNam
         <line x1="10" y1="67" x2="290" y2="67" stroke="currentColor" opacity="0.07" strokeWidth="1" strokeDasharray="3 3" />
         <line x1="10" y1="112" x2="290" y2="112" stroke="currentColor" opacity="0.07" strokeWidth="1" strokeDasharray="3 3" />
         
-        {/* Notebook Red Margin Line */}
-        <line x1="50" y1="10" x2="50" y2="140" stroke="#EF4444" strokeWidth="0.75" opacity="0.3" />
+        {/* Margin line removed for dark theme */}
 
         {/* Loading text */}
         <path
