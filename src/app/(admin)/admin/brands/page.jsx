@@ -4,15 +4,18 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axiosClient from "@/lib/axios";
 import { toast } from "sonner";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import BrandTable from "./BrandTable"; 
+import BrandGrid from "./BrandGrid";
 import BrandFormModal from "./BrandFormModal";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import useFuzzySearch from "@/hooks/useFuzzySearch";
+import VoiceSearchButton from "@/components/ui/voice-search-button";
 
-// Categories fetch karne ke liye pipeline helper
+// Categories fetch helper
 const fetchCategories = async () => {
   const response = await axiosClient.get("/api/admin/categories");
   return response.data || [];
@@ -21,25 +24,28 @@ const fetchCategories = async () => {
 export default function BrandManagementPage() {
   const queryClient = useQueryClient();
 
-  // 1. Filter States
+  // 1. Filter & View States
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [selectedBrands, setSelectedBrands] = useState([]);
+  const [brandSearchText, setBrandSearchText] = useState("");
+  const [isBrandDropdownOpen, setIsBrandDropdownOpen] = useState(false);
+  const [viewMode, setViewMode] = useState("table");
 
   // 2. Modal & Delete Dialog States
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBrand, setEditingBrand] = useState(null);
-  
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
 
-  // 3. Categories Fetch via TanStack Query
+  // 3. Categories Fetch
   const { data: categories = [], isLoading: categoriesLoading } = useQuery({
     queryKey: ["categories"],
     queryFn: fetchCategories,
   });
 
-  // Fetch brands to obtain unified loading state for initial load screen
-  const { isLoading: brandsLoading } = useQuery({
+  // 4. Fetch brands (filtered by category/search)
+  const { data: brands = [], isLoading: brandsLoading } = useQuery({
     queryKey: ["brands", categoryFilter, searchQuery],
     queryFn: async () => {
       const response = await axiosClient.get(`/api/admin/brands?category=${categoryFilter}&search=${searchQuery}`);
@@ -47,14 +53,23 @@ export default function BrandManagementPage() {
     },
   });
 
-  // 4. Delete Mutation using TanStack Query & Axios
+  // 5. Fetch ALL brands raw (for stats and brand filter dropdown)
+  const { data: allBrands = [], isLoading: allBrandsLoading } = useQuery({
+    queryKey: ["brands", "all-raw"],
+    queryFn: async () => {
+      const response = await axiosClient.get("/api/admin/brands");
+      return response.data || [];
+    },
+  });
+
+  // 6. Delete Mutation
   const { mutate: deleteBrand } = useMutation({
     mutationFn: async (id) => {
       return axiosClient.delete(`/api/admin/brands?id=${id}`);
     },
     onSuccess: (res) => {
       toast.success(res.message || "Brand profile retired safely.");
-      queryClient.invalidateQueries({ queryKey: ["brands"] }); // Real-time table refresh!
+      queryClient.invalidateQueries({ queryKey: ["brands"] }); // Real-time tables refresh!
       setDeleteDialogOpen(false);
       setPendingDeleteId(null);
     },
@@ -73,13 +88,33 @@ export default function BrandManagementPage() {
     setDeleteDialogOpen(true);
   };
 
+  const handleRefreshAll = () => {
+    queryClient.invalidateQueries({ queryKey: ["brands"] });
+    toast.success("Sync complete! Brand registries updated.");
+  };
 
+  const { results: fuzzyMatchedBrands, suggestion: spellingSuggestion } = useFuzzySearch(
+    brands,
+    searchQuery,
+    "name"
+  );
+
+  // Client-side brand-wise filtering
+  const filteredBrands = fuzzyMatchedBrands.filter((b) => {
+    if (selectedBrands.length === 0) return true;
+    return selectedBrands.includes(b._id);
+  });
+
+  // Stats Calculations
+  const totalBrands = allBrands.length;
+  const totalProducts = allBrands.reduce((sum, b) => sum + (b.productCount || 0), 0);
+  const totalCategories = categories.length;
+  const avgProducts = totalBrands > 0 ? (totalProducts / totalBrands).toFixed(1) : 0;
 
   return (
     <div className="w-full min-h-screen bg-[#09090b] text-white p-6 space-y-6 font-sans">
       
-      {/* 
-       1. TOP NAVBAR ELEMENT CONTROLS */}
+      {/* 1. TOP NAVBAR ELEMENT CONTROLS */}
       <div className="flex justify-between items-center border-b border-zinc-800 pb-5">
         <div className="flex items-center gap-4">
           <h1 className="text-xl font-bold tracking-tight">Brand & Manufacturer Profiles</h1>
@@ -95,48 +130,218 @@ export default function BrandManagementPage() {
         </div>
       </div>
 
-      {/* 🔍 2. SEARCH ARCHITECTURE & CAT-FILTER BAR */}
-      <div className="bg-[#0c0c0e] border border-zinc-800 rounded-2xl p-6 space-y-4 shadow-xl">
-        <div className="flex flex-col md:flex-row items-center gap-3">
-          
-          <div className="relative w-full">
-            <Search className="absolute left-3 top-3.5 h-4 w-4 text-zinc-500" />
-            <Input 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search Brand Registry Index..."
-              className="bg-[#141416] border-zinc-700 rounded-xl h-11 pl-10 text-zinc-300 placeholder-zinc-500 focus-visible:ring-zinc-600 transition-all"
-            />
+      {/* 2. STATS CARDS ROW */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-[#0c0c0e] border border-zinc-800/80 p-5 rounded-2xl shadow-sm flex flex-col justify-between min-h-[105px]">
+          <div>
+            <p className="text-xs text-zinc-500 uppercase tracking-wider font-bold">Total Brands</p>
+            <p className="text-2xl font-bold mt-2 font-mono tracking-tight text-white">{String(totalBrands).padStart(2, "0")}</p>
           </div>
-
-          <select
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
-            className="bg-[#141416] border border-zinc-700 rounded-xl h-11 px-4 text-sm text-zinc-300 focus:outline-none focus:border-zinc-500 min-w-45 cursor-pointer appearance-none"
-            style={{
-              backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>")`,
-              backgroundRepeat: 'no-repeat',
-              backgroundPosition: 'right 12px center',
-              backgroundSize: '14px'
-            }}
-          >
-            <option value="all">All Categories</option>
-            {categories.map(cat => (
-              <option key={cat._id} value={cat._id}>{cat.name}</option>
-            ))}
-          </select>
+          <span className="text-[10px] text-zinc-550 mt-1.5 block italic">Registered manufacturer profiles</span>
         </div>
-
-        {/* 📊 3. BRAND DATA TABLE MATRIX */}
-        <BrandTable 
-          categoryFilter={categoryFilter} 
-          searchQuery={searchQuery} 
-          onEdit={handleEdit}
-          onDelete={handleDeleteTrigger}
-        />
+        <div className="bg-[#0c0c0e] border border-zinc-800/80 p-5 rounded-2xl shadow-sm flex flex-col justify-between min-h-[105px]">
+          <div>
+            <p className="text-xs text-zinc-500 uppercase tracking-wider font-bold">Total Products</p>
+            <p className="text-2xl font-bold mt-2 font-mono tracking-tight text-white">{String(totalProducts).padStart(2, "0")}</p>
+          </div>
+          <span className="text-[10px] text-zinc-550 mt-1.5 block italic">Active catalog items linked</span>
+        </div>
+        <div className="bg-[#0c0c0e] border border-zinc-800/80 p-5 rounded-2xl shadow-sm flex flex-col justify-between min-h-[105px]">
+          <div>
+            <p className="text-xs text-zinc-500 uppercase tracking-wider font-bold">Total Categories</p>
+            <p className="text-2xl font-bold mt-2 font-mono tracking-tight text-white">{String(totalCategories).padStart(2, "0")}</p>
+          </div>
+          <span className="text-[10px] text-zinc-550 mt-1.5 block italic">Operative category mappings</span>
+        </div>
+        <div className="bg-[#0c0c0e] border border-zinc-800/80 p-5 rounded-2xl shadow-sm flex flex-col justify-between min-h-[105px]">
+          <div>
+            <p className="text-xs text-zinc-500 uppercase tracking-wider font-bold">Avg. Products / Brand</p>
+            <p className="text-2xl font-bold mt-2 font-mono tracking-tight text-white">{avgProducts}</p>
+          </div>
+          <span className="text-[10px] text-zinc-555 text-zinc-500 mt-1.5 block italic">Density per brand registry</span>
+        </div>
       </div>
 
-      {/* 🪄 4. AI POWERED FORM MODAL COMPONENT */}
+      {/* 🔍 3. SEARCH ARCHITECTURE & FILTER BAR */}
+      <div className="bg-[#0c0c0e] border border-zinc-800 rounded-2xl p-6 space-y-4 shadow-xl">
+        
+        {/* Controls Row */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3 w-full">
+            <div className="relative w-full flex items-center">
+              <Search className="absolute left-3 top-3.5 h-4 w-4 text-zinc-500 z-10" />
+              <Input 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search Brand Registry Index..."
+                className="bg-[#141416] border-zinc-700 rounded-xl h-10 pl-10 pr-12 text-zinc-300 placeholder-zinc-500 focus-visible:ring-zinc-600 transition-all w-full text-xs"
+              />
+              <VoiceSearchButton 
+                onResult={(text) => setSearchQuery(text)} 
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 h-8 w-8"
+              />
+            </div>
+            <Button onClick={handleRefreshAll} variant="outline" className="h-10 w-10 p-0 border-zinc-700 bg-[#141416] shrink-0 rounded-xl hover:bg-zinc-850"><RefreshCw className="w-4 h-4" /></Button>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3 shrink-0">
+            {/* 🏢 Brand/Company Dropdown Selector */}
+            <div className="relative shrink-0 w-full sm:w-auto">
+              <button
+                type="button"
+                onClick={() => setIsBrandDropdownOpen(!isBrandDropdownOpen)}
+                className="bg-[#141416] border border-zinc-700 rounded-xl h-10 px-4 text-xs font-semibold text-zinc-300 hover:text-white hover:border-zinc-550 transition-all flex items-center justify-between gap-2 cursor-pointer w-full sm:min-w-[170px]"
+              >
+                <span className="truncate">
+                  {selectedBrands.length === 0 
+                    ? "All Brands/Companies" 
+                    : selectedBrands.length === 1 
+                      ? allBrands.find(b => b._id === selectedBrands[0])?.name || "1 Selected"
+                      : `${selectedBrands.length} Selected`
+                  }
+                </span>
+                <span className="text-[9px] text-zinc-500">▼</span>
+              </button>
+
+              {isBrandDropdownOpen && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-40" 
+                    onClick={() => setIsBrandDropdownOpen(false)} 
+                  />
+                  <div className="absolute right-0 top-11.5 w-64 bg-zinc-950 border border-zinc-800 rounded-2xl p-3 shadow-2xl z-50 space-y-2 mt-1">
+                    <Input 
+                      value={brandSearchText}
+                      onChange={(e) => setBrandSearchText(e.target.value)}
+                      placeholder="Search company name..."
+                      className="h-8 bg-zinc-900 border-zinc-808 border-zinc-800 text-xs rounded-lg placeholder-zinc-650"
+                    />
+                    
+                    <div className="max-h-48 overflow-y-auto space-y-1 custom-scrollbar py-1">
+                      {selectedBrands.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedBrands([])}
+                          className="w-full text-left text-[10px] text-rose-450 hover:underline px-2 py-0.5"
+                        >
+                          Clear Selection
+                        </button>
+                      )}
+
+                      {allBrands
+                        .filter(b => b.name.toLowerCase().includes(brandSearchText.toLowerCase()))
+                        .map((brand) => {
+                          const isChecked = selectedBrands.includes(brand._id);
+                          return (
+                            <label 
+                              key={brand._id}
+                              className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-zinc-900 cursor-pointer text-xs text-zinc-350 hover:text-white transition-colors select-none"
+                            >
+                              <input 
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={() => {
+                                  if (isChecked) {
+                                    setSelectedBrands(prev => prev.filter(id => id !== brand._id));
+                                  } else {
+                                    setSelectedBrands(prev => [...prev, brand._id]);
+                                  }
+                                }}
+                                className="rounded border-zinc-800 bg-zinc-900 text-blue-600 focus:ring-0 focus:ring-offset-0 w-3.5 h-3.5"
+                              />
+                              <span className="truncate capitalize">{brand.name}</span>
+                            </label>
+                          );
+                        })
+                      }
+
+                      {allBrands.filter(b => b.name.toLowerCase().includes(brandSearchText.toLowerCase())).length === 0 && (
+                        <p className="text-[11px] text-zinc-550 text-center py-2">No brands found.</p>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* View Mode Toggle Switcher */}
+            <div className="flex items-center gap-1 bg-[#141416] border border-zinc-800 p-1 rounded-xl shrink-0 w-full sm:w-auto justify-center">
+              <button
+                type="button"
+                onClick={() => setViewMode("table")}
+                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === "table" ? "bg-zinc-800 text-white" : "text-zinc-550 text-zinc-500 hover:text-zinc-300"}`}
+              >
+                Table
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("grid")}
+                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === "grid" ? "bg-zinc-800 text-white" : "text-zinc-550 text-zinc-500 hover:text-zinc-300"}`}
+              >
+                Grid
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* ✨ Smart Did You Mean Ribbon Suggestion Box */}
+        {spellingSuggestion && (
+          <div className="text-xs text-zinc-400 bg-blue-500/10 border border-blue-500/20 px-3 py-1.5 rounded-lg w-fit mx-auto">
+            Did you mean:{" "}
+            <button
+              type="button"
+              onClick={() => setSearchQuery(spellingSuggestion)}
+              className="text-blue-400 font-semibold hover:underline capitalize"
+            >
+              {spellingSuggestion}
+            </button>
+            {" "}?
+          </div>
+        )}
+
+        {/* 🏷️ Horizontal Category-wise filter scrollbar */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-2.5 scrollbar-none border-b border-zinc-800/80">
+          <button
+            type="button"
+            onClick={() => setCategoryFilter("all")}
+            className={`px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all border ${categoryFilter === "all" ? "bg-white text-black border-white shadow-md scale-[1.02]" : "bg-zinc-900/50 text-zinc-400 border-zinc-850 hover:text-zinc-200"}`}
+          >
+            All Categories ({allBrands.length})
+          </button>
+          {categories.map((cat) => {
+            const count = allBrands.filter(b => b.categories?.some(c => (c._id || c) === cat._id)).length;
+            return (
+              <button
+                key={cat._id}
+                type="button"
+                onClick={() => setCategoryFilter(cat._id)}
+                className={`px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all border ${categoryFilter === cat._id ? "bg-white text-black border-white shadow-md scale-[1.02]" : "bg-zinc-900/50 text-zinc-400 border-zinc-855 border-zinc-850 hover:text-zinc-200"}`}
+              >
+                <span className="capitalize">{cat.name}</span> ({count})
+              </button>
+            );
+          })}
+        </div>
+
+        {/* 📊 BRAND DISPLAY PORTAL */}
+        {viewMode === "table" ? (
+          <BrandTable 
+            brands={filteredBrands} 
+            isLoading={brandsLoading || allBrandsLoading} 
+            onEdit={handleEdit}
+            onDelete={handleDeleteTrigger}
+          />
+        ) : (
+          <BrandGrid 
+            brands={filteredBrands} 
+            isLoading={brandsLoading || allBrandsLoading} 
+            onEdit={handleEdit}
+            onDelete={handleDeleteTrigger}
+          />
+        )}
+      </div>
+
+      {/* 🪄 AI POWERED FORM MODAL COMPONENT */}
       <BrandFormModal 
         isOpen={isModalOpen}
         onClose={() => { setIsModalOpen(false); setEditingBrand(null); }}
@@ -144,7 +349,7 @@ export default function BrandManagementPage() {
         categories={categories}
       />
 
-      {/* 🛡️ 5. SAFEGUARD DELETION REJECTION SHIELD */}
+      {/* 🛡️ SAFEGUARD DELETION REJECTION SHIELD */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent className="bg-zinc-900 border border-zinc-800 text-white rounded-2xl">
           <AlertDialogHeader>

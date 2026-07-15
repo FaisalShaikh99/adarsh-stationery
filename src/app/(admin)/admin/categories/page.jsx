@@ -42,28 +42,8 @@ import * as z from "zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { categoryCreateSchema } from "@/schemas/category.schema";
-
-// Levenshtein Distance Algorithm (Spelling checker)
-const getLevenshteinDistance = (a, b) => {
-  const matrix = [];
-  for (let i = 0; i <= b.length; i++) matrix[i] = [i];
-  for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
-
-  for (let i = 1; i <= b.length; i++) {
-    for (let j = 1; j <= a.length; j++) {
-      if (b.charAt(i - 1) === a.charAt(j - 1)) {
-        matrix[i][j] = matrix[i - 1][j - 1];
-      } else {
-        matrix[i][j] = Math.min(
-          matrix[i - 1][j - 1] + 1, // substitution
-          matrix[i][j - 1] + 1,     // insertion
-          matrix[i - 1][j] + 1      // deletion
-        );
-      }
-    }
-  }
-  return matrix[b.length][a.length];
-};
+import useFuzzySearch from "@/hooks/useFuzzySearch";
+import VoiceSearchButton from "@/components/ui/voice-search-button";
 
 export default function CategoryManagementPage() {
   const queryClient = useQueryClient();
@@ -71,7 +51,6 @@ export default function CategoryManagementPage() {
 
   // States
   const [searchQuery, setSearchQuery] = useState("");
-  const [spellingSuggestion, setSpellingSuggestion] = useState(null);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -265,51 +244,10 @@ export default function CategoryManagementPage() {
     }
   };
 
-  const handleSearchChange = (query) => {
-    setSearchQuery(query);
-    
-    if (query.trim().length < 2) {
-      setSpellingSuggestion(null);
-      return;
-    }
-
-    const lowerQuery = query.toLowerCase().trim();
-    const directMatchExists = categories.some(cat => 
-      cat.name.toLowerCase().includes(lowerQuery)
-    );
-
-    if (directMatchExists) {
-      setSpellingSuggestion(null);
-      return;
-    }
-
-    let bestMatch = null;
-    let minDistance = 999;
-
-    categories.forEach((cat) => {
-      const catName = cat.name.toLowerCase();
-      const words = catName.split(/\s+/);
-      let closestWordDistance = 999;
-
-      words.forEach((word) => {
-        const wordDist = getLevenshteinDistance(lowerQuery, word);
-        if (wordDist < closestWordDistance) closestWordDistance = wordDist;
-      });
-
-      const globalDistance = getLevenshteinDistance(lowerQuery, catName);
-      const finalDistance = Math.min(closestWordDistance, globalDistance);
-
-      if (finalDistance < minDistance && finalDistance <= 2) { 
-        minDistance = finalDistance;
-        bestMatch = cat.name;
-      }
-    });
-
-    setSpellingSuggestion(bestMatch);
-  };
-
-  const filteredCategories = categories.filter((cat) =>
-    cat.name.toLowerCase().includes(searchQuery.toLowerCase())
+  const { results: filteredCategories, suggestion: spellingSuggestion } = useFuzzySearch(
+    categories,
+    searchQuery,
+    "name"
   );
 
 
@@ -342,13 +280,17 @@ export default function CategoryManagementPage() {
         
         {/* Wireframe Center Input Search Box */}
         <div className="flex flex-col items-center justify-center w-full space-y-2">
-          <div className="relative w-full max-w-md">
+          <div className="relative w-full max-w-md flex items-center">
             <input
               type="text"
               value={searchQuery}
-              onChange={(e) => handleSearchChange(e.target.value)}
+              onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search Category with AI search features..."
-              className="w-full bg-[#141416] border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-center text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-blue-500 transition-all shadow-inner"
+              className="w-full bg-[#141416] border border-zinc-700 rounded-xl pl-4 pr-12 py-2.5 text-sm text-center text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-blue-500 transition-all shadow-inner"
+            />
+            <VoiceSearchButton 
+              onResult={(text) => setSearchQuery(text)} 
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 h-8 w-8"
             />
           </div>
 
@@ -358,10 +300,7 @@ export default function CategoryManagementPage() {
               Did you mean:{" "}
               <button
                 type="button"
-                onClick={() => {
-                  handleSearchChange(spellingSuggestion);
-                  setSpellingSuggestion(null);
-                }}
+                onClick={() => setSearchQuery(spellingSuggestion)}
                 className="text-blue-400 font-semibold hover:underline capitalize"
               >
                 {spellingSuggestion}

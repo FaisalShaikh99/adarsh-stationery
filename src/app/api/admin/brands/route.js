@@ -74,8 +74,27 @@ export const GET = asyncHandler(async (request) => {
         .populate("categories", "name slug")
         .sort({ createdAt: -1 });
 
+    // Aggregate product counts for active products grouped by company/brand
+    const productCounts = await Product.aggregate([
+        { $match: { isActive: true } },
+        { $group: { _id: "$company", count: { $sum: 1 } } }
+    ]);
+
+    const countMap = {};
+    productCounts.forEach(item => {
+        if (item._id) {
+            countMap[item._id.toString()] = item.count;
+        }
+    });
+
+    const brandsWithCounts = brands.map(brand => {
+        const brandObj = brand.toObject();
+        brandObj.productCount = countMap[brand._id.toString()] || 0;
+        return brandObj;
+    });
+
     return NextResponse.json(
-        new ApiResponse(200, brands, "Brand registries loaded perfectly.")
+        new ApiResponse(200, brandsWithCounts, "Brand registries loaded perfectly.")
     );
 });
 

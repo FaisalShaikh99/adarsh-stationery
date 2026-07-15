@@ -22,6 +22,17 @@ export async function POST(req) {
 
     return NextResponse.json({ success: true, options });
   } catch (error) {
-    return NextResponse.json({ success: false, message: "AI Engine Timeout" }, { status: 500 });
+    console.warn("AI generation failed, generating fallback options:", error.message);
+    const pName = productName || "Stationery Item";
+    const bName = brand || "Generic";
+    const cName = category || "Office Supply";
+    
+    const options = [
+      `Premium ${pName} by ${bName}. This high-quality item is crafted for professional results, delivering maximum reliability and a superior feel.`,
+      `The ultimate addition to your ${cName} catalog. High-grade ${pName} engineered by ${bName} to stand the test of time.`,
+      `Bring professional results with ${bName}'s deluxe ${pName}. Specifically designed for students and professionals alike.`
+    ];
+
+    return NextResponse.json({ success: true, options, fallback: true });
   }
 }

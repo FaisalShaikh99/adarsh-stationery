@@ -80,15 +80,31 @@ export default function BrandFormModal({ isOpen, onClose, editingBrand, categori
     setIsAiLoading(true);
     try {
       const res = await axiosClient.post("/api/admin/ai-generate", { productName: form.name });
-      if (res.success) {
+      if (res.success && Array.isArray(res.options)) {
         setAiDescriptions(res.options); // Load 3 variations directly
-        toast.success("AI Content variations generated successfully!");
+        if (res.fallback) {
+          toast.info("Offline fallback descriptions generated successfully.");
+        } else {
+          toast.success("AI Content variations generated successfully!");
+        }
+        return;
       }
     } catch (err) {
-      toast.error(err.message || "AI Engine Timeout");
+      console.warn("AI generation endpoint failed, using local generator:", err);
     } finally {
       setIsAiLoading(false);
     }
+
+    // Local fallback generator for Brand profiles
+    const brandName = form.name.trim();
+    const adjectives = ["Premium", "Leading", "Innovative", "Trusted", "Global", "Eco-friendly"];
+    const descriptions = [
+      `${brandName} is a ${adjectives[0].toLowerCase()} name in stationery, committed to delivering ergonomic design and superior reliability for students and professionals alike.`,
+      `Discover premium quality with ${brandName}. Specialized in high-quality writing instruments, office supplies, and creative stationery essentials.`,
+      `${brandName} is a ${adjectives[3].toLowerCase()} manufacturer, crafting premium school and workspace products engineered for durability, precision, and excellence.`
+    ];
+    setAiDescriptions(descriptions);
+    toast.info("Offline fallback descriptions generated successfully.");
   };
 
   // 🪄 3. AI Image Enhancer Service (Cloudinary URL Transformer Node)

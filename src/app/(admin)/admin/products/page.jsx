@@ -32,6 +32,8 @@ import * as z from "zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { productSchema } from "@/schemas/products.schema";
+import useFuzzySearch from "@/hooks/useFuzzySearch";
+import VoiceSearchButton from "@/components/ui/voice-search-button";
  
 export default function ProductManagementPage() {
   const queryClient = useQueryClient();
@@ -74,6 +76,9 @@ export default function ProductManagementPage() {
   const [aiDescriptions, setAiDescriptions] = useState([]);
   const [viewMode, setViewMode] = useState("table"); // "table" or "grid"
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState("All");
+  const [selectedBrands, setSelectedBrands] = useState([]);
+  const [brandSearchText, setBrandSearchText] = useState("");
+  const [isBrandDropdownOpen, setIsBrandDropdownOpen] = useState(false);
   const [isEnhancingImage, setIsEnhancingImage] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -82,7 +87,7 @@ export default function ProductManagementPage() {
   // Reset pagination on filter parameter change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, selectedCategoryFilter]);
+  }, [searchQuery, selectedCategoryFilter, selectedBrands]);
 
   // React Hook Form
   const { register, handleSubmit: handleFormSubmit, reset, setValue, watch, formState: { errors } } = useForm({
@@ -97,7 +102,7 @@ export default function ProductManagementPage() {
       costPrice: editingProduct.costPrice,
       sellingPrice: editingProduct.sellingPrice,
       description: editingProduct.description || "",
-      images: (editingProduct.images || []).concat(["", "", ""]).slice(0, 3),
+      images: editingProduct.images && editingProduct.images.length > 0 ? editingProduct.images : [""],
       isActive: editingProduct.isActive !== undefined ? editingProduct.isActive : true
     } : {
       name: "",
@@ -108,7 +113,7 @@ export default function ProductManagementPage() {
       costPrice: "",
       sellingPrice: "",
       description: "",
-      images: ["", "", ""],
+      images: [""],
       isActive: true
     }
   });
@@ -549,10 +554,17 @@ export default function ProductManagementPage() {
     setValue("images", updatedImages);
   };
  
-  const filteredProducts = products.filter(p => {
-    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
+  const { results: fuzzyMatchedProducts, suggestion: spellingSuggestion } = useFuzzySearch(
+    products,
+    searchQuery,
+    "name"
+  );
+ 
+  const filteredProducts = fuzzyMatchedProducts.filter(p => {
     const matchesCategory = selectedCategoryFilter === "All" || p.category?._id === selectedCategoryFilter || p.category === selectedCategoryFilter;
-    return matchesSearch && matchesCategory;
+    const brandId = p.company?._id || p.company;
+    const matchesBrand = selectedBrands.length === 0 || selectedBrands.includes(brandId?.toString());
+    return matchesCategory && matchesBrand;
   });
  
   const metrics = [
@@ -604,32 +616,158 @@ export default function ProductManagementPage() {
       <div className="bg-[#0c0c0e] border border-zinc-800 rounded-2xl p-4 sm:p-6 space-y-4 shadow-xl">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3 w-full">
-            <Input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search products..."
-              className="bg-[#141416] border-zinc-700 rounded-xl h-11 text-zinc-300 placeholder-zinc-500 focus-visible:ring-zinc-600 transition-all w-full"
-            />
+            <div className="relative w-full flex items-center">
+              <Input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search products..."
+                className="bg-[#141416] border-zinc-700 rounded-xl h-11 text-zinc-300 placeholder-zinc-500 focus-visible:ring-zinc-600 transition-all w-full text-xs pl-4 pr-12"
+              />
+              <VoiceSearchButton 
+                onResult={(text) => setSearchQuery(text)} 
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 h-8 w-8"
+              />
+            </div>
             <Button onClick={handleRefreshAll} variant="outline" className="h-11 w-11 p-0 border-zinc-700 bg-zinc-900 shrink-0 rounded-xl hover:bg-zinc-800"><RefreshCw className="w-4 h-4" /></Button>
           </div>
           
-          {/* View Mode Toggle Switcher */}
-          <div className="flex items-center gap-1 bg-[#141416] border border-zinc-800 p-1 rounded-xl shrink-0 self-stretch sm:self-auto justify-center">
-            <button
-              type="button"
-              onClick={() => setViewMode("table")}
-              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === "table" ? "bg-zinc-800 text-white" : "text-zinc-500 hover:text-zinc-350"}`}
-            >
-              Table
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode("grid")}
-              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === "grid" ? "bg-zinc-800 text-white" : "text-zinc-500 hover:text-zinc-350"}`}
-            >
-              Grid
-            </button>
+          <div className="flex flex-wrap items-center gap-3 shrink-0">
+            {/* 🏢 Brand/Company Dropdown Selector */}
+            <div className="relative shrink-0 w-full sm:w-auto">
+              <button
+                type="button"
+                onClick={() => setIsBrandDropdownOpen(!isBrandDropdownOpen)}
+                className="bg-[#141416] border border-zinc-700 rounded-xl h-11 px-4 text-xs font-semibold text-zinc-300 hover:text-white hover:border-zinc-550 transition-all flex items-center justify-between gap-2 cursor-pointer w-full sm:min-w-[170px]"
+              >
+                <span className="truncate">
+                  {selectedBrands.length === 0 
+                    ? "All Brands/Companies" 
+                    : selectedBrands.length === 1 
+                      ? brands.find(b => b._id === selectedBrands[0])?.name || "1 Selected"
+                      : `${selectedBrands.length} Selected`
+                  }
+                </span>
+                <span className="text-[9px] text-zinc-500">▼</span>
+              </button>
+
+              {isBrandDropdownOpen && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-40" 
+                    onClick={() => setIsBrandDropdownOpen(false)} 
+                  />
+                  <div className="absolute right-0 top-12.5 w-64 bg-zinc-950 border border-zinc-800 rounded-2xl p-3 shadow-2xl z-50 space-y-2 mt-1">
+                    <Input 
+                      value={brandSearchText}
+                      onChange={(e) => setBrandSearchText(e.target.value)}
+                      placeholder="Search company name..."
+                      className="h-8 bg-zinc-900 border-zinc-805 border-zinc-800 text-xs rounded-lg placeholder-zinc-650"
+                    />
+                    
+                    <div className="max-h-48 overflow-y-auto space-y-1 custom-scrollbar py-1">
+                      {selectedBrands.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedBrands([])}
+                          className="w-full text-left text-[10px] text-rose-400 hover:underline px-2 py-0.5"
+                        >
+                          Clear Selection
+                        </button>
+                      )}
+
+                      {brands
+                        .filter(b => b.name.toLowerCase().includes(brandSearchText.toLowerCase()))
+                        .map((brand) => {
+                          const isChecked = selectedBrands.includes(brand._id);
+                          return (
+                            <label 
+                              key={brand._id}
+                              className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-zinc-900 cursor-pointer text-xs text-zinc-350 hover:text-white transition-colors select-none"
+                            >
+                              <input 
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={() => {
+                                  if (isChecked) {
+                                    setSelectedBrands(prev => prev.filter(id => id !== brand._id));
+                                  } else {
+                                    setSelectedBrands(prev => [...prev, brand._id]);
+                                  }
+                                }}
+                                className="rounded border-zinc-800 bg-zinc-900 text-blue-600 focus:ring-0 focus:ring-offset-0 w-3.5 h-3.5"
+                              />
+                              <span className="truncate capitalize">{brand.name}</span>
+                            </label>
+                          );
+                        })
+                      }
+
+                      {brands.filter(b => b.name.toLowerCase().includes(brandSearchText.toLowerCase())).length === 0 && (
+                        <p className="text-[11px] text-zinc-550 text-center py-2">No brands found.</p>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* View Mode Toggle Switcher */}
+            <div className="flex items-center gap-1 bg-[#141416] border border-zinc-800 p-1 rounded-xl shrink-0 self-stretch sm:self-auto justify-center">
+              <button
+                type="button"
+                onClick={() => setViewMode("table")}
+                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === "table" ? "bg-zinc-800 text-white" : "text-zinc-500 hover:text-zinc-350"}`}
+              >
+                Table
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("grid")}
+                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === "grid" ? "bg-zinc-800 text-white" : "text-zinc-500 hover:text-zinc-350"}`}
+              >
+                Grid
+              </button>
+            </div>
           </div>
+        </div>
+
+        {/* ✨ Smart Did You Mean Ribbon Suggestion Box */}
+        {spellingSuggestion && (
+          <div className="text-xs text-zinc-400 bg-blue-500/10 border border-blue-500/20 px-3 py-1.5 rounded-lg w-fit mx-auto">
+            Did you mean:{" "}
+            <button
+              type="button"
+              onClick={() => setSearchQuery(spellingSuggestion)}
+              className="text-blue-400 font-semibold hover:underline capitalize"
+            >
+              {spellingSuggestion}
+            </button>
+            {" "}?
+          </div>
+        )}
+
+        {/* 🏷️ Horizontal Category-wise View filter */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none border-b border-zinc-800/60">
+          <button
+            type="button"
+            onClick={() => setSelectedCategoryFilter("All")}
+            className={`px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all border ${selectedCategoryFilter === "All" ? "bg-white text-black border-white shadow-md scale-[1.02]" : "bg-zinc-900/50 text-zinc-400 border-zinc-805 border-zinc-800 hover:text-zinc-200"}`}
+          >
+            All Categories ({products.length})
+          </button>
+          {categories.map((cat) => {
+            const count = products.filter(p => p.category?._id === cat._id || p.category === cat._id).length;
+            return (
+              <button
+                key={cat._id}
+                type="button"
+                onClick={() => setSelectedCategoryFilter(cat._id)}
+                className={`px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all border ${selectedCategoryFilter === cat._id ? "bg-white text-black border-white shadow-md scale-[1.02]" : "bg-zinc-900/50 text-zinc-400 border-zinc-805 border-zinc-800 hover:text-zinc-200"}`}
+              >
+                <span className="capitalize">{cat.name}</span> ({count})
+              </button>
+            );
+          })}
         </div>
  
         {/* 4. CORE INVENTORY DISPLAY (TABLE / GRID) */}
@@ -724,30 +862,6 @@ export default function ProductManagementPage() {
         ) : (
           /* Grid View Cards Frame */
           <div className="space-y-6">
-            {/* Horizontal Category-wise View filter */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none border-b border-zinc-800/60">
-              <button
-                type="button"
-                onClick={() => setSelectedCategoryFilter("All")}
-                className={`px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all border ${selectedCategoryFilter === "All" ? "bg-white text-black border-white shadow-md scale-[1.02]" : "bg-zinc-900/50 text-zinc-400 border-zinc-800 hover:text-zinc-200"}`}
-              >
-                All Categories ({products.length})
-              </button>
-              {categories.map((cat) => {
-                const count = products.filter(p => p.category?._id === cat._id || p.category === cat._id).length;
-                return (
-                  <button
-                    key={cat._id}
-                    type="button"
-                    onClick={() => setSelectedCategoryFilter(cat._id)}
-                    className={`px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all border ${selectedCategoryFilter === cat._id ? "bg-white text-black border-white shadow-md scale-[1.02]" : "bg-zinc-900/50 text-zinc-400 border-zinc-800 hover:text-zinc-200"}`}
-                  >
-                    {cat.name} ({count})
-                  </button>
-                );
-              })}
-            </div>
-
             {productsLoading ? (
               <div className="text-center py-12 text-zinc-550 font-medium">
                 <LoadingSpinner size={160} label="Loading items..." className="mx-auto" />
