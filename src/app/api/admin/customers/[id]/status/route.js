@@ -1,3 +1,4 @@
+// Made for show customer active and inactive status
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { getToken } from "next-auth/jwt";

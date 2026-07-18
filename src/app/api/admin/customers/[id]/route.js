@@ -1,3 +1,4 @@
+// Made for get customer data in customer directory list page
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { getToken } from "next-auth/jwt";
