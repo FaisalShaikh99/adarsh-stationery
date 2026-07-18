@@ -44,23 +44,18 @@ export default function BrandManagementPage() {
     queryFn: fetchCategories,
   });
 
-  // 4. Fetch brands (filtered by category/search)
+  // 4. Fetch all active brands once (filtering will be done client-side to prevent screen-jerking and input focus loss)
   const { data: brands = [], isLoading: brandsLoading } = useQuery({
-    queryKey: ["brands", categoryFilter, searchQuery],
-    queryFn: async () => {
-      const response = await axiosClient.get(`/api/admin/brands?category=${categoryFilter}&search=${searchQuery}`);
-      return response.data || [];
-    },
-  });
-
-  // 5. Fetch ALL brands raw (for stats and brand filter dropdown)
-  const { data: allBrands = [], isLoading: allBrandsLoading } = useQuery({
-    queryKey: ["brands", "all-raw"],
+    queryKey: ["brands"],
     queryFn: async () => {
       const response = await axiosClient.get("/api/admin/brands");
       return response.data || [];
     },
+    refetchOnMount: true,
   });
+
+  const allBrands = brands;
+  const allBrandsLoading = brandsLoading;
 
   // 6. Delete Mutation
   const { mutate: deleteBrand } = useMutation({
@@ -99,10 +94,19 @@ export default function BrandManagementPage() {
     "name"
   );
 
-  // Client-side brand-wise filtering
+  // Client-side category and brand filtering on fuzzy-matched results
   const filteredBrands = fuzzyMatchedBrands.filter((b) => {
-    if (selectedBrands.length === 0) return true;
-    return selectedBrands.includes(b._id);
+    // 1. Filter by category if one is selected
+    const matchesCategory =
+      categoryFilter === "all" ||
+      b.categories?.some((c) => (c._id || c) === categoryFilter);
+
+    // 2. Filter by selected brands if any are checked
+    const matchesBrand =
+      selectedBrands.length === 0 ||
+      selectedBrands.includes(b._id);
+
+    return matchesCategory && matchesBrand;
   });
 
   // Stats Calculations

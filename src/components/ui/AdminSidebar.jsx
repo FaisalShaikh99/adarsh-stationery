@@ -14,7 +14,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
-  LayoutGrid
+  LayoutGrid,
+  User
 } from "lucide-react";
 import { useState } from "react";
 
@@ -46,6 +47,7 @@ export default function AdminSidebar({ isCollapsed, setIsCollapsed }) {
     { name: "Products & Stock", href: "/admin/products", icon: ShoppingBag },
     { name: "Brands & Manufactors", href: "/admin/brands", icon: ShoppingBag },
     { name: "Invoices / Orders", href: "/admin/orders", icon: FileText },
+    { name: "Customer Directory", href: "/admin/customers", icon: User },
     { name: "Store Settings", href: "/admin/settings", icon: Settings },
   ];
 
