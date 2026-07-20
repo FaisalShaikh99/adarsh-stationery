@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ChevronLeft, ChevronRight, Loader2, RefreshCw, Search, Eye } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -36,6 +37,7 @@ function formatCurrency(amount) {
 }
 
 export default function OrdersPage() {
+  const router = useRouter();
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
@@ -154,24 +156,27 @@ export default function OrdersPage() {
                 <TableHead className="font-semibold text-zinc-400">Amount</TableHead>
                 <TableHead className="font-semibold text-zinc-400">Payment</TableHead>
                 <TableHead className="font-semibold text-zinc-400">Status</TableHead>
-                <TableHead className="font-semibold text-zinc-400 text-center">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-48 text-center text-zinc-450">
+                  <TableCell colSpan={6} className="h-48 text-center text-zinc-450">
                     <Loader2 className="mx-auto h-5 w-5 animate-spin text-zinc-500" />
                   </TableCell>
                 </TableRow>
               ) : orders.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-48 text-center text-sm text-zinc-500">
+                  <TableCell colSpan={6} className="h-48 text-center text-sm text-zinc-500">
                     No orders match these filters.
                   </TableCell>
                 </TableRow>
               ) : orders.map((order) => (
-                <TableRow key={order._id} className="border-b border-zinc-800/60 hover:bg-zinc-900/20 transition-colors">
+                <TableRow 
+                  key={order._id} 
+                  onClick={() => router.push(`/admin/orders/${order._id}`)}
+                  className="border-b border-zinc-800/60 hover:bg-zinc-900/20 transition-colors cursor-pointer"
+                >
                   <TableCell className="py-4">
                     <p className="font-bold tracking-tight text-sm text-zinc-100">{order.orderNumber}</p>
                     <p className="mt-1 text-xs text-zinc-400">{new Date(order.createdAt).toLocaleDateString("en-IN")}</p>
@@ -191,7 +196,7 @@ export default function OrdersPage() {
                       {order.paymentStatus}
                     </span>
                   </TableCell>
-                  <TableCell className="py-4">
+                  <TableCell className="py-4" onClick={(e) => e.stopPropagation()}>
                     <select 
                       value={order.status} 
                       disabled={statusMutation.isPending || ["Delivered", "Cancelled"].includes(order.status)} 
@@ -203,13 +208,6 @@ export default function OrdersPage() {
                         <option key={item} value={item} className="bg-zinc-950 text-zinc-200">{item}</option>
                       ))}
                     </select>
-                  </TableCell>
-                  <TableCell className="py-4 text-center">
-                    <Link href={`/admin/orders/${order._id}`} passHref>
-                      <Button variant="ghost" className="p-1 h-auto text-zinc-450 hover:text-white hover:bg-transparent transition-colors" title="View Details">
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                    </Link>
                   </TableCell>
                 </TableRow>
               ))}

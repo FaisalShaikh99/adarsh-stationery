@@ -23,7 +23,10 @@ export default function AdminSidebar({ isCollapsed, setIsCollapsed }) {
   const pathname = usePathname();
   const { data: session } = useSession();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-
+  const [isHovered, setIsHovered] = useState(false);
+ 
+  const isExpanded = !isCollapsed || isHovered;
+ 
   const handleLogout = async () => {
     try {
       setIsLoggingOut(true);
@@ -39,7 +42,7 @@ export default function AdminSidebar({ isCollapsed, setIsCollapsed }) {
       signOut({ callbackUrl: "/admin/sign-in" });
     }
   };
-
+ 
   const navLinks = [
     { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
     { name: "Team Members", href: "/admin/team-members", icon: Users, requireSuperAdmin: true },
@@ -50,11 +53,13 @@ export default function AdminSidebar({ isCollapsed, setIsCollapsed }) {
     { name: "Customer Directory", href: "/admin/customers", icon: User },
     { name: "Store Settings", href: "/admin/settings", icon: Settings },
   ];
-
+ 
   return (
     <aside 
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       className={`min-h-screen bg-zinc-950 border-r border-zinc-800 flex flex-col justify-between p-4 fixed left-0 top-0 z-40 transition-all duration-300 ease-in-out ${
-        isCollapsed ? "w-20" : "w-64"
+        isExpanded ? "w-64 shadow-[0_0_50px_rgba(0,0,0,0.5)]" : "w-20"
       }`}
     >
       <div className="space-y-8 relative">
@@ -64,34 +69,34 @@ export default function AdminSidebar({ isCollapsed, setIsCollapsed }) {
         >
           {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
         </button>
-
+ 
         <div className="flex items-center gap-3 px-2 overflow-hidden">
           <div className="h-9 w-9 shrink-0 rounded-xl bg-gradient-to-br from-blue-500 via-indigo-600 to-orange-500 flex items-center justify-center shadow-lg shadow-blue-500/10">
             <PenTool className="h-5 w-5 text-white" />
           </div>
           
-          {!isCollapsed && (
+          {isExpanded && (
             <div className="transition-all duration-200 animate-in fade-in duration-300">
               <h2 className="text-lg font-bold tracking-tight text-white leading-none">Adarsh</h2>
               <span className="text-[11px] font-semibold text-orange-400 uppercase tracking-widest">Stationery</span>
             </div>
           )}
         </div>
-
+ 
         <nav className="space-y-1.5">
           {navLinks.map((link) => {
             if (link.requireSuperAdmin && session?.user?.role !== "superadmin") {
               return null;
             }
-
+ 
             const Icon = link.icon;
             const isActive = pathname === link.href;
-
+ 
             return (
               <Link
                 key={link.href}
                 href={link.href}
-                title={isCollapsed ? link.name : ""}
+                title={!isExpanded ? link.name : ""}
                 className={`flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-medium transition-all duration-200 group relative ${
                   isActive
                     ? "bg-gradient-to-r from-blue-600/10 via-indigo-600/5 to-transparent text-blue-400 border-l-2 border-blue-500 shadow-[inset_10px_0_15px_-10px_rgba(59,130,246,0.15)]"
@@ -100,7 +105,7 @@ export default function AdminSidebar({ isCollapsed, setIsCollapsed }) {
               >
                 <Icon className={`h-4 w-4 shrink-0 transition-transform group-hover:scale-105 ${isActive ? "text-blue-400" : "text-zinc-400 group-hover:text-zinc-300"}`} />
                 
-                {!isCollapsed && (
+                {isExpanded && (
                   <span className="truncate transition-all duration-200 animate-in fade-in duration-200">
                     {link.name}
                   </span>
@@ -110,30 +115,30 @@ export default function AdminSidebar({ isCollapsed, setIsCollapsed }) {
           })}
         </nav>
       </div>
-
+ 
       <div className="border-t border-zinc-900 pt-4 space-y-4 overflow-hidden">
         <div className="flex items-center gap-3 px-2 py-1">
           {session?.user?.image ? (
             <img 
               src={session.user.image} 
               alt="Profile" 
-              className="w-9 h-9 shrink-0 rounded-full border border-zinc-800"
+              className="w-9 h-9 shrink-0 rounded-full border border-zinc-800 aspect-square object-cover"
               referrerPolicy="no-referrer"
             />
           ) : (
-            <div className="w-9 h-9 shrink-0 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-sm font-bold uppercase text-white">
+            <div className="w-9 h-9 shrink-0 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-sm font-bold uppercase text-white aspect-square object-cover">
               {session?.user?.name ? session.user.name[0] : "A"}
             </div>
           )}
           
-          {!isCollapsed && (
+          {isExpanded && (
             <div className="truncate max-w-[140px] animate-in fade-in duration-200">
               <p className="text-sm font-semibold text-zinc-200 truncate">{session?.user?.name || "Admin"}</p>
               <p className="text-[11px] text-zinc-500 uppercase tracking-wider font-medium">{session?.user?.role || "Staff"}</p>
             </div>
           )}
         </div>
-
+ 
         <button
           onClick={handleLogout} 
           disabled={isLoggingOut}
@@ -144,7 +149,7 @@ export default function AdminSidebar({ isCollapsed, setIsCollapsed }) {
           ) : (
             <LogOut className="h-4 w-4 shrink-0 text-rose-400 transition-transform group-hover:-translate-x-0.5" />
           )}
-          {!isCollapsed && (
+          {isExpanded && (
             <span className="animate-in fade-in duration-200">
               {isLoggingOut ? "Logging out..." : "Logout Account"}
             </span>

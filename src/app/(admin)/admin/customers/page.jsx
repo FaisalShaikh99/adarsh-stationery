@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ChevronLeft, ChevronRight, Loader2, RefreshCw, Search, Eye, AlertTriangle, Check, X, ShieldAlert } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -29,6 +30,7 @@ function formatCurrency(amount) {
 }
 
 export default function CustomersPage() {
+  const router = useRouter();
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
@@ -48,6 +50,12 @@ export default function CustomersPage() {
     queryFn: async () => (await axios.get("/api/admin/customers/stats")).data.data,
   });
 
+  const { data: spellingTargets } = useQuery({
+    queryKey: ["customer-spelling-targets"],
+    queryFn: async () => (await axios.get("/api/admin/customers?all=true")).data.data?.customers || [],
+    staleTime: 60 * 1000,
+  });
+
   // Mutations
   const toggleStatusMutation = useMutation({
     mutationFn: (id) => axios.patch(`/api/admin/customers/${id}/status`),
@@ -55,6 +63,7 @@ export default function CustomersPage() {
       toast.success(response.data.message || "Customer status updated.");
       queryClient.invalidateQueries({ queryKey: ["customers"] });
       queryClient.invalidateQueries({ queryKey: ["customer-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["customer-spelling-targets"] });
     },
     onError: (error) => toast.error(error.response?.data?.message || "Unable to update customer status."),
   });
@@ -70,7 +79,7 @@ export default function CustomersPage() {
 
   // Client-side fuzzy spelling suggestion helper
   const { suggestion: spellingSuggestion } = useFuzzySearch(
-    customersResponse?.customers || [],
+    spellingTargets || [],
     search,
     ["name", "phone", "email"]
   );
@@ -186,24 +195,27 @@ export default function CustomersPage() {
                 <TableHead className="font-semibold text-zinc-400">Total Spent</TableHead>
                 <TableHead className="font-semibold text-zinc-400">Tags</TableHead>
                 <TableHead className="font-semibold text-zinc-400">Status</TableHead>
-                <TableHead className="font-semibold text-zinc-400 text-center">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="h-48 text-center text-zinc-450">
+                  <TableCell colSpan={7} className="h-48 text-center text-zinc-450">
                     <Loader2 className="mx-auto h-5 w-5 animate-spin text-zinc-500" />
                   </TableCell>
                 </TableRow>
               ) : customers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="h-48 text-center text-sm text-zinc-500">
+                  <TableCell colSpan={7} className="h-48 text-center text-sm text-zinc-500">
                     No customers match these filters.
                   </TableCell>
                 </TableRow>
               ) : customers.map((customer) => (
-                <TableRow key={customer._id} className="border-b border-zinc-800/60 hover:bg-zinc-900/20 transition-colors">
+                <TableRow 
+                  key={customer._id} 
+                  onClick={() => router.push(`/admin/customers/${customer._id}`)}
+                  className="border-b border-zinc-800/60 hover:bg-zinc-900/20 transition-colors cursor-pointer"
+                >
                   <TableCell className="py-4 font-semibold text-zinc-200">
                     {customer.name}
                   </TableCell>
@@ -232,7 +244,7 @@ export default function CustomersPage() {
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="py-4">
+                  <TableCell className="py-4" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center">
                       <Switch
                         checked={customer.status === "Active"}
@@ -242,13 +254,6 @@ export default function CustomersPage() {
                         aria-label="Toggle status"
                       />
                     </div>
-                  </TableCell>
-                  <TableCell className="py-4 text-center">
-                    <Link href={`/admin/customers/${customer._id}`} passHref>
-                      <Button variant="ghost" className="p-1 h-auto text-zinc-450 hover:text-white hover:bg-transparent transition-colors" title="View Customer Details">
-                        <Eye className="w-4.5 h-4.5" />
-                      </Button>
-                    </Link>
                   </TableCell>
                 </TableRow>
               ))}

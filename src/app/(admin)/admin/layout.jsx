@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import AdminSidebar from "@/components/ui/AdminSidebar";
 
 export default function AdminLayout({ children }) {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true);
   const pathname = usePathname(); // 👈 Current URL path nikaala
 
   const isLoginPage = pathname === "/admin/sign-in";

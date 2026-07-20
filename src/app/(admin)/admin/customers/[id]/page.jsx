@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import axios from "axios";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -111,6 +111,7 @@ function CustomerDetailSkeleton() {
 
 export default function CustomerDetailPage() {
   const { id } = useParams();
+  const router = useRouter();
   const queryClient = useQueryClient();
   const [blockDialogOpen, setBlockDialogOpen] = useState(false);
   const [isEditingContact, setIsEditingContact] = useState(false);
@@ -440,19 +441,22 @@ export default function CustomerDetailPage() {
                     <TableHead className="font-semibold text-zinc-400">Amount</TableHead>
                     <TableHead className="font-semibold text-zinc-400">Payment</TableHead>
                     <TableHead className="font-semibold text-zinc-400">Status</TableHead>
-                    <TableHead className="font-semibold text-zinc-400 text-center">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {orders.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="h-32 text-center text-sm text-zinc-500">
+                      <TableCell colSpan={6} className="h-32 text-center text-sm text-zinc-500">
                         No orders recorded for this customer yet.
                       </TableCell>
                     </TableRow>
                   ) : (
                     orders.map((order) => (
-                      <TableRow key={order._id} className="border-b border-zinc-800/60 hover:bg-zinc-900/20 transition-colors">
+                      <TableRow 
+                        key={order._id} 
+                        onClick={() => router.push(`/admin/orders/${order._id}`)}
+                        className="border-b border-zinc-800/60 hover:bg-zinc-900/20 transition-colors cursor-pointer"
+                      >
                         <TableCell className="py-4 font-bold text-xs sm:text-sm text-zinc-100 font-mono">
                           {order.orderNumber}
                         </TableCell>
@@ -471,16 +475,9 @@ export default function CustomerDetailPage() {
                           </span>
                         </TableCell>
                         <TableCell className="py-4 text-xs">
-                          <span className={`px-2 py-0.5 rounded-full border text-[10px] font-bold ${orderStatusClasses[order.status] || "bg-zinc-800 text-zinc-450 border-zinc-700"}`}>
+                          <span className={`px-2 py-0.5 rounded-full border text-[10px] font-bold ${orderStatusClasses[order.status] || "bg-zinc-850 text-zinc-450 border-zinc-700"}`}>
                             {order.status}
                           </span>
-                        </TableCell>
-                        <TableCell className="py-4 text-center">
-                          <Link href={`/admin/orders/${order._id}`} passHref>
-                            <Button variant="ghost" className="p-1 h-auto text-zinc-450 hover:text-white hover:bg-transparent transition-colors" title="View Order Details">
-                              <Eye className="w-4 h-4" />
-                            </Button>
-                          </Link>
                         </TableCell>
                       </TableRow>
                     ))

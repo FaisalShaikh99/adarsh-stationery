@@ -16,6 +16,15 @@ export const GET = asyncHandler(async (request) => {
   }
 
   const { searchParams } = new URL(request.url);
+  const all = searchParams.get("all") === "true";
+
+  if (all) {
+    const customers = await Customer.find({}, "name phone email").lean();
+    return NextResponse.json(
+      new ApiResponse(200, { customers }, "All customer names fetched successfully.")
+    );
+  }
+
   const page = Math.max(Number.parseInt(searchParams.get("page") || "1", 10), 1);
   const limit = Math.min(Math.max(Number.parseInt(searchParams.get("limit") || "10", 10), 1), 100);
   const status = searchParams.get("status");
