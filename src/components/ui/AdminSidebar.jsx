@@ -15,10 +15,11 @@ import {
   ChevronRight,
   Loader2,
   LayoutGrid,
-  User
+  User,
+  CreditCard
 } from "lucide-react";
 import { useState } from "react";
-
+ 
 export default function AdminSidebar({ isCollapsed, setIsCollapsed }) {
   const pathname = usePathname();
   const { data: session } = useSession();
@@ -50,6 +51,7 @@ export default function AdminSidebar({ isCollapsed, setIsCollapsed }) {
     { name: "Products & Stock", href: "/admin/products", icon: ShoppingBag },
     { name: "Brands & Manufactors", href: "/admin/brands", icon: ShoppingBag },
     { name: "Invoices / Orders", href: "/admin/orders", icon: FileText },
+    { name: "Payments Control", href: "/admin/payments", icon: CreditCard },
     { name: "Customer Directory", href: "/admin/customers", icon: User },
     { name: "Store Settings", href: "/admin/settings", icon: Settings },
   ];

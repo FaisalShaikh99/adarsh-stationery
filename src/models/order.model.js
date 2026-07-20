@@ -58,6 +58,11 @@ const orderSchema = new mongoose.Schema(
     },
     paymentId: { type: String, trim: true },
     razorpayOrderId: { type: String, trim: true },
+    paymentMethod: {
+      type: String,
+      enum: ["COD", "UPI", "Card", "NetBanking"],
+      default: "UPI",
+    },
     statusHistory: { type: [statusHistorySchema], default: [] },
   },
   { timestamps: true },

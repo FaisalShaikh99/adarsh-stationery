@@ -27,6 +27,7 @@ export const createOrderSchema = z.object({
   paymentStatus: z.enum(["Pending", "Paid", "Failed"]).optional(),
   paymentId: z.string().trim().optional(),
   razorpayOrderId: z.string().trim().optional(),
+  paymentMethod: z.enum(["COD", "UPI", "Card", "NetBanking"]).optional().default("UPI"),
 });
 
 export const updateShippingAddressSchema = shippingAddressSchema;
