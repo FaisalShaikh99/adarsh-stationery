@@ -27,5 +27,43 @@ export const GET = asyncHandler(async (request, { params }) => {
     throw new ApiError(404, "Order not found.");
   }
 
-  return NextResponse.json(new ApiResponse(200, order, "Order fetched successfully."));
+  // Fetch other orders belonging to the same customer
+  let otherOrders = [];
+  if (order.customer?._id) {
+    otherOrders = await Order.find({
+      $or: [
+        { customer: order.customer._id },
+        { "shippingAddress.phone": order.shippingAddress.phone },
+        { "shippingAddress.email": order.shippingAddress.email }
+      ],
+      _id: { $ne: order._id }
+    })
+    .select("orderNumber status totalAmount createdAt")
+    .sort({ createdAt: -1 })
+    .lean();
+  } else {
+    const queryConditions = [];
+    if (order.shippingAddress?.phone) {
+      queryConditions.push({ "shippingAddress.phone": order.shippingAddress.phone });
+    }
+    if (order.shippingAddress?.email) {
+      queryConditions.push({ "shippingAddress.email": order.shippingAddress.email });
+    }
+    if (queryConditions.length > 0) {
+      otherOrders = await Order.find({
+        $or: queryConditions,
+        _id: { $ne: order._id }
+      })
+      .select("orderNumber status totalAmount createdAt")
+      .sort({ createdAt: -1 })
+      .lean();
+    }
+  }
+
+  const orderData = {
+    ...order,
+    otherOrders
+  };
+
+  return NextResponse.json(new ApiResponse(200, orderData, "Order fetched successfully."));
 });

@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const shippingAddressSchema = z.object({
   name: z.string().trim().min(1, "Name is required"),
+  email: z.string().trim().email("Invalid email address").optional().or(z.literal("")),
   phone: z.string().trim().min(1, "Phone number is required"),
   addressLine1: z.string().trim().min(1, "Address is required"),
   addressLine2: z.string().trim().optional().default(""),

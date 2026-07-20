@@ -58,14 +58,24 @@ export const GET = asyncHandler(async (request, { params }) => {
 
   const eligibleCustomerIds = results.map((r) => r._id);
 
+  const customerCountMap = results.reduce((acc, curr) => {
+    acc[curr._id.toString()] = curr.qualifyingOrdersCount;
+    return acc;
+  }, {});
+
   // 4. Query Customer details for these IDs who have non-empty email addresses
   const eligibleCustomers = await Customer.find({
     _id: { $in: eligibleCustomerIds },
     email: { $exists: true, $ne: "", $regex: /\S+/ },
     status: "Active", // only active customers should receive emails
-  }).select("name email phone status");
+  }).select("name email phone status").lean();
+
+  const responseData = eligibleCustomers.map(customer => ({
+    ...customer,
+    qualifyingOrdersCount: customerCountMap[customer._id.toString()] || 0
+  }));
 
   return NextResponse.json(
-    new ApiResponse(200, eligibleCustomers, "Eligible customers fetched successfully.")
+    new ApiResponse(200, responseData, "Eligible customers fetched successfully.")
   );
 });

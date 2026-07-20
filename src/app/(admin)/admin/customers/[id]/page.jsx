@@ -22,7 +22,8 @@ import {
   Eye,
   RefreshCw,
   Sparkles,
-  ShieldAlert
+  ShieldAlert,
+  Pencil
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -37,6 +38,10 @@ import {
   AlertDialogHeader, 
   AlertDialogTitle 
 } from "@/components/ui/alert-dialog";
+
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { customerContactSchema } from "@/schemas/customer.schema";
 
 const statusClasses = {
   Active: "bg-emerald-500/10 text-emerald-300 border border-emerald-500/25",
@@ -108,6 +113,7 @@ export default function CustomerDetailPage() {
   const { id } = useParams();
   const queryClient = useQueryClient();
   const [blockDialogOpen, setBlockDialogOpen] = useState(false);
+  const [isEditingContact, setIsEditingContact] = useState(false);
 
   // Queries
   const { data: customer, isLoading, error } = useQuery({
@@ -133,6 +139,35 @@ export default function CustomerDetailPage() {
     enabled: !!id && customer?.orderCount > 0,
     retry: 1,
   });
+
+  const { register, handleSubmit: handleFormSubmit, reset, formState: { errors } } = useForm({
+    resolver: zodResolver(customerContactSchema),
+    mode: "onBlur",
+    values: customer ? {
+      email: customer.email || "",
+      phone: customer.phone || "",
+    } : {
+      email: "",
+      phone: "",
+    }
+  });
+
+  const updateContactMutation = useMutation({
+    mutationFn: (data) => axios.patch(`/api/admin/customers/${id}/contact`, data),
+    onSuccess: (response) => {
+      toast.success(response.data?.message || "Customer contact details updated.");
+      setIsEditingContact(false);
+      queryClient.invalidateQueries({ queryKey: ["customer", id] });
+      queryClient.invalidateQueries({ queryKey: ["customers"] });
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || "Unable to update customer contact details.");
+    },
+  });
+
+  const onSubmitContact = (data) => {
+    updateContactMutation.mutate(data);
+  };
 
   // Mutations
   const toggleStatusMutation = useMutation({
@@ -229,18 +264,97 @@ export default function CustomerDetailPage() {
               <User className="w-4 h-4 text-zinc-500" /> Customer Information
             </h2>
             <div className="grid gap-4 sm:grid-cols-2 text-xs border-t border-zinc-800/60 pt-4">
-              <div>
-                <p className="text-zinc-500 font-bold uppercase tracking-wider">Contact Email</p>
-                <p className="mt-1 font-semibold text-zinc-200 text-sm flex items-center gap-1.5">
-                  <Mail className="w-3.5 h-3.5 text-zinc-500" /> {customer.email || "—"}
-                </p>
-              </div>
-              <div>
-                <p className="text-zinc-500 font-bold uppercase tracking-wider">Phone Number</p>
-                <p className="mt-1 font-semibold text-zinc-200 text-sm flex items-center gap-1.5 font-mono">
-                  <Phone className="w-3.5 h-3.5 text-zinc-500" /> {customer.phone}
-                </p>
-              </div>
+              {isEditingContact ? (
+                <form onSubmit={handleFormSubmit(onSubmitContact)} className="sm:col-span-2 grid gap-4 sm:grid-cols-2 w-full">
+                  <div className="space-y-1.5">
+                    <label htmlFor="contact-email" className="text-zinc-500 font-bold uppercase tracking-wider block">Contact Email</label>
+                    <div className="flex items-center gap-2 bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-1.5 transition-all focus-within:border-zinc-500 focus-within:ring-1 focus-within:ring-zinc-500">
+                      <Mail className="w-4 h-4 text-zinc-500 shrink-0" />
+                      <input
+                        id="contact-email"
+                        type="text"
+                        {...register("email")}
+                        className="bg-transparent border-none text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-sm w-full p-0"
+                        placeholder="email@example.com"
+                      />
+                    </div>
+                    {errors.email && <p className="text-xs text-rose-500 mt-1">{errors.email.message}</p>}
+                  </div>
+                  <div className="space-y-1.5">
+                    <label htmlFor="contact-phone" className="text-zinc-500 font-bold uppercase tracking-wider block">Phone Number</label>
+                    <div className="flex items-center gap-2 bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-1.5 transition-all focus-within:border-zinc-500 focus-within:ring-1 focus-within:ring-zinc-500">
+                      <Phone className="w-4 h-4 text-zinc-500 shrink-0" />
+                      <input
+                        id="contact-phone"
+                        type="text"
+                        {...register("phone")}
+                        className="bg-transparent border-none text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-sm w-full font-mono p-0"
+                        placeholder="10 digit phone number"
+                      />
+                    </div>
+                    {errors.phone && <p className="text-xs text-rose-500 mt-1">{errors.phone.message}</p>}
+                  </div>
+                  <div className="sm:col-span-2 flex items-center gap-2 justify-end">
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        setIsEditingContact(false);
+                        reset();
+                      }}
+                      variant="outline"
+                      className="border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded-xl px-3 py-1.5 text-xs font-semibold h-8"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={updateContactMutation.isPending}
+                      className="bg-white text-black font-semibold hover:bg-zinc-250 rounded-xl px-3 py-1.5 text-xs h-8 flex items-center gap-1"
+                    >
+                      {updateContactMutation.isPending && (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      )}
+                      Save
+                    </Button>
+                  </div>
+                </form>
+              ) : (
+                <>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="text-zinc-500 font-bold uppercase tracking-wider">Contact Email</p>
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingContact(true)}
+                        className="text-zinc-400 hover:text-white transition-colors p-1"
+                        title="Edit contact info"
+                      >
+                        <Pencil className="w-3 h-3" />
+                      </button>
+                    </div>
+                    <p className="mt-1 font-semibold text-zinc-200 text-sm flex items-center gap-1.5">
+                      <Mail className="w-3.5 h-3.5 text-zinc-500" /> {customer.email || "—"}
+                    </p>
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="text-zinc-500 font-bold uppercase tracking-wider">Phone Number</p>
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingContact(true)}
+                        className="text-zinc-400 hover:text-white transition-colors p-1"
+                        title="Edit contact info"
+                      >
+                        <Pencil className="w-3 h-3" />
+                      </button>
+                    </div>
+                    <p className="mt-1 font-semibold text-zinc-200 text-sm flex items-center gap-1.5 font-mono">
+                      <Phone className="w-3.5 h-3.5 text-zinc-500" /> {customer.phone}
+                    </p>
+                  </div>
+                </>
+              )}
+
               <div className="sm:col-span-2">
                 <p className="text-zinc-500 font-bold uppercase tracking-wider">Latest Address Registered</p>
                 <div className="mt-1 text-zinc-200 flex items-start gap-1.5 leading-relaxed text-sm">

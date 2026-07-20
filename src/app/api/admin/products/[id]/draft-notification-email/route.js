@@ -49,10 +49,11 @@ export const POST = asyncHandler(async (request, { params }) => {
     - Do not wrap the JSON object in markdown code block markers (like \`\`\`json). Return it as plain text.
     - Write in a professional, concise, engaging e-commerce marketing tone.
     - Use natural-looking newlines ("\\n") in the body copy.
-    - Do not include personalizations like customer names in the static subject/body (those will be merged on the fly).
+    - Start the email body copy EXACTLY with the literal greeting "Hello [Customer Name]," (you MUST use the exact placeholder "[Customer Name]" in brackets; do NOT replace it with a real name or any other text under any circumstance).
+    - Do not include any other personalizations like specific names in the static subject/body (those will be merged on the fly).
     
     Example response structure:
-    {"subject": "New Category Launch: Product Name!", "body": "We are excited to share..."}`;
+    {"subject": "New Category Launch: Product Name!", "body": "Hello [Customer Name],\\n\\nWe are excited to share..."}`;
 
     const response = await ai.models.generateContent({
       model: "gemini-3.5-flash",
@@ -82,7 +83,7 @@ export const POST = asyncHandler(async (request, { params }) => {
     const discountText = discount > 0 ? ` with a special launch discount of ${discount}% off` : "";
     const fallbackDraft = {
       subject: `New Arrival: Discover the ${product.name}!`,
-      body: `We are thrilled to introduce the all-new ${product.name} by ${brandName} to our collection! As a valued shopper of our ${categoryName} range, we wanted you to be the first to know.\n\nExplore our latest addition today${discountText} and upgrade your stationery collection!\n\nBest regards,\nAdarsh Stationery Team`
+      body: `Hello [Customer Name],\n\nWe are thrilled to introduce the all-new ${product.name} by ${brandName} to our collection! As a valued shopper of our ${categoryName} range, we wanted you to be the first to know.\n\nExplore our latest addition today${discountText} and upgrade your stationery collection!\n\nBest regards,\nAdarsh Stationery Team`
     };
 
     return NextResponse.json(

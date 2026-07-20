@@ -56,13 +56,6 @@ export default function NewProductNotification({
             </Text>
           </Section>
 
-          {/* Customer Greeting */}
-          <Row>
-            <Heading as="h3" style={{ fontSize: "16px", margin: "0 0 16px 0", color: "#111827" }}>
-              Hello {customerName || "Valued Customer"},
-            </Heading>
-          </Row>
-
           {/* AI-Drafted Notification Body */}
           <Row>
             <Text style={{ fontSize: "14px", color: "#374151", lineHeight: "1.6", margin: "0 0 24px 0", whiteSpace: "pre-line" }}>

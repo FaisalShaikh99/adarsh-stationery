@@ -2,8 +2,8 @@ import mongoose from "mongoose";
 import { matchOrCreateCustomer } from "../src/lib/matchOrCreateCustomer.js";
 
 const SEED_MARKER = /^seed-order-/;
-const ORDER_STATUSES = ["Pending", "Confirmed", "Shipped", "Delivered", "Cancelled", "Pending", "Confirmed", "Shipped"];
-const PAYMENT_STATUSES = ["Paid", "Paid", "Pending", "Paid", "Failed", "Pending", "Paid", "Paid"];
+const ORDER_STATUSES = ["Pending", "Confirmed", "Shipped", "Delivered", "Cancelled", "Pending", "Confirmed", "Shipped", "Delivered", "Delivered"];
+const PAYMENT_STATUSES = ["Paid", "Paid", "Pending", "Paid", "Failed", "Pending", "Paid", "Paid", "Paid", "Paid"];
 
 const ADDRESSES = [
   // Aarav Sharma - repeat customer with 3 orders
@@ -17,8 +17,12 @@ const ADDRESSES = [
   
   // Other customers
   { name: "Ananya Iyer", phone: "9845012345", addressLine1: "18 5th Cross", addressLine2: "Indiranagar", city: "Bengaluru", state: "Karnataka", pincode: "560038" },
-  { name: "Rohan Mehta", phone: "9820123456", addressLine1: "B-14 Link Road", addressLine2: "Andheri West", city: "Mumbai", state: "Maharashtra", pincode: "400053" },
+  { name: "Rohan Mehta", email: "rohan.mehta@example.com", phone: "9820123456", addressLine1: "B-14 Link Road", addressLine2: "Andheri West", city: "Mumbai", state: "Maharashtra", pincode: "400053" },
   { name: "Kavya Nair", phone: "9895123456", addressLine1: "22 Marine Drive", addressLine2: "Fort Kochi", city: "Kochi", state: "Kerala", pincode: "682001" },
+
+  // Rohan Mehta's repeat orders
+  { name: "Rohan Mehta", email: "rohan.mehta@example.com", phone: "9820123456", addressLine1: "B-14 Link Road", addressLine2: "Andheri West", city: "Mumbai", state: "Maharashtra", pincode: "400053" },
+  { name: "Rohan Mehta", email: "rohan.mehta@example.com", phone: "9820123456", addressLine1: "B-14 Link Road", addressLine2: "Andheri West", city: "Mumbai", state: "Maharashtra", pincode: "400053" },
 ];
 
 function loadEnvironment() {
@@ -60,11 +64,15 @@ async function seedOrders() {
   await mongoose.connect(process.env.MONGODB_URI, { bufferCommands: false });
 
   const db = mongoose.connection.db;
-  const existingSeedCount = await db.collection("orders").countDocuments({ razorpayOrderId: SEED_MARKER });
-  if (existingSeedCount > 0) {
-    console.log(`Seed orders already exist (${existingSeedCount}); no duplicate test data was inserted.`);
-    return;
-  }
+
+  // Always reset existing seed orders to prevent duplication and allow clean re-runs
+  console.log("Resetting seed orders...");
+  await db.collection("orders").deleteMany({ razorpayOrderId: SEED_MARKER });
+
+  // Clear existing customer profiles matching seed phone numbers to keep seeding clean
+  const seedPhones = ADDRESSES.map((addr) => addr.phone);
+  console.log("Resetting seed customers...");
+  await db.collection("customers").deleteMany({ phone: { $in: seedPhones } });
 
   const products = await db.collection("products").find({}, { projection: { name: 1, sellingPrice: 1 } }).toArray();
   if (products.length === 0) {
@@ -86,10 +94,6 @@ async function seedOrders() {
   const startingSequence = latestOrder ? Number(latestOrder.orderNumber.split("-").pop()) + 1 : 1;
   const now = new Date();
 
-  // Clear existing customer profiles matching seed phone numbers to keep seeding clean
-  const seedPhones = ADDRESSES.map((addr) => addr.phone);
-  await db.collection("customers").deleteMany({ phone: { $in: seedPhones } });
-
   const orders = ORDER_STATUSES.map((status, index) => {
     const productCount = 1 + (index % Math.min(3, products.length));
     const items = Array.from({ length: productCount }, (_, productOffset) => {
@@ -109,6 +113,22 @@ async function seedOrders() {
         subtotal: pricePerUnit * quantity,
       };
     });
+
+    // Ensure Rohan Mehta has a product from the first category in all his orders
+    if (ADDRESSES[index].name === "Rohan Mehta") {
+      const targetProduct = products[0];
+      const price = Number(targetProduct.sellingPrice);
+      const exists = items.some(item => String(item.product) === String(targetProduct._id));
+      if (!exists) {
+        items.push({
+          product: targetProduct._id,
+          productName: targetProduct.name,
+          quantity: 1,
+          pricePerUnit: price,
+          subtotal: price,
+        });
+      }
+    }
     
     // Spread dates so they are chronologically separated
     const createdAt = new Date(now.getTime() - (index * 4 + 1) * 24 * 60 * 60 * 1000);

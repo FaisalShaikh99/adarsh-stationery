@@ -34,9 +34,6 @@ export default function CustomersPage() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [tag, setTag] = useState("");
-  const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
-  const [isBannerDismissed, setIsBannerDismissed] = useState(false);
-  const [ignoredPrimaryIds, setIgnoredPrimaryIds] = useState(new Set());
 
   // Queries
   const queryParams = useMemo(() => ({ page, limit: 10, search, status, tag }), [page, search, status, tag]);
@@ -51,11 +48,6 @@ export default function CustomersPage() {
     queryFn: async () => (await axios.get("/api/admin/customers/stats")).data.data,
   });
 
-  const { data: duplicatesResponse } = useQuery({
-    queryKey: ["customer-duplicates"],
-    queryFn: async () => (await axios.get("/api/admin/customers/duplicates")).data.data,
-  });
-
   // Mutations
   const toggleStatusMutation = useMutation({
     mutationFn: (id) => axios.patch(`/api/admin/customers/${id}/status`),
@@ -67,26 +59,9 @@ export default function CustomersPage() {
     onError: (error) => toast.error(error.response?.data?.message || "Unable to update customer status."),
   });
 
-  const mergeMutation = useMutation({
-    mutationFn: ({ primaryId, duplicateIds }) => axios.post("/api/admin/customers/merge", { primaryId, duplicateIds }),
-    onSuccess: (response) => {
-      toast.success(response.data.message || "Customers merged successfully.");
-      queryClient.invalidateQueries({ queryKey: ["customers"] });
-      queryClient.invalidateQueries({ queryKey: ["customer-stats"] });
-      queryClient.invalidateQueries({ queryKey: ["customer-duplicates"] });
-    },
-    onError: (error) => toast.error(error.response?.data?.message || "Unable to merge customer profiles."),
-  });
-
   const customers = customersResponse?.customers || [];
   const pagination = customersResponse?.pagination || { page: 1, totalPages: 1, total: 0 };
   const stats = statsResponse || { totalCustomers: 0, vipCount: 0, newCount: 0, atRiskCount: 0 };
-  
-  // Filter active duplicate groups that have not been ignored in the local UI
-  const activeDuplicateGroups = useMemo(() => {
-    if (!duplicatesResponse) return [];
-    return duplicatesResponse.filter(group => !ignoredPrimaryIds.has(group.primary._id));
-  }, [duplicatesResponse, ignoredPrimaryIds]);
 
   const resetPage = (setter) => (event) => {
     setter(event.target.value);
@@ -120,42 +95,7 @@ export default function CustomersPage() {
         </Button>
       </div>
 
-      {/* 2. DUPLICATES ALERT BANNER */}
-      {activeDuplicateGroups.length > 0 && !isBannerDismissed && (
-        <div className="flex items-center justify-between gap-4 bg-amber-500/10 border border-amber-500/25 p-4 rounded-2xl animate-fade-in shadow-lg">
-          <div className="flex items-center gap-3">
-            <div className="bg-amber-500/20 p-2 rounded-xl text-amber-300">
-              <ShieldAlert className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-sm font-bold text-zinc-100">
-                {activeDuplicateGroups.length} possible duplicate customer profiles detected
-              </p>
-              <p className="text-xs text-zinc-400 mt-0.5">
-                Profiles with similar names and matching cities or pin codes have been flagged.
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              onClick={() => setIsDuplicateModalOpen(true)}
-              className="bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs rounded-xl px-4 py-2 h-auto"
-            >
-              Review duplicates
-            </Button>
-            <Button
-              size="icon"
-              variant="ghost"
-              onClick={() => setIsBannerDismissed(true)}
-              className="text-zinc-500 hover:text-zinc-300 hover:bg-transparent h-8 w-8"
-              title="Dismiss warning"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      )}
+
 
       {/* 3. STATS CARDS GRID */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -344,140 +284,6 @@ export default function CustomersPage() {
           </div>
         </div>
       </div>
-
-      {/* 7. DUPLICATE REVIEW DIALOG MODAL */}
-      <Dialog open={isDuplicateModalOpen} onOpenChange={setIsDuplicateModalOpen}>
-        <DialogContent className="max-w-[92vw] w-full sm:max-w-4xl bg-zinc-950 border border-zinc-800 text-white rounded-[32px] overflow-hidden shadow-2xl p-6">
-          <DialogHeader className="border-b border-zinc-900 pb-4">
-            <DialogTitle className="text-lg font-bold flex items-center gap-2">
-              <ShieldAlert className="h-5 w-5 text-amber-400" />
-              Review Possible Duplicates
-            </DialogTitle>
-            <DialogDescription className="text-zinc-400 text-xs">
-              Mergable customer accounts with matching locations and spelling similarities. Primary accounts absorb order counts, spends, and historical dates before candidate removal.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="max-h-[60vh] overflow-y-auto py-4 space-y-6 custom-scrollbar pr-1">
-            {activeDuplicateGroups.length === 0 ? (
-              <div className="text-center py-8 text-zinc-500">
-                <Check className="h-8 w-8 text-emerald-400 mx-auto mb-2" />
-                <p className="font-semibold text-sm">All duplication alerts resolved!</p>
-              </div>
-            ) : (
-              activeDuplicateGroups.map((group) => (
-                <div key={group.primary._id} className="border border-zinc-800/80 rounded-2xl bg-zinc-900/10 p-5 space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Primary column card */}
-                    <div className="border border-blue-500/25 bg-blue-500/5 p-4 rounded-xl relative space-y-2.5">
-                      <span className="absolute top-3 right-3 bg-blue-500/20 text-blue-400 border border-blue-500/30 text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider font-mono">
-                        Primary Suggestion
-                      </span>
-                      <p className="text-xs text-zinc-500 font-bold uppercase tracking-wider">Name</p>
-                      <p className="text-base font-bold text-zinc-100">{group.primary.name}</p>
-                      
-                      <div className="grid grid-cols-2 gap-2 pt-2 border-t border-zinc-800/60 text-xs">
-                        <div>
-                          <p className="text-zinc-500 font-medium">Phone</p>
-                          <p className="font-semibold font-mono text-zinc-350">{group.primary.phone}</p>
-                        </div>
-                        <div>
-                          <p className="text-zinc-500 font-medium">Location</p>
-                          <p className="font-semibold text-zinc-350 truncate">{group.primary.city || "—"} ({group.primary.pincode || "—"})</p>
-                        </div>
-                        <div className="mt-1">
-                          <p className="text-zinc-500 font-medium">Order Count</p>
-                          <p className="font-bold text-zinc-200">{group.primary.orderCount}</p>
-                        </div>
-                        <div className="mt-1">
-                          <p className="text-zinc-500 font-medium">Total Spent</p>
-                          <p className="font-bold text-zinc-200">{formatCurrency(group.primary.totalSpent)}</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Candidate(s) column card */}
-                    <div className="space-y-3">
-                      {group.candidates.map((candidate) => (
-                        <div key={candidate._id} className="border border-zinc-800 bg-zinc-900/40 p-4 rounded-xl space-y-2.5 relative">
-                          <span className="absolute top-3 right-3 bg-zinc-800 text-zinc-400 border border-zinc-700/60 text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider font-mono">
-                            Candidate
-                          </span>
-                          <p className="text-xs text-zinc-500 font-bold uppercase tracking-wider">Name</p>
-                          <p className="text-base font-bold text-zinc-200">{candidate.name}</p>
-                          
-                          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-zinc-800/60 text-xs">
-                            <div>
-                              <p className="text-zinc-500 font-medium">Phone</p>
-                              <p className="font-semibold font-mono text-zinc-350">{candidate.phone}</p>
-                            </div>
-                            <div>
-                              <p className="text-zinc-500 font-medium">Location</p>
-                              <p className="font-semibold text-zinc-350 truncate">{candidate.city || "—"} ({candidate.pincode || "—"})</p>
-                            </div>
-                            <div className="mt-1">
-                              <p className="text-zinc-500 font-medium">Order Count</p>
-                              <p className="font-semibold text-zinc-300">{candidate.orderCount}</p>
-                            </div>
-                            <div className="mt-1">
-                              <p className="text-zinc-500 font-medium">Total Spent</p>
-                              <p className="font-semibold text-zinc-300">{formatCurrency(candidate.totalSpent)}</p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Actions row for this specific duplicate group */}
-                  <div className="flex flex-wrap items-center justify-end gap-3 border-t border-zinc-900 pt-4 mt-2">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => {
-                        setIgnoredPrimaryIds(prev => {
-                          const next = new Set(prev);
-                          next.add(group.primary._id);
-                          return next;
-                        });
-                        toast.info(`Duplicate alert ignored for "${group.primary.name}".`);
-                      }}
-                      className="text-zinc-450 hover:text-zinc-300 text-xs rounded-xl hover:bg-zinc-900 px-4"
-                    >
-                      Not a duplicate, ignore
-                    </Button>
-                    <Button
-                      size="sm"
-                      disabled={mergeMutation.isPending}
-                      onClick={() => mergeMutation.mutate({
-                        primaryId: group.primary._id,
-                        duplicateIds: group.candidates.map(c => c._id)
-                      })}
-                      className="bg-white text-black font-semibold text-xs rounded-xl hover:bg-zinc-200 px-4 flex items-center gap-1.5"
-                    >
-                      {mergeMutation.isPending ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                      ) : (
-                        <Check className="h-3 w-3 stroke-3" />
-                      )}
-                      Merge Profiles
-                    </Button>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-
-          <DialogFooter className="border-t border-zinc-900 pt-4 mt-2">
-            <Button
-              onClick={() => setIsDuplicateModalOpen(false)}
-              className="bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 text-xs font-semibold rounded-xl px-5 h-10 w-full sm:w-auto"
-            >
-              Close Panel
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
     </div>
   );

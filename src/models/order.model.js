@@ -21,6 +21,7 @@ const orderItemSchema = new mongoose.Schema(
 const shippingAddressSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
+    email: { type: String, trim: true },
     phone: { type: String, required: true, trim: true },
     addressLine1: { type: String, required: true, trim: true },
     addressLine2: { type: String, trim: true, default: "" },

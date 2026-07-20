@@ -1479,141 +1479,171 @@ export default function ProductManagementPage() {
 
       {/* 5.5 NOTIFY CUSTOMERS MODAL */}
       <Dialog open={isNotifyModalOpen} onOpenChange={setIsNotifyModalOpen}>
-        <DialogContent className="max-w-xl bg-slate-950 border border-slate-800 text-white rounded-3xl overflow-hidden shadow-2xl p-6">
-          <DialogHeader className="border-b border-slate-800 pb-4 mb-4">
-            <div className="flex items-center gap-2">
-              <Bell className="text-amber-500 w-5 h-5 animate-bounce" />
-              <DialogTitle className="text-lg font-bold tracking-wide">
+        <DialogContent className="w-[92vw] sm:max-w-md md:max-w-3xl lg:max-w-4xl bg-zinc-950 border border-zinc-800 text-white rounded-[32px] overflow-hidden shadow-2xl p-6 flex flex-col max-h-[85vh] sm:max-h-[90vh]">
+          <DialogHeader className="border-b border-zinc-800 pb-4 mb-4 shrink-0">
+            <div className="flex items-center gap-2.5">
+              <Bell className="text-amber-500 w-6 h-6 animate-bounce" />
+              <DialogTitle className="text-xl font-bold tracking-wide">
                 Notify Customers for Launch
               </DialogTitle>
             </div>
           </DialogHeader>
 
           {isEligibleLoading ? (
-            <div className="flex flex-col items-center justify-center py-12 gap-3">
+            <div className="flex flex-col items-center justify-center py-12 gap-3 my-auto shrink-0">
               <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-              <p className="text-xs text-zinc-400">Scanning order histories for eligible category buyers...</p>
+              <p className="text-sm text-zinc-400">Scanning order histories for eligible category buyers...</p>
             </div>
           ) : (
-            <div className="space-y-4 text-sm">
-              {/* Recipient summary */}
-              <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex items-center justify-between">
-                <div>
-                  <h4 className="font-bold text-zinc-200">Eligible Recipients</h4>
-                  <p className="text-[11px] text-zinc-500 mt-0.5">Ordered from same category at least 2 times.</p>
-                </div>
-                <span className={`px-3 py-1 rounded-full text-xs font-bold font-mono ${eligibleCustomers.length > 0 ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-zinc-800 text-zinc-500 border border-zinc-700"}`}>
-                  {eligibleCustomers.length} Buyers
-                </span>
-              </div>
-
-              {eligibleCustomers.length === 0 ? (
-                <div className="text-center py-8 bg-slate-900/40 border border-dashed border-slate-800 rounded-2xl space-y-2">
-                  <p className="text-xs text-rose-400 font-semibold">No eligible customers found for this category yet.</p>
-                  <p className="text-[10px] text-zinc-500">Only customers with 2+ purchases in this category and a registered email will qualify.</p>
-                </div>
-              ) : (
-                <>
-                  {/* Discount percentage input */}
-                  <div className="space-y-2">
-                    <Label className="text-xs text-zinc-450 font-bold uppercase tracking-wider">Launch Discount Percentage (Optional)</Label>
-                    <div className="flex gap-3">
-                      <div className="relative flex-1">
-                        <Input
-                          type="number"
-                          min="0"
-                          max="100"
-                          value={discountPercentage}
-                          onChange={(e) => {
-                            let val = e.target.value;
-                            if (val !== "") {
-                              let num = Math.min(100, Math.max(0, Number(val)));
-                              setDiscountPercentage(String(num));
-                            } else {
-                              setDiscountPercentage("");
-                            }
-                          }}
-                          placeholder="e.g. 15"
-                          className="bg-slate-900 border border-slate-800 rounded-2xl h-11 pr-8 text-zinc-200 text-xs"
-                        />
-                        <Percent className="absolute right-3.5 top-3.5 w-4 h-4 text-zinc-500" />
+            <>
+              {/* Scrollable Container */}
+              <div className="flex-1 min-h-0 overflow-y-auto pr-1 custom-scrollbar space-y-4 overflow-x-hidden">
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 text-sm">
+                  {/* Left Column: Customer analytics list (span 5 on desktop) */}
+                  <div className="md:col-span-5 space-y-4">
+                    {/* Recipient summary */}
+                    <div className="w-full bg-zinc-900/40 border border-zinc-800 p-4.5 rounded-2xl flex items-center justify-between">
+                      <div>
+                        <h4 className="font-bold text-zinc-200 text-sm">Eligible Recipients</h4>
+                        <p className="text-xs text-zinc-500 mt-0.5">Purchased from same category 2+ times.</p>
                       </div>
-                      <Button
-                        type="button"
-                        onClick={handleGenerateDraft}
-                        disabled={isDraftLoading || isSendingNotifications}
-                        className="bg-blue-650 hover:bg-blue-600 text-white rounded-2xl px-4 h-11 text-xs font-bold flex items-center gap-1.5 cursor-pointer shrink-0 border border-slate-800 bg-slate-900 hover:bg-slate-800 text-zinc-300 hover:text-white"
-                      >
-                        {isDraftLoading ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        ) : (
-                          <Sparkles className="w-3.5 h-3.5" />
-                        )}
-                        Generate AI Draft
-                      </Button>
+                      <span className={`px-4 py-1.5 rounded-full text-xs sm:text-sm font-bold font-mono ${eligibleCustomers.length > 0 ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-zinc-800 text-zinc-500 border border-zinc-700"}`}>
+                        {eligibleCustomers.length} Buyers
+                      </span>
                     </div>
+
+                    {eligibleCustomers.length > 0 ? (
+                      <div className="w-full border border-zinc-800 bg-zinc-900/10 p-4.5 rounded-2xl space-y-3">
+                        <p className="text-xs text-zinc-500 font-bold uppercase tracking-wider">Eligible Customer List</p>
+                        <div className="max-h-36 md:max-h-80 overflow-y-auto space-y-2.5 pr-1 custom-scrollbar">
+                          {eligibleCustomers.map((customer) => (
+                            <div key={customer._id} className="flex justify-between items-center p-3 rounded-xl bg-zinc-950 border border-zinc-800/40">
+                              <div className="space-y-0.5 min-w-0">
+                                <p className="font-bold text-zinc-200 text-sm truncate capitalize">{customer.name}</p>
+                                <p className="text-xs text-zinc-500 font-mono truncate">{customer.email}</p>
+                              </div>
+                              <span className="text-xs bg-blue-500/10 text-blue-400 border border-blue-500/20 px-3 py-1 rounded-full font-bold font-mono shrink-0">
+                                {customer.qualifyingOrdersCount} Orders
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 bg-zinc-900/20 border border-dashed border-zinc-800 rounded-2xl space-y-2">
+                        <p className="text-sm text-rose-455 font-semibold">No eligible customers found for this category yet.</p>
+                        <p className="text-xs text-zinc-550">Only customers with 2+ purchases in this category and a registered email will qualify.</p>
+                      </div>
+                    )}
                   </div>
 
-                  {/* AI Editor fields */}
-                  {emailSubject !== "" && (
-                    <div className="space-y-3 pt-2 border-t border-slate-850 border-slate-800 animate-in fade-in duration-300">
-                      <div className="space-y-1.5">
-                        <Label className="text-xs text-zinc-450 font-bold uppercase tracking-wider">Email Subject</Label>
-                        <Input
-                          type="text"
-                          value={emailSubject}
-                          onChange={(e) => setEmailSubject(e.target.value)}
-                          className="bg-slate-900 border border-slate-800 rounded-2xl h-11 text-zinc-200 text-xs font-semibold"
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label className="text-xs text-zinc-450 font-bold uppercase tracking-wider">Email Body Copy</Label>
-                        <Textarea
-                          value={emailBody}
-                          onChange={(e) => setEmailBody(e.target.value)}
-                          className="bg-slate-900 border border-slate-800 rounded-2xl min-h-[160px] text-zinc-200 text-xs leading-relaxed resize-none p-3.5"
-                        />
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
+                  {/* Right Column: Email composer (span 7 on desktop) */}
+                  <div className="md:col-span-7 space-y-4">
+                    {eligibleCustomers.length > 0 && (
+                      <>
+                        {/* Discount percentage input */}
+                        <div className="w-full space-y-2">
+                          <Label className="text-sm text-zinc-300 font-bold uppercase tracking-wider">Launch Discount Percentage (Optional)</Label>
+                          <div className="flex gap-3">
+                            <div className="relative flex-1">
+                              <Input
+                                type="number"
+                                min="0"
+                                max="100"
+                                value={discountPercentage}
+                                onChange={(e) => {
+                                  let val = e.target.value;
+                                  if (val !== "") {
+                                    let num = Math.min(100, Math.max(0, Number(val)));
+                                    setDiscountPercentage(String(num));
+                                  } else {
+                                    setDiscountPercentage("");
+                                  }
+                                }}
+                                placeholder="e.g. 15"
+                                className="bg-zinc-950 border border-zinc-800 rounded-xl h-12 pr-10 text-zinc-200 text-sm focus-visible:ring-1 focus-visible:ring-blue-500/20 focus-visible:border-blue-500/60 transition-all"
+                              />
+                              <Percent className="absolute right-3.5 top-3.5 w-5 h-5 text-zinc-550" />
+                            </div>
+                            <Button
+                              type="button"
+                              onClick={handleGenerateDraft}
+                              disabled={isDraftLoading || isSendingNotifications}
+                              className="bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-350 hover:text-white rounded-xl px-5 h-12 text-sm font-bold flex items-center gap-2 cursor-pointer shrink-0 transition-all"
+                            >
+                              {isDraftLoading ? (
+                                <Loader2 className="w-4.5 h-4.5 animate-spin" />
+                              ) : (
+                                <Sparkles className="w-4.5 h-4.5" />
+                              )}
+                              Generate AI Draft
+                            </Button>
+                          </div>
+                        </div>
+
+                        {/* AI Editor fields - Always visible for manual entry */}
+                        <div className="w-full space-y-3.5 pt-2.5 border-t border-zinc-800">
+                          <div className="space-y-2">
+                            <Label className="text-sm text-zinc-300 font-bold uppercase tracking-wider">Email Subject</Label>
+                            <Input
+                              type="text"
+                              value={emailSubject}
+                              onChange={(e) => setEmailSubject(e.target.value)}
+                              placeholder="e.g. Exclusive Launch: New Stationery Arrivals!"
+                              className="bg-zinc-950 border border-zinc-800 rounded-xl h-12 text-zinc-200 text-sm font-semibold focus-visible:ring-1 focus-visible:ring-blue-500/20 focus-visible:border-blue-500/60 transition-all"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-sm text-zinc-300 font-bold uppercase tracking-wider">Email Body Copy</Label>
+                            <Textarea
+                              value={emailBody}
+                              onChange={(e) => setEmailBody(e.target.value)}
+                              placeholder="Hello [Customer Name],&#10;&#10;Write your custom email announcement here, or click the 'Generate AI Draft' button above to let AI automatically compose a tailored copy..."
+                              className="bg-zinc-950 border border-zinc-800 rounded-xl min-h-[180px] md:min-h-[260px] text-zinc-200 text-sm leading-relaxed resize-none p-4 focus-visible:ring-1 focus-visible:ring-blue-500/20 focus-visible:border-blue-500/60 transition-all"
+                            />
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
 
               {/* Progress Summary */}
               {sendSummary && (
-                <div className="bg-amber-500/10 border border-amber-500/25 p-3 rounded-2xl text-center text-xs text-amber-300 font-bold">
+                <div className="bg-amber-500/10 border border-amber-500/25 p-3 rounded-2xl text-center text-xs text-amber-300 font-bold font-mono shrink-0">
                   {sendSummary}
                 </div>
               )}
 
               {/* Modal footer controls */}
-              <div className="border-t border-slate-800 pt-4 flex items-center justify-end gap-3 mt-4">
+              <div className="border-t border-zinc-800 pt-4 flex items-center justify-end gap-3 mt-4 shrink-0">
                 <Button
                   type="button"
                   variant="ghost"
                   disabled={isSendingNotifications}
                   onClick={() => setIsNotifyModalOpen(false)}
-                  className="rounded-2xl border border-slate-800 bg-slate-900 px-4 py-2 text-xs font-semibold text-slate-350 hover:bg-slate-800"
+                  className="rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-2.5 text-sm font-bold text-zinc-350 hover:bg-zinc-800 h-12 transition-all"
                 >
                   Cancel
                 </Button>
-                {eligibleCustomers.length > 0 && emailSubject !== "" && (
+                {eligibleCustomers.length > 0 && (
                   <Button
                     type="button"
                     onClick={handleSendNotifications}
-                    disabled={isSendingNotifications || isDraftLoading}
-                    className="rounded-2xl bg-emerald-600 px-5 py-2 text-xs font-semibold text-white hover:bg-emerald-700 shadow-md flex items-center gap-1.5 cursor-pointer"
+                    disabled={isSendingNotifications || isDraftLoading || !emailSubject.trim() || !emailBody.trim()}
+                    className="rounded-xl bg-emerald-600 px-6 py-2.5 text-sm font-bold text-white hover:bg-emerald-700 shadow-md flex items-center gap-2 cursor-pointer h-12 transition-all"
                   >
                     {isSendingNotifications ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <Loader2 className="w-4.5 h-4.5 animate-spin" />
                     ) : (
-                      <Send className="w-3.5 h-3.5" />
+                      <Send className="w-4.5 h-4.5" />
                     )}
                     {isSendingNotifications ? "Delivering..." : "Send Launch Notifications"}
                   </Button>
                 )}
               </div>
-            </div>
+            </>
           )}
         </DialogContent>
       </Dialog>

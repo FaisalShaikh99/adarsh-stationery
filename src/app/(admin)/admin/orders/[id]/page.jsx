@@ -16,7 +16,8 @@ import {
   MapPin, 
   CreditCard, 
   ArrowLeft, 
-  Clock 
+  Clock,
+  Mail
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -258,8 +259,14 @@ export default function OrderDetailPage() {
               </div>
               <div>
                 <p className="text-zinc-500 font-bold uppercase tracking-wider">Phone Number</p>
-                <p className="mt-1 font-semibold text-zinc-200 text-sm flex items-center gap-1.5">
+                <p className="mt-1 font-semibold text-zinc-200 text-sm flex items-center gap-1.5 font-mono">
                   <Phone className="w-3.5 h-3.5 text-zinc-500" /> {order.shippingAddress?.phone}
+                </p>
+              </div>
+              <div>
+                <p className="text-zinc-500 font-bold uppercase tracking-wider">Contact Email</p>
+                <p className="mt-1 font-semibold text-zinc-200 text-sm flex items-center gap-1.5">
+                  <Mail className="w-3.5 h-3.5 text-zinc-500" /> {order.shippingAddress?.email || "—"}
                 </p>
               </div>
               <div className="sm:col-span-2">
@@ -413,6 +420,45 @@ export default function OrderDetailPage() {
                 </div>
               ) : (
                 <p className="text-sm text-zinc-500 italic">No timeline entries available.</p>
+              )}
+            </div>
+          </div>
+          
+          {/* Other Customer Orders Card */}
+          <div className="bg-[#0c0c0e] border border-zinc-800/80 p-5 rounded-2xl shadow-sm space-y-4 animate-in fade-in duration-300">
+            <h2 className="text-sm font-bold text-white flex items-center gap-2 uppercase tracking-wider text-zinc-400">
+              <Clock className="w-4 h-4 text-zinc-550" /> Other Orders
+            </h2>
+            <div className="border-t border-zinc-800/60 pt-4">
+              {order.otherOrders && order.otherOrders.length > 0 ? (
+                <div className="space-y-3">
+                  {order.otherOrders.map((other) => (
+                    <Link 
+                      key={other._id}
+                      href={`/admin/orders/${other._id}`}
+                      className="flex items-center justify-between p-3 rounded-xl bg-zinc-900/10 border border-zinc-850 hover:border-zinc-700/80 hover:bg-zinc-900/40 transition-all cursor-pointer group"
+                    >
+                      <div className="space-y-1 min-w-0 pr-2">
+                        <p className="font-bold text-zinc-200 text-xs group-hover:text-blue-400 transition-colors truncate">
+                          {other.orderNumber}
+                        </p>
+                        <p className="text-[10px] text-zinc-500 font-mono">
+                          {formatDate(other.createdAt)}
+                        </p>
+                      </div>
+                      <div className="text-right space-y-1 shrink-0 flex flex-col items-end">
+                        <p className="font-semibold text-zinc-300 text-xs font-mono">
+                          {formatCurrency(other.totalAmount)}
+                        </p>
+                        <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold border ${statusClasses[other.status] || "bg-zinc-800 text-zinc-500 border-zinc-700"}`}>
+                          {other.status}
+                        </span>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-zinc-500 italic py-2 text-center">No other orders found for this customer.</p>
               )}
             </div>
           </div>

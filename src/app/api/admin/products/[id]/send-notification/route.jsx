@@ -42,7 +42,7 @@ export const POST = asyncHandler(async (request, { params }) => {
   const successes = [];
   const failures = [];
 
-  const apiKey = process.env.ADMIN_RESEND_API_KEY;
+  const apiKey = process.env.ADMIN_RESEND_API_KEY || process.env.ADARSH_ADMIN_API_KEY;
   const isMockSend = !apiKey || apiKey.startsWith("re_dummy");
 
   // 3. Loop through customers and send notifications
@@ -59,13 +59,28 @@ export const POST = asyncHandler(async (request, { params }) => {
         continue;
       }
 
+      // Personalize the body copy dynamically by substituting any variations of [Customer Name]
+      let personalizedBody = emailBody;
+      const namePlaceholders = [
+        /\[Customer\s*Name\]/gi,
+        /\[Customer's\s*Name\]/gi,
+        /\[Name\]/gi,
+        /\{Customer\s*Name\}/gi,
+        /\{\{Customer\s*Name\}\}/gi,
+        /\{Name\}/gi,
+        /\{\{Name\}\}/gi
+      ];
+      for (const pattern of namePlaceholders) {
+        personalizedBody = personalizedBody.replace(pattern, customer.name);
+      }
+
       if (isMockSend) {
         // Safe development simulation fallback
         console.log(`\n========================================`);
         console.log(`[MOCK EMAIL DELIVERED]`);
         console.log(`To: ${customer.name} <${customer.email}>`);
         console.log(`Subject: ${subject}`);
-        console.log(`Body (Snippet): ${emailBody.substring(0, 100)}...`);
+        console.log(`Body (Snippet): ${personalizedBody.substring(0, 100)}...`);
         console.log(`========================================\n`);
         
         successes.push({ id: customer._id, name: customer.name, email: customer.email });
@@ -79,7 +94,7 @@ export const POST = asyncHandler(async (request, { params }) => {
             <NewProductNotification
               customerName={customer.name}
               subject={subject}
-              body={emailBody}
+              body={personalizedBody}
               productName={product.name}
               productImage={product.images?.[0] || ""}
               productCategory={product.category?.name || "Stationery"}

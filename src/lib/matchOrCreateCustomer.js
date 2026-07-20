@@ -11,7 +11,7 @@ import { computeCustomerTags } from "./computeCustomerTags.js";
  * @returns {Promise<Object>} - The matched/created Customer document.
  */
 export async function matchOrCreateCustomer(shippingAddress, totalAmount, orderDate = new Date()) {
-  const { name, phone, addressLine1, addressLine2, city, state, pincode } = shippingAddress;
+  const { name, email, phone, addressLine1, addressLine2, city, state, pincode } = shippingAddress;
   const oDate = new Date(orderDate);
   const trimmedPhone = phone.trim();
 
@@ -38,6 +38,10 @@ export async function matchOrCreateCustomer(shippingAddress, totalAmount, orderD
     customer.state = state.trim();
     customer.pincode = pincode.trim();
 
+    if (email && email.trim()) {
+      customer.email = email.trim();
+    }
+
     // 4. Compute tags
     customer.tags = computeCustomerTags(customer);
 
@@ -46,6 +50,7 @@ export async function matchOrCreateCustomer(shippingAddress, totalAmount, orderD
     // Create new customer
     customer = new Customer({
       name: name.trim(),
+      email: (email && email.trim()) ? email.trim() : "",
       phone: trimmedPhone,
       addressLine1: addressLine1.trim(),
       addressLine2: addressLine2 ? addressLine2.trim() : "",

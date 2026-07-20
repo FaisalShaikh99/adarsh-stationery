@@ -1,9 +1,6 @@
 import { z } from "zod";
 
-const objectIdRegex = /^[0-9a-fA-F]{24}$/;
-const objectIdSchema = z.string().regex(objectIdRegex, "Invalid customer ID format");
-
-export const mergeCustomersSchema = z.object({
-  primaryId: objectIdSchema,
-  duplicateIds: z.array(objectIdSchema).min(1, "At least one duplicate ID is required for merge"),
+export const customerContactSchema = z.object({
+  email: z.string().trim().email("Invalid email address").optional().or(z.literal("")),
+  phone: z.string().trim().regex(/^\d{10}$/, "Phone number must be exactly 10 digits"),
 });
