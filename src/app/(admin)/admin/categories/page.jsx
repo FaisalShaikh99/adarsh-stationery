@@ -318,104 +318,97 @@ export default function CategoryManagementPage() {
             </div>
           )}
         </div>
+        {/* 📊 CATEGORY VISUAL WORKSPACE CARDS */}
+        {categoriesLoading ? (
+          <div className="flex h-48 items-center justify-center bg-[#0c0c0e]/30 border border-zinc-800 rounded-2xl">
+            <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
+          </div>
+        ) : filteredCategories.length === 0 ? (
+          <div className="flex flex-col items-center justify-center text-center p-12 border border-dashed border-zinc-800 bg-[#0c0c0e]/30 rounded-2xl space-y-3 min-h-[200px]">
+            <p className="text-sm font-semibold text-zinc-400">No categories found matching search criteria.</p>
+            <Button
+              onClick={openCreateModal}
+              className="bg-white text-black font-semibold hover:bg-zinc-200 rounded-xl px-4 h-9 text-xs cursor-pointer shadow-md"
+            >
+              + Add New Category
+            </Button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {filteredCategories.map((category) => (
+              <div 
+                key={category._id}
+                className={`bg-zinc-900/40 border border-zinc-800 hover:border-zinc-700 rounded-2xl p-5 transition-all duration-300 relative group flex flex-col justify-between ${
+                  !category.isActive ? "opacity-60 bg-zinc-950/20" : ""
+                }`}
+              >
+                {/* Status Switch & Actions */}
+                <div className="flex justify-between items-center mb-4">
+                  <div className="flex items-center gap-2">
+                    {((statusToggleMutation.isPending && statusToggleMutation.variables === category._id) || (deleteMutation.isPending && deleteMutation.variables === category._id)) ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-500" />
+                    ) : (
+                      <>
+                        <Switch 
+                          checked={category.isActive}
+                          onCheckedChange={() => handleStatusToggle(category._id)}
+                          className="data-[state=checked]:bg-emerald-600 scale-75"
+                        />
+                        <span className={`text-[9px] font-bold uppercase ${category.isActive ? "text-emerald-400" : "text-zinc-500"}`}>
+                          {category.isActive ? "Active" : "Disabled"}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                  
+                  <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
+                    <button 
+                      onClick={() => openEditModal(category)}
+                      className="text-zinc-400 hover:text-white transition-colors p-1.5 hover:bg-zinc-800 rounded-lg cursor-pointer"
+                      title="Edit Category"
+                    >
+                      <Edit2 className="h-3 w-3" />
+                    </button>
+                    <button 
+                      onClick={() => triggerDeleteCheck(category._id)}
+                      className="text-zinc-550 text-zinc-500 hover:text-rose-400 transition-colors p-1.5 hover:bg-zinc-800 rounded-lg cursor-pointer"
+                      title="Delete Category"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </div>
+                </div>
 
-        {/* 📊 CORE DATA TABLE NODE LAYER */}
-        <div className="overflow-x-auto rounded-xl border border-zinc-800 bg-zinc-900/50">
-          <Table className="min-w-[800px]">
-            <TableHeader>
-              <TableRow className="border-b border-zinc-800 bg-zinc-900/80 hover:bg-transparent">
-                <TableHead className="w-16 text-center text-zinc-400 font-semibold">no</TableHead>
-                <TableHead className="w-24 text-zinc-400 font-semibold">Icon</TableHead>
-                <TableHead className="text-zinc-400 font-semibold">Category Name</TableHead>
-                <TableHead className="text-zinc-400 font-semibold">Products Count</TableHead>
-                <TableHead className="text-zinc-400 font-semibold">Status</TableHead>
-                <TableHead className="text-zinc-400 font-semibold">Created At</TableHead>
-                <TableHead className="text-center w-36 text-zinc-400 font-semibold">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody className="text-zinc-300">
-              {categoriesLoading ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-6 text-zinc-550 font-medium">
-                    <LoadingSpinner size={140} label="Loading items..." className="mx-auto" />
-                  </TableCell>
-                </TableRow>
-              ) : filteredCategories.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="py-12 text-center text-zinc-500">
-                    <div className="flex flex-col items-center justify-center space-y-4">
-                      <p className="text-sm font-semibold text-zinc-400">No categories found matching search criteria.</p>
-                      <Button
-                        onClick={openCreateModal}
-                        className="bg-white text-black font-semibold hover:bg-zinc-200 rounded-xl px-4 h-9 text-xs cursor-pointer shadow-md"
-                      >
-                        + Add New Category
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredCategories.map((category, index) => (
-                  <TableRow 
-                    key={category._id} 
-                    className={`border-b border-zinc-800 hover:bg-zinc-900/40 transition-colors ${!category.isActive ? "opacity-60 bg-zinc-950/20" : ""}`}
-                  >
-                    <TableCell className="text-center font-medium text-zinc-500 py-2.5 text-xs">{index + 1}</TableCell>
-                    <TableCell className="py-2.5">
-                      <img 
-                        src={category.image} 
-                        alt="" 
-                        className="w-10 h-10 rounded-lg object-contain border border-zinc-800 bg-white p-0.5" 
-                        referrerPolicy="no-referrer"
-                      />
-                    </TableCell>
-                    <TableCell className="font-bold tracking-tight text-xs text-zinc-100 capitalize py-2.5">{category.name}</TableCell>
-                    <TableCell className="font-mono text-xs py-2.5">
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${category.totalProducts > 0 ? "bg-blue-500/10 text-blue-400 border border-blue-500/20" : "bg-zinc-800 text-zinc-500"}`}>
-                        {String(category.totalProducts).padStart(2, '0')} Products
-                      </span>
-                    </TableCell>
-                    <TableCell className="py-2.5">
-                      {((statusToggleMutation.isPending && statusToggleMutation.variables === category._id) || (deleteMutation.isPending && deleteMutation.variables === category._id)) ? (
-                        <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
-                      ) : (
-                        <div className="flex items-center gap-3">
-                          <Switch 
-                            checked={category.isActive}
-                            onCheckedChange={() => handleStatusToggle(category._id)}
-                            className="data-[state=checked]:bg-emerald-600 scale-75"
-                          />
-                          <span className={`text-[10px] font-bold uppercase min-w-[50px] ${category.isActive ? "text-emerald-400" : "text-zinc-500"}`}>
-                            {category.isActive ? "Active" : "Disabled"}
-                          </span>
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-xs text-zinc-400 font-mono py-2.5">
+                {/* Center Content: Icon & Name */}
+                <div className="flex flex-col items-center text-center space-y-3 py-2">
+                  <div className="w-12 h-12 rounded-2xl bg-white border border-zinc-800 p-1 flex items-center justify-center shadow-inner overflow-hidden shrink-0">
+                    <img 
+                      src={category.image} 
+                      alt="" 
+                      className="w-full h-full object-contain" 
+                      referrerPolicy="no-referrer"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="font-bold tracking-tight text-xs text-zinc-100 capitalize hover:text-white transition-colors">
+                      {category.name}
+                    </h3>
+                    <p className="text-[10px] text-zinc-550 text-zinc-550 text-zinc-500 font-mono">
                       {new Date(category.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-                    </TableCell>
-                    <TableCell className="py-2.5">
-                      <div className="flex items-center justify-center gap-3">
-                        <button 
-                          onClick={() => openEditModal(category)}
-                          className="text-zinc-400 hover:text-white transition-colors p-1.5"
-                        >
-                          <Edit2 className="h-3.5 w-3.5" />
-                        </button>
-                        <button 
-                          onClick={() => triggerDeleteCheck(category._id)}
-                          className="text-zinc-500 hover:text-rose-400 transition-colors p-1.5"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
+                    </p>
+                  </div>
+                </div>
+
+                {/* Bottom Stats: Product count */}
+                <div className="mt-4 border-t border-zinc-900 pt-3 flex justify-center">
+                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono tracking-wide ${category.totalProducts > 0 ? "bg-blue-500/10 text-blue-400 border border-blue-500/15" : "bg-zinc-800/80 text-zinc-500 border border-zinc-800"}`}>
+                    {String(category.totalProducts).padStart(2, '0')} Products
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* 🔲 COMPOSITE MULTI-OPERATIONAL DIALOG BOX FORMS */}

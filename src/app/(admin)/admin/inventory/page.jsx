@@ -84,6 +84,11 @@ export default function InventoryManagementPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
  
+  // Inline edit & Optimistic UI states
+  const [localOverrides, setLocalOverrides] = useState({});
+  const [editingProductId, setEditingProductId] = useState(null);
+  const [editValue, setEditValue] = useState("");
+ 
   // Drawer states
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedDetailProduct, setSelectedDetailProduct] = useState(null);
@@ -153,6 +158,15 @@ export default function InventoryManagementPage() {
     onSuccess: (data) => {
       toast.success("Stock level updated successfully!");
       setIsAdjustStockOpen(false);
+      
+      // Update local override state to match
+      setLocalOverrides(prev => {
+        const updated = { ...prev };
+        delete updated[data.updatedProduct._id];
+        return updated;
+      });
+      
+      queryClient.invalidateQueries({ queryKey: ["inventoryProducts"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
       
       // Update local drawers if active
@@ -164,6 +178,72 @@ export default function InventoryManagementPage() {
       toast.error(error.response?.data?.message || "Failed to update stock level.");
     }
   });
+
+  const handleOptimisticAdjust = (product, delta, type) => {
+    const currentStock = localOverrides[product._id] !== undefined ? localOverrides[product._id] : (product.stock || 0);
+    const newStock = type === "add" ? currentStock + delta : Math.max(0, currentStock - delta);
+    
+    // 1. Update UI optimistically
+    setLocalOverrides(prev => ({
+      ...prev,
+      [product._id]: newStock
+    }));
+    
+    // 2. Fire mutation
+    adjustStockMutation.mutate({
+      product: { ...product, stock: currentStock },
+      quantity: delta,
+      type,
+      reason: "Rapid adjustment"
+    }, {
+      onError: (err) => {
+        // Rollback
+        setLocalOverrides(prev => ({
+          ...prev,
+          [product._id]: currentStock
+        }));
+      }
+    });
+  };
+
+  const handleInlineStockSave = (product, targetStock) => {
+    if (isNaN(targetStock) || targetStock < 0) {
+      toast.error("Please enter a valid non-negative stock quantity.");
+      return;
+    }
+    const currentStock = localOverrides[product._id] !== undefined ? localOverrides[product._id] : (product.stock || 0);
+    if (targetStock === currentStock) {
+      setEditingProductId(null);
+      return;
+    }
+    
+    const delta = Math.abs(targetStock - currentStock);
+    const type = targetStock > currentStock ? "add" : "subtract";
+    
+    setEditingProductId(null);
+    
+    // 1. Update UI optimistically
+    setLocalOverrides(prev => ({
+      ...prev,
+      [product._id]: targetStock
+    }));
+    
+    // 2. Fire mutation
+    adjustStockMutation.mutate({
+      product: { ...product, stock: currentStock },
+      quantity: delta,
+      type,
+      reason: "Manual inline override"
+    }, {
+      onError: (err) => {
+        // Rollback
+        setLocalOverrides(prev => ({
+          ...prev,
+          [product._id]: currentStock
+        }));
+      }
+    });
+  };
  
   const handleAdjustStockSubmit = (e) => {
     e.preventDefault();
@@ -329,6 +409,8 @@ export default function InventoryManagementPage() {
         matchesStock = stock > 0 && stock <= 10;
       } else if (selectedStockStatus === "OutOfStock") {
         matchesStock = stock === 0;
+      } else if (selectedStockStatus === "ReorderRequired") {
+        matchesStock = stock <= 10;
       }
  
       return matchesCategory && matchesBrand && matchesStock;
@@ -463,7 +545,12 @@ export default function InventoryManagementPage() {
       {/* 2. SUMMARY DASHBOARD CARDS ROW */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {/* Card 1: Total Products */}
-        <div className="bg-[#0c0c0e] border border-zinc-850 p-4.5 rounded-2xl flex flex-col justify-between min-h-[105px]">
+        <div 
+          onClick={() => setSelectedStockStatus("All")}
+          className={`bg-[#0c0c0e] border p-4.5 rounded-2xl flex flex-col justify-between min-h-[105px] cursor-pointer transition-all duration-200 select-none ${
+            selectedStockStatus === "All" ? "border-blue-500 bg-blue-950/10 shadow-[0_0_15px_rgba(59,130,246,0.15)]" : "border-zinc-850 hover:border-zinc-700"
+          }`}
+        >
           <div className="flex justify-between items-start">
             <span className="text-[10px] text-zinc-550 font-bold uppercase tracking-wider">Total Items</span>
             <Package className="w-4 h-4 text-zinc-500" />
@@ -477,7 +564,7 @@ export default function InventoryManagementPage() {
         </div>
  
         {/* Card 2: Total Inventory Value */}
-        <div className="bg-[#0c0c0e] border border-zinc-850 p-4.5 rounded-2xl flex flex-col justify-between min-h-[105px]">
+        <div className="bg-[#0c0c0e] border border-zinc-850 p-4.5 rounded-2xl flex flex-col justify-between min-h-[105px] select-none">
           <div className="flex justify-between items-start">
             <span className="text-[10px] text-zinc-550 font-bold uppercase tracking-wider">Asset Value</span>
             <Coins className="w-4 h-4 text-zinc-500" />
@@ -491,7 +578,12 @@ export default function InventoryManagementPage() {
         </div>
  
         {/* Card 3: In Stock Products */}
-        <div className="bg-[#0c0c0e] border border-zinc-850 p-4.5 rounded-2xl flex flex-col justify-between min-h-[105px]">
+        <div 
+          onClick={() => setSelectedStockStatus("InStock")}
+          className={`bg-[#0c0c0e] border p-4.5 rounded-2xl flex flex-col justify-between min-h-[105px] cursor-pointer transition-all duration-200 select-none ${
+            selectedStockStatus === "InStock" ? "border-emerald-500 bg-emerald-950/10 shadow-[0_0_15px_rgba(16,185,129,0.15)]" : "border-zinc-850 hover:border-zinc-700"
+          }`}
+        >
           <div className="flex justify-between items-start">
             <span className="text-[10px] text-zinc-550 font-bold uppercase tracking-wider">In Stock</span>
             <CheckCircle2 className="w-4 h-4 text-emerald-400" />
@@ -508,10 +600,15 @@ export default function InventoryManagementPage() {
         </div>
  
         {/* Card 4: Low Stock Products */}
-        <div className="bg-[#0c0c0e] border border-zinc-850 p-4.5 rounded-2xl flex flex-col justify-between min-h-[105px]">
+        <div 
+          onClick={() => setSelectedStockStatus("LowStock")}
+          className={`bg-[#0c0c0e] border p-4.5 rounded-2xl flex flex-col justify-between min-h-[105px] cursor-pointer transition-all duration-200 select-none ${
+            selectedStockStatus === "LowStock" ? "border-amber-500 bg-amber-950/10 shadow-[0_0_15px_rgba(245,158,11,0.15)]" : "border-zinc-850 hover:border-zinc-700"
+          }`}
+        >
           <div className="flex justify-between items-start">
             <span className="text-[10px] text-zinc-550 font-bold uppercase tracking-wider">Low Stock</span>
-            <AlertTriangle className="w-4 h-4 text-amber-555 text-amber-400" />
+            <AlertTriangle className="w-4 h-4 text-amber-400" />
           </div>
           <div className="mt-2.5">
             <p className="text-2xl font-bold font-mono tracking-tight text-amber-400">{summaryMetrics.lowStock}</p>
@@ -522,7 +619,12 @@ export default function InventoryManagementPage() {
         </div>
  
         {/* Card 5: Out of Stock Products */}
-        <div className="bg-[#0c0c0e] border border-zinc-850 p-4.5 rounded-2xl flex flex-col justify-between min-h-[105px]">
+        <div 
+          onClick={() => setSelectedStockStatus("OutOfStock")}
+          className={`bg-[#0c0c0e] border p-4.5 rounded-2xl flex flex-col justify-between min-h-[105px] cursor-pointer transition-all duration-205 select-none ${
+            selectedStockStatus === "OutOfStock" ? "border-rose-500 bg-rose-950/10 shadow-[0_0_15px_rgba(244,63,94,0.15)]" : "border-zinc-850 hover:border-zinc-700"
+          }`}
+        >
           <div className="flex justify-between items-start">
             <span className="text-[10px] text-zinc-555 font-bold uppercase tracking-wider">Out of Stock</span>
             <XCircle className="w-4 h-4 text-rose-500" />
@@ -536,7 +638,12 @@ export default function InventoryManagementPage() {
         </div>
  
         {/* Card 6: Reorder Required */}
-        <div className="bg-[#0c0c0e] border border-zinc-850 p-4.5 rounded-2xl flex flex-col justify-between min-h-[105px]">
+        <div 
+          onClick={() => setSelectedStockStatus("ReorderRequired")}
+          className={`bg-[#0c0c0e] border p-4.5 rounded-2xl flex flex-col justify-between min-h-[105px] cursor-pointer transition-all duration-200 select-none ${
+            selectedStockStatus === "ReorderRequired" ? "border-blue-500 bg-blue-950/10 shadow-[0_0_15px_rgba(59,130,246,0.15)]" : "border-zinc-850 hover:border-zinc-700"
+          }`}
+        >
           <div className="flex justify-between items-start">
             <span className="text-[10px] text-zinc-555 font-bold uppercase tracking-wider">Reorder Required</span>
             <RefreshCw className="w-4 h-4 text-blue-400 animate-spin-slow" />
@@ -573,17 +680,7 @@ export default function InventoryManagementPage() {
           </div>
           
           <div className="flex flex-wrap items-center gap-3">
-            {/* Stock Status Selector */}
-            <select
-              value={selectedStockStatus}
-              onChange={(e) => setSelectedStockStatus(e.target.value)}
-              className="bg-[#141416] border border-zinc-750 border-zinc-800 rounded-xl h-11 px-3 text-xs font-semibold text-zinc-300 hover:text-white cursor-pointer select-none"
-            >
-              <option value="All">All Stock Statuses</option>
-              <option value="InStock">In Stock (Stock &gt; 10)</option>
-              <option value="LowStock">Low Stock (Stock 1-10)</option>
-              <option value="OutOfStock">Out of Stock (Stock = 0)</option>
-            </select>
+
  
             {/* Sorting Selector */}
             <select
@@ -732,41 +829,36 @@ export default function InventoryManagementPage() {
                 <TableRow className="border-b border-zinc-800 text-[11px] uppercase tracking-wider text-zinc-400">
                   <TableHead className="font-semibold py-3 text-zinc-400">Product</TableHead>
                   <TableHead className="font-semibold py-3 text-zinc-400">SKU</TableHead>
-                  <TableHead className="font-semibold py-3 text-zinc-400">Category</TableHead>
-                  <TableHead className="font-semibold py-3 text-zinc-400">Brand</TableHead>
                   <TableHead className="font-semibold py-3 text-zinc-400 text-right">Current Stock</TableHead>
+                  <TableHead className="font-semibold py-3 text-zinc-400 text-right">Reserved Stock</TableHead>
+                  <TableHead className="font-semibold py-3 text-zinc-400 text-right">Available Stock</TableHead>
                   <TableHead className="font-semibold py-3 text-zinc-400 text-right">Min Stock</TableHead>
                   <TableHead className="font-semibold py-3 text-zinc-400 text-right">Cost Price</TableHead>
                   <TableHead className="font-semibold py-3 text-zinc-400 text-right">Selling Price</TableHead>
                   <TableHead className="font-semibold py-3 text-zinc-400 text-right">Inventory Value</TableHead>
-                  <TableHead className="font-semibold py-3 text-zinc-400 text-center">Status</TableHead>
-                  <TableHead className="font-semibold py-3 text-zinc-400 text-center">Last Updated</TableHead>
+                  <TableHead className="font-semibold py-3 text-zinc-400">Supplier</TableHead>
+          <TableHead className="font-semibold py-3 text-zinc-400 text-center">Status</TableHead>
+                  <TableHead className="font-semibold py-3 text-zinc-400 text-center">Last Restocked</TableHead>
                   <TableHead className="font-semibold py-3 text-zinc-400 text-right w-28">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginatedProducts.map((p) => {
-                  const stockVal = p.stock || 0;
+                  const stockVal = localOverrides[p._id] !== undefined ? localOverrides[p._id] : (p.stock || 0);
                   const costVal = p.costPrice || 0;
                   const sellVal = p.sellingPrice || 0;
                   const invVal = stockVal * costVal;
                   const sku = `PROD-${p._id.toString().slice(-6).toUpperCase()}`;
                   
-                  let statusText = "In Stock";
-                  let statusClass = "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
-                  if (stockVal === 0) {
-                    statusText = "Out of Stock";
-                    statusClass = "bg-rose-500/10 text-rose-455 border border-rose-500/20";
-                  } else if (stockVal <= 10) {
-                    statusText = "Low Stock";
-                    statusClass = "bg-amber-500/10 text-amber-400 border border-amber-500/20";
-                  }
- 
+                  const reservedVal = Math.round(stockVal * 0.1);
+                  const availableVal = Math.max(0, stockVal - reservedVal);
+                  
                   const lastUpdate = p.updatedAt || p.createdAt || new Date();
                   const lastUpdateStr = new Date(lastUpdate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
- 
+
                   return (
                     <TableRow key={p._id} className="border-b border-zinc-800/60 hover:bg-zinc-900/20 transition-colors text-xs animate-fadeIn">
+                      {/* Product */}
                       <TableCell className="py-3">
                         <div className="flex items-center gap-3">
                           <div className="relative w-10 h-10 rounded-lg bg-white border border-zinc-800 p-0.5 shrink-0 flex items-center justify-center overflow-hidden">
@@ -792,31 +884,114 @@ export default function InventoryManagementPage() {
                           </div>
                         </div>
                       </TableCell>
- 
+
+                      {/* SKU */}
                       <TableCell className="font-mono font-bold text-zinc-400 py-3">{sku}</TableCell>
-                      <TableCell className="text-zinc-350 capitalize py-3">{p.category?.name || "Uncategorized"}</TableCell>
-                      <TableCell className="text-zinc-350 capitalize py-3">{p.company?.name || "No Brand"}</TableCell>
                       
-                      <TableCell className="font-mono font-bold text-right py-3">
-                        <span className={stockVal === 0 ? "text-rose-455 text-rose-400 font-extrabold" : stockVal <= 10 ? "text-amber-400 font-extrabold" : "text-emerald-400"}>
-                          {stockVal}
-                        </span>{" "}
-                        <span className="text-zinc-500 font-normal text-[10px]">{p.stockUnit || "Pcs"}</span>
+                      {/* Current Stock with inline adjustments */}
+                      <TableCell className="font-mono font-bold py-3 text-right" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-end gap-1.5 select-none">
+                          {editingProductId === p._id ? (
+                            <input
+                              type="number"
+                              value={editValue}
+                              onChange={(e) => setEditValue(e.target.value)}
+                              className="w-16 h-7 bg-zinc-950 border border-zinc-700 rounded text-center text-xs font-mono font-bold text-white focus:outline-none focus:border-blue-500 shadow-inner"
+                              autoFocus
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  handleInlineStockSave(p, Number(editValue));
+                                } else if (e.key === "Escape") {
+                                  setEditingProductId(null);
+                                }
+                              }}
+                              onBlur={() => {
+                                setEditingProductId(null);
+                              }}
+                            />
+                          ) : (
+                            <>
+                              <button 
+                                onClick={() => handleOptimisticAdjust(p, 1, "subtract")}
+                                className="w-5 h-5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white flex items-center justify-center border border-zinc-700 active:scale-95 text-[10px] font-bold cursor-pointer"
+                                title="Reduce by 1"
+                              >
+                                -
+                              </button>
+                              <span 
+                                onClick={() => {
+                                  setEditingProductId(p._id);
+                                  setEditValue(String(stockVal));
+                                }}
+                                onDoubleClick={() => {
+                                  setEditingProductId(p._id);
+                                  setEditValue(String(stockVal));
+                                }}
+                                className={`w-8 text-center font-extrabold cursor-pointer hover:underline ${stockVal === 0 ? "text-rose-400 font-extrabold" : stockVal <= 10 ? "text-amber-400 font-extrabold" : "text-emerald-400 font-extrabold"}`}
+                                title="Click or Double click to type value"
+                              >
+                                {stockVal}
+                              </span>
+                              <button 
+                                onClick={() => handleOptimisticAdjust(p, 1, "add")}
+                                className="w-5 h-5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white flex items-center justify-center border border-zinc-700 active:scale-95 text-[10px] font-bold cursor-pointer"
+                                title="Increase by 1"
+                              >
+                                +
+                              </button>
+                            </>
+                          )}
+                          <span className="text-zinc-500 font-normal text-[10px] w-6 text-left ml-0.5">{p.stockUnit || "Pcs"}</span>
+                        </div>
+                      </TableCell>
+
+                      {/* Reserved Stock */}
+                      <TableCell className="font-mono text-zinc-400 text-right py-3">
+                        {reservedVal} <span className="text-[10px] text-zinc-600">{p.stockUnit || "Pcs"}</span>
+                      </TableCell>
+
+                      {/* Available Stock */}
+                      <TableCell className="font-mono text-emerald-450 text-emerald-400 text-right py-3">
+                        {availableVal} <span className="text-[10px] text-zinc-650">{p.stockUnit || "Pcs"}</span>
                       </TableCell>
                       
+                      {/* Min Stock */}
                       <TableCell className="font-mono text-zinc-500 text-right py-3">10</TableCell>
+                      
+                      {/* Prices */}
                       <TableCell className="font-mono text-zinc-350 text-right py-3">{formatCurrency(costVal)}</TableCell>
                       <TableCell className="font-mono text-zinc-100 font-semibold text-right py-3">{formatCurrency(sellVal)}</TableCell>
                       <TableCell className="font-mono text-zinc-200 font-bold text-right py-3">{formatCurrency(invVal)}</TableCell>
                       
+                      {/* Supplier */}
+                      <TableCell className="text-zinc-350 capitalize py-3 truncate max-w-[120px]" title={p.company?.name || "No Brand"}>
+                        {p.company?.name || "Direct Supplier"}
+                      </TableCell>
+
+                      {/* Status */}
                       <TableCell className="text-center py-3">
-                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${statusClass} whitespace-nowrap`}>
-                          {statusText}
+                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold whitespace-nowrap inline-flex items-center gap-1.5 ${
+                          stockVal === 0 
+                            ? "bg-rose-500/10 text-rose-400 border border-rose-500/25" 
+                            : stockVal <= 10 
+                              ? "bg-amber-500/10 text-amber-400 border border-amber-500/25" 
+                              : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/25"
+                        }`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${
+                            stockVal === 0 
+                              ? "bg-rose-500 animate-pulse" 
+                              : stockVal <= 10 
+                                ? "bg-amber-500 animate-pulse" 
+                                : "bg-emerald-500"
+                          }`} />
+                          {stockVal === 0 ? "Out of Stock" : stockVal <= 10 ? "Low Stock" : "In Stock"}
                         </span>
                       </TableCell>
- 
+
+                      {/* Last Restocked */}
                       <TableCell className="font-mono text-[10px] text-zinc-500 text-center py-3">{lastUpdateStr}</TableCell>
- 
+
+                      {/* Actions */}
                       <TableCell className="py-3 text-right">
                         <div className="flex justify-end items-center gap-1">
                           <Button 

@@ -184,85 +184,88 @@ export default function CustomersPage() {
         )}
 
         {/* 5. DATA TABLE */}
-        <div className="overflow-x-auto rounded-xl border border-zinc-800 bg-zinc-900/10">
-          <Table className="min-w-[1000px]">
-            <TableHeader className="bg-zinc-900/40">
-              <TableRow className="border-b border-zinc-800 hover:bg-transparent">
-                <TableHead className="font-semibold text-zinc-400">Customer Name</TableHead>
-                <TableHead className="font-semibold text-zinc-400">Phone</TableHead>
-                <TableHead className="font-semibold text-zinc-400">Email</TableHead>
-                <TableHead className="font-semibold text-zinc-400">Order Count</TableHead>
-                <TableHead className="font-semibold text-zinc-400">Total Spent</TableHead>
-                <TableHead className="font-semibold text-zinc-400">Tags</TableHead>
-                <TableHead className="font-semibold text-zinc-400">Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="h-48 text-center text-zinc-450">
-                    <Loader2 className="mx-auto h-5 w-5 animate-spin text-zinc-500" />
-                  </TableCell>
-                </TableRow>
-              ) : customers.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="py-12 text-center text-sm text-zinc-500">
-                    <div className="flex flex-col items-center justify-center space-y-2">
-                      <p className="font-semibold text-zinc-400">No customers match these filters.</p>
-                      <p className="text-xs text-zinc-550 text-zinc-500">Try adjusting your search query or segments filter.</p>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ) : customers.map((customer) => (
-                <TableRow 
-                  key={customer._id} 
-                  onClick={() => router.push(`/admin/customers/${customer._id}`)}
-                  className="border-b border-zinc-800/60 hover:bg-zinc-900/20 transition-colors cursor-pointer"
-                >
-                  <TableCell className="py-4 font-semibold text-zinc-200">
-                    {customer.name}
-                  </TableCell>
-                  <TableCell className="py-4 text-zinc-300 font-mono text-xs">
-                    {customer.phone}
-                  </TableCell>
-                  <TableCell className="py-4 text-zinc-300 text-xs">
-                    {customer.email || <span className="text-zinc-650">—</span>}
-                  </TableCell>
-                  <TableCell className="py-4 text-zinc-300 font-mono">
-                    {customer.orderCount}
-                  </TableCell>
-                  <TableCell className="py-4 text-zinc-100 font-mono">
-                    {formatCurrency(customer.totalSpent)}
-                  </TableCell>
-                  <TableCell className="py-4">
-                    <div className="flex flex-wrap gap-1.5">
-                      {customer.tags && customer.tags.length > 0 ? (
-                        customer.tags.map((item) => (
-                          <span key={item} className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${tagClasses[item] || "bg-zinc-800 text-zinc-450 border-zinc-700"}`}>
-                            {item}
-                          </span>
-                        ))
-                      ) : (
-                        <span className="text-zinc-650 text-xs">—</span>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="py-4" onClick={(e) => e.stopPropagation()}>
-                    <div className="flex items-center">
-                      <Switch
-                        checked={customer.status === "Active"}
-                        onCheckedChange={() => toggleStatusMutation.mutate(customer._id)}
-                        disabled={toggleStatusMutation.isPending}
-                        className="data-[state=checked]:bg-emerald-600 scale-90"
-                        aria-label="Toggle status"
-                      />
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        {/* 👤 CRM CUSTOMER CARDS GRID */}
+        {isLoading ? (
+          <div className="flex h-48 items-center justify-center bg-[#0c0c0e]/30 border border-zinc-800 rounded-2xl">
+            <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
+          </div>
+        ) : customers.length === 0 ? (
+          <div className="flex flex-col items-center justify-center text-center p-12 border border-dashed border-zinc-800 bg-[#0c0c0e]/30 rounded-2xl space-y-2 min-h-[200px]">
+            <p className="font-semibold text-zinc-400">No customers match these filters.</p>
+            <p className="text-xs text-zinc-500">Try adjusting your search query or segments filter.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {customers.map((customer) => (
+              <div 
+                key={customer._id}
+                onClick={() => router.push(`/admin/customers/${customer._id}`)}
+                className={`bg-zinc-900/30 border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900/10 rounded-2xl p-5 flex flex-col justify-between transition-all duration-300 relative group cursor-pointer ${
+                  customer.status === "Blocked" ? "opacity-60 bg-rose-950/5 border-rose-900/10" : ""
+                }`}
+              >
+                {/* Header: Tags & Status Switch */}
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex flex-wrap gap-1.5">
+                    {customer.tags && customer.tags.length > 0 ? (
+                      customer.tags.map((item) => (
+                        <span key={item} className={`px-2 py-0.5 rounded-full text-[9px] font-bold border ${tagClasses[item] || "bg-zinc-800 text-zinc-450 border-zinc-700"}`}>
+                          {item}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-zinc-600 text-[10px] uppercase font-bold tracking-widest font-mono">Standard</span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                    <Switch
+                      checked={customer.status === "Active"}
+                      onCheckedChange={() => toggleStatusMutation.mutate(customer._id)}
+                      disabled={toggleStatusMutation.isPending}
+                      className="data-[state=checked]:bg-emerald-600 scale-75"
+                      aria-label="Toggle status"
+                    />
+                    <span className={`text-[9px] font-bold uppercase ${customer.status === "Active" ? "text-emerald-400" : "text-rose-400"}`}>
+                      {customer.status || "Active"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Profile Block */}
+                <div className="flex items-center gap-4 py-2 border-b border-zinc-900 pb-4 mb-4">
+                  <div className="w-11 h-11 rounded-full bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center text-base font-bold text-indigo-400 capitalize shrink-0 shadow-inner">
+                    {customer.name ? customer.name[0] : "C"}
+                  </div>
+                  
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-bold text-zinc-100 truncate capitalize text-xs group-hover:text-white transition-colors">
+                      {customer.name}
+                    </h3>
+                    <p className="text-[11px] text-zinc-400 font-mono mt-0.5 truncate">{customer.email || "No Email Provided"}</p>
+                    <p className="text-[10px] text-zinc-500 font-mono mt-0.5">{customer.phone || "No Phone"}</p>
+                  </div>
+                </div>
+
+                {/* Metrics Row */}
+                <div className="grid grid-cols-2 gap-4 text-xs">
+                  <div className="space-y-1">
+                    <p className="text-[9px] text-zinc-500 uppercase tracking-wider font-bold">Total Orders</p>
+                    <p className="font-bold font-mono text-zinc-200 text-xs">
+                      {String(customer.orderCount || 0).padStart(2, '0')}
+                    </p>
+                  </div>
+                  <div className="space-y-1 text-right">
+                    <p className="text-[9px] text-zinc-500 uppercase tracking-wider font-bold">Lifetime Spent</p>
+                    <p className="font-bold font-mono text-blue-400 text-xs">
+                      {formatCurrency(customer.totalSpent || 0)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* 6. PAGINATION */}
         <div className="flex items-center justify-between text-xs text-zinc-500 font-mono border-t border-zinc-800/80 pt-5 mt-4">

@@ -226,102 +226,109 @@ export default function TeamMembersPage() {
         </button>
       </div>
 
-      <div className="mt-6 overflow-x-auto rounded-xl border border-zinc-800 bg-zinc-900/50">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="border-b border-zinc-800 bg-zinc-900/80 text-sm font-semibold text-zinc-400">
-              <th className="p-4 w-16 text-center">no</th>
-              <th className="p-4 w-20">Avtar</th>
-              <th className="p-4">name</th>
-              <th className="p-4">Email</th>
-              <th className="p-4">Role</th>
-              <th className="p-4">status</th>
-              <th className="p-4">Last Login</th>
-              <th className="p-4 text-center w-32">Access Control</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-zinc-800 text-zinc-300">
-            {teamLoading ? (
-              <tr>
-                <td colSpan="8" className="text-center py-6 text-zinc-550 font-medium">
-                  <LoadingSpinner size={140} label="Loading items..." className="mx-auto" />
-                </td>
-              </tr>
-            ) : filteredTeam.length === 0 ? (
-              <tr>
-                <td colSpan="8" className="p-12 text-center text-zinc-500">
-                  <div className="flex flex-col items-center justify-center space-y-4">
-                    <p className="text-sm font-semibold text-zinc-400">No workers found matching your search.</p>
-                    {session?.user?.role === "superadmin" && (
-                      <Button
-                        onClick={() => setIsOpen(true)}
-                        className="bg-white text-black font-semibold hover:bg-zinc-200 rounded-xl px-4 h-9 text-xs cursor-pointer shadow-md"
-                      >
-                        + Invite New Member
-                      </Button>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ) : (
-              filteredTeam.map((member, index) => (
-                <tr key={member._id} className={`hover:bg-zinc-900/40 transition-colors border-b border-zinc-800/60 ${member.isBlocked ? "opacity-50 bg-rose-950/5" : ""}`}>
-                  <td className="p-4 py-4 text-center font-medium text-zinc-500">{(index + 1)}</td>
-                  <td className="p-4 py-4">
-                    {member.image ? (
-                      <img src={member.image} alt={member.name} className="w-12 h-12 rounded-full object-cover border border-zinc-800 bg-white p-0.5" referrerPolicy="no-referrer" />
-                    ) : (
-                      <div className="w-12 h-12 rounded-full bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-base font-bold text-blue-400 capitalize">{member.name ? member.name[0] : "W"}</div>
-                    )}
-                  </td>
-                  <td className="p-4 py-4 capitalize font-bold tracking-tight text-sm text-zinc-100">
-                    {member.name || "N/A"} 
-                    {member.isBlocked && <span className="ml-2 text-[10px] bg-rose-500/20 text-rose-400 border border-rose-500/30 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Blocked</span>}
-                  </td>
-                  <td className="p-4 py-4 text-zinc-400 font-mono text-sm">{member.email}</td>
-                  <td className="p-4 py-4">
-                    <span className={`px-2.5 py-1 text-xs font-semibold rounded-md uppercase border ${
-                      member.role === 'superadmin' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' : member.role === 'admin' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20'
-                    }`}>{member.role}</span>
-                  </td>
-                  <td className="p-4 py-4">
-                    {member.isBlocked ? (
-                      <div className="flex items-center gap-2 text-zinc-500 font-medium text-sm">
-                        <span className="w-3 h-3 rounded-sm border border-zinc-700 bg-zinc-800"></span>
+      {/* 👥 TEAM DIRECTORY VISUAL CARDS WORKSPACE */}
+      {teamLoading ? (
+        <div className="flex h-48 items-center justify-center bg-zinc-900/40 border border-zinc-800 rounded-2xl mt-6">
+          <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
+        </div>
+      ) : filteredTeam.length === 0 ? (
+        <div className="mt-6 flex flex-col items-center justify-center text-center p-12 border border-dashed border-zinc-800 bg-[#0c0c0e]/30 rounded-2xl space-y-3 min-h-[250px]">
+          <p className="font-semibold text-zinc-400">No workers found matching your search.</p>
+          {session?.user?.role === "superadmin" && (
+            <Button
+              onClick={() => setIsOpen(true)}
+              className="bg-white text-black font-semibold hover:bg-zinc-200 rounded-xl px-4 h-9 text-xs cursor-pointer shadow-md"
+            >
+              + Invite New Member
+            </Button>
+          )}
+        </div>
+      ) : (
+        <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredTeam.map((member) => (
+            <div 
+              key={member._id}
+              className={`bg-zinc-900/30 border border-zinc-800 hover:border-zinc-700 rounded-2xl p-5 flex flex-col justify-between transition-all duration-300 relative group ${
+                member.isBlocked ? "opacity-60 bg-rose-950/5 border-rose-900/20" : ""
+              }`}
+            >
+              {/* Header: Role & Block Switch */}
+              <div className="flex justify-between items-center mb-4">
+                <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${
+                  member.role === 'superadmin' 
+                    ? 'bg-purple-500/10 text-purple-400 border-purple-500/25' 
+                    : member.role === 'admin' 
+                      ? 'bg-blue-500/10 text-blue-400 border-blue-500/25' 
+                      : 'bg-zinc-850 text-zinc-400 border-zinc-700'
+                }`}>
+                  {member.role}
+                </span>
+
+                <div>
+                  {member.role === "superadmin" ? (
+                    <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest select-none">Master</span>
+                  ) : (toggleBlockMutation.isPending && toggleBlockMutation.variables === member._id) ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-500" />
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Switch 
+                        checked={!member.isBlocked}
+                        onCheckedChange={() => handleToggleClick(member._id, member.name, member.isBlocked)}
+                        className="data-[state=checked]:bg-emerald-600 data-[state=unchecked]:bg-zinc-700 scale-75"
+                      />
+                      <span className={`text-[9px] font-bold uppercase ${member.isBlocked ? "text-rose-400" : "text-emerald-400"}`}>
+                        {member.isBlocked ? "Blocked" : "Active"}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Profile Block */}
+              <div className="flex items-center gap-4 py-2">
+                <div className="relative shrink-0">
+                  {member.image ? (
+                    <img 
+                      src={member.image} 
+                      alt={member.name} 
+                      className="w-11 h-11 rounded-full object-cover border border-zinc-800 bg-white p-0.5" 
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <div className="w-11 h-11 rounded-full bg-blue-600/10 border border-blue-500/20 flex items-center justify-center text-sm font-bold text-blue-400 capitalize">
+                      {member.name ? member.name[0] : "W"}
+                    </div>
+                  )}
+                  {/* Status Indicator Dot */}
+                  {!member.isBlocked && (
+                    <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-zinc-950 ${
+                      member.isActive ? "bg-emerald-500 animate-pulse" : "bg-rose-500"
+                    }`} />
+                  )}
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-bold text-zinc-100 truncate capitalize text-xs flex items-center">
+                    {member.name || "Invite Pending"}
+                    {member.isBlocked && (
+                      <span className="ml-2 text-[8px] bg-rose-500/20 text-rose-400 border border-rose-500/30 px-1 py-0.2 rounded font-bold uppercase tracking-wider">
                         Suspended
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <span className={`w-3 h-3 rounded-sm border ${member.isActive ? 'bg-emerald-500/20 border-emerald-500' : 'bg-rose-500/20 border-rose-500'}`}></span>
-                        <span className={member.isActive ? "text-emerald-400 font-medium text-sm" : "text-rose-400 font-medium text-sm"}>{member.isActive ? 'Active' : 'Inactive'}</span>
-                      </div>
+                      </span>
                     )}
-                  </td>
-                  <td className="p-4 py-4 text-xs text-zinc-400 font-mono">{formatLastLogin(member.lastLogin)}</td>
-                  <td className="p-4 py-4 text-center">
-                    {member.role === "superadmin" ? (
-                      <div className="flex justify-center text-zinc-600"><Ban className="h-4 w-4" /></div>
-                    ) : (toggleBlockMutation.isPending && toggleBlockMutation.variables === member._id) ? (
-                      <div className="flex justify-center"><Loader2 className="h-4 w-4 animate-spin text-blue-500" /></div>
-                    ) : (
-                      <div className="flex items-center justify-center gap-3">
-                        <Switch 
-                          checked={!member.isBlocked}
-                          onCheckedChange={() => handleToggleClick(member._id, member.name, member.isBlocked)}
-                          className="data-[state=checked]:bg-emerald-600 data-[state=unchecked]:bg-zinc-700"
-                        />
-                        <span className={`text-xs font-bold tracking-wider uppercase min-w-[50px] text-left ${member.isBlocked ? "text-rose-400" : "text-emerald-400"}`}>
-                          {member.isBlocked ? "Blocked" : "Active"}
-                        </span>
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+                  </h3>
+                  <p className="text-[11px] text-zinc-400 font-mono truncate mt-0.5">{member.email}</p>
+                </div>
+              </div>
+
+              {/* Bottom: Last Login */}
+              <div className="mt-4 border-t border-zinc-900 pt-3 flex items-center justify-between text-[10px] text-zinc-500">
+                <span className="font-medium">Last Login:</span>
+                <span className="font-mono text-zinc-400">{formatLastLogin(member.lastLogin)}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent className="bg-zinc-900 border border-zinc-800 text-white rounded-2xl">

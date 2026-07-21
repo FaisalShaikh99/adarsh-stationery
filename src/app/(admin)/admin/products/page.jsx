@@ -79,7 +79,7 @@ export default function ProductManagementPage() {
   
   const [editingProduct, setEditingProduct] = useState(null); // null = add, product object = edit
   const [aiDescriptions, setAiDescriptions] = useState([]);
-  const [viewMode, setViewMode] = useState("table"); // "table" or "grid"
+  const [viewMode, setViewMode] = useState("grid"); // default grid-first visual workspace
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState("All");
   const [selectedBrands, setSelectedBrands] = useState([]);
   const [brandSearchText, setBrandSearchText] = useState("");

@@ -295,8 +295,7 @@ export default function PaymentsPage() {
     { id: "refunds", name: "Refunds", icon: RotateCcw },
     { id: "failed", name: "Failed", icon: XCircle },
     { id: "methods", name: "Payment Methods", icon: Percent },
-    { id: "settlements", name: "Settlements", icon: PiggyBank },
-    { id: "invoices", name: "Invoices", icon: FileText }
+    { id: "settlements", name: "Settlements", icon: PiggyBank }
   ];
 
   return (
@@ -382,12 +381,10 @@ export default function PaymentsPage() {
                 </div>
               );
             })}
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          </div>          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
             {/* LEDGER TREND CHART (CSS BARS) */}
-            <div className="lg:col-span-2 bg-[#0c0c0e] border border-zinc-800 rounded-2xl p-5 space-y-4">
+            <div className="lg:col-span-3 bg-[#0c0c0e] border border-zinc-805 border-zinc-800 rounded-2xl p-5 space-y-4">
               <div className="flex justify-between items-center border-b border-zinc-800 pb-3">
                 <h3 className="text-sm font-bold text-zinc-200">Monthly Revenue vs Expenses</h3>
                 <div className="flex gap-3 text-[10px] uppercase font-bold tracking-wider">
@@ -436,41 +433,6 @@ export default function PaymentsPage() {
                 </div>
               )}
             </div>
-
-            {/* AI FINANCE COPILOT ASSISTANT */}
-            <div className="bg-[#0c0c0e] border border-zinc-800 rounded-2xl p-5 space-y-4 flex flex-col justify-between">
-              <div>
-                <div className="flex justify-between items-center border-b border-zinc-800 pb-3">
-                  <h3 className="text-sm font-bold text-zinc-200 flex items-center gap-1.5">
-                    <Bot className="w-4 h-4 text-purple-400" /> AI Finance Copilot
-                  </h3>
-                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-purple-500/10 text-purple-300 border border-purple-500/20 flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse"></span> Offline/Simulator
-                  </span>
-                </div>
-                <div className="mt-4 p-3.5 bg-purple-950/15 border border-purple-500/15 rounded-xl space-y-2">
-                  <p className="text-xs text-zinc-300 leading-relaxed font-semibold">
-                    "Ledger audit complete. Cashflow is healthy with a <strong>{((stats.revenueTotal - stats.expenseTotal) / (stats.revenueTotal || 1) * 100).toFixed(0)}% margin</strong>."
-                  </p>
-                  <ul className="text-[10px] text-zinc-400 space-y-1 list-disc list-inside">
-                    <li>UPI stands as the dominant transaction source.</li>
-                    <li>Cash collection matches pending logs accurately.</li>
-                    <li>No anomalous chargebacks identified.</li>
-                  </ul>
-                </div>
-              </div>
-              
-              <div className="pt-3 border-t border-zinc-800/80 flex items-center gap-2">
-                <Input 
-                  placeholder="Ask copilot about reconciliation..." 
-                  disabled 
-                  className="h-8 bg-zinc-900 border-zinc-800 placeholder-zinc-650 text-xs rounded-lg"
-                />
-                <Button disabled className="h-8 w-8 p-0 bg-purple-650 text-white rounded-lg flex items-center justify-center shrink-0">
-                  <Bot className="w-3.5 h-3.5" />
-                </Button>
-              </div>
-            </div>
           </div>
         </div>
       )}
@@ -513,67 +475,103 @@ export default function PaymentsPage() {
                 <option value="NetBanking" className="bg-zinc-950 text-zinc-200">NetBanking</option>
               </select>
             </div>
-          </div>
-
-          <div className="overflow-x-auto rounded-xl border border-zinc-800 bg-zinc-900/10">
+          </div>          <div className="overflow-x-auto rounded-xl border border-zinc-800 bg-zinc-900/10">
             <Table className="min-w-[1000px]">
               <TableHeader className="bg-zinc-900/40">
-                <TableRow className="border-b border-zinc-800 hover:bg-transparent">
-                  <TableHead className="font-semibold text-zinc-400">Order Number</TableHead>
-                  <TableHead className="font-semibold text-zinc-400">Customer Name</TableHead>
-                  <TableHead className="font-semibold text-zinc-400">Payment ID</TableHead>
-                  <TableHead className="font-semibold text-zinc-400">Amount</TableHead>
-                  <TableHead className="font-semibold text-zinc-400">Payment Method</TableHead>
-                  <TableHead className="font-semibold text-zinc-400">Status</TableHead>
-                  <TableHead className="font-semibold text-zinc-400">Payment Date</TableHead>
+                <TableRow className="border-b border-zinc-800 hover:bg-transparent text-[11px] uppercase tracking-wider text-zinc-400">
+                  <TableHead className="w-16 text-center font-semibold py-3 text-zinc-400">Flow</TableHead>
+                  <TableHead className="font-semibold py-3 text-zinc-400">Ledger Reference</TableHead>
+                  <TableHead className="font-semibold py-3 text-zinc-400">Order ID</TableHead>
+                  <TableHead className="font-semibold py-3 text-zinc-400">Customer</TableHead>
+                  <TableHead className="font-semibold py-3 text-zinc-400">Channel</TableHead>
+                  <TableHead className="font-semibold py-3 text-zinc-400 text-right">Debit / Credit</TableHead>
+                  <TableHead className="font-semibold py-3 text-zinc-400 text-center">Status</TableHead>
+                  <TableHead className="font-semibold py-3 text-zinc-400 text-right">Timestamp</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isPaymentsLoading ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="h-48 text-center text-zinc-450">
+                    <TableCell colSpan={8} className="h-48 text-center text-zinc-450">
                       <Loader2 className="mx-auto h-5 w-5 animate-spin text-zinc-500" />
                     </TableCell>
                   </TableRow>
                 ) : payments.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="h-48 text-center text-sm text-zinc-500">
+                    <TableCell colSpan={8} className="h-48 text-center text-sm text-zinc-500">
                       No transactions match these filters.
                     </TableCell>
                   </TableRow>
-                ) : payments.map((payment) => (
-                  <TableRow 
-                    key={payment._id} 
-                    onClick={() => payment.order?._id && router.push(`/admin/orders/${payment.order._id}`)}
-                    className="border-b border-zinc-800/60 hover:bg-zinc-900/20 transition-colors cursor-pointer"
-                  >
-                    <TableCell className="py-4 font-bold font-mono text-zinc-100 text-xs sm:text-sm">
-                      {payment.order?.orderNumber || "—"}
-                    </TableCell>
-                    <TableCell className="py-4 font-semibold text-zinc-200">
-                      {payment.customer?.name || "Customer unavailable"}
-                    </TableCell>
-                    <TableCell className="py-4 text-zinc-350 font-mono text-xs">
-                      {payment.gatewayTransactionId || payment.transactionId || payment.paymentNumber || <span className="text-zinc-650">—</span>}
-                    </TableCell>
-                    <TableCell className="py-4 text-zinc-100 font-mono">
-                      {formatCurrency(payment.amount)}
-                    </TableCell>
-                    <TableCell className="py-4">
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${paymentTypeClasses[payment.paymentMethod] || "bg-zinc-800 text-zinc-455 border-zinc-700"}`}>
-                        {payment.paymentMethod}
-                      </span>
-                    </TableCell>
-                    <TableCell className="py-4">
-                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${paymentStatusClasses[payment.status] || "bg-zinc-800 text-zinc-455 border-zinc-700"}`}>
-                        {payment.status}
-                      </span>
-                    </TableCell>
-                    <TableCell className="py-4 text-zinc-400 text-xs font-mono">
-                      {formatDate(payment.paymentDate)}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                ) : payments.map((payment) => {
+                  const isDebit = payment.status === "Refunded" || payment.status === "Failed" || payment.status === "Cancelled";
+                  return (
+                    <TableRow 
+                      key={payment._id} 
+                      onClick={() => payment.order?._id && router.push(`/admin/orders/${payment.order._id}`)}
+                      className="border-b border-zinc-800/60 hover:bg-zinc-900/20 transition-colors cursor-pointer text-xs"
+                    >
+                      {/* Flow Arrow */}
+                      <TableCell className="py-3 text-center" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex justify-center">
+                          {isDebit ? (
+                            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400" title="Outflow / Debit / Refund">
+                              <ArrowUpRight className="w-3 h-3" />
+                            </span>
+                          ) : (
+                            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400" title="Inflow / Credit / Sale">
+                              <ArrowDownRight className="w-3 h-3" />
+                            </span>
+                          )}
+                        </div>
+                      </TableCell>
+
+                      {/* Ledger Reference (Payment / Transaction ID) */}
+                      <TableCell className="py-3 font-mono text-[11px] text-zinc-400">
+                        <span className="bg-zinc-950 border border-zinc-850 px-2 py-0.5 rounded text-zinc-300 select-all font-mono">
+                          {payment.gatewayTransactionId || payment.transactionId || payment.paymentNumber || "—"}
+                        </span>
+                      </TableCell>
+
+                      {/* Order ID */}
+                      <TableCell className="py-3 font-bold font-mono text-zinc-350">
+                        {payment.order?.orderNumber || "—"}
+                      </TableCell>
+
+                      {/* Customer */}
+                      <TableCell className="py-3 font-semibold text-zinc-200">
+                        {payment.customer?.name || "Customer unavailable"}
+                      </TableCell>
+
+                      {/* Channel */}
+                      <TableCell className="py-3">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${paymentTypeClasses[payment.paymentMethod] || "bg-zinc-800 text-zinc-455 border-zinc-700"}`}>
+                          {payment.paymentMethod}
+                        </span>
+                      </TableCell>
+
+                      {/* Debit / Credit Amount */}
+                      <TableCell className="py-3 font-mono text-right font-bold">
+                        {isDebit ? (
+                          <span className="text-rose-455 text-rose-400 font-mono">- {formatCurrency(payment.amount)}</span>
+                        ) : (
+                          <span className="text-emerald-405 text-emerald-400 font-mono">+ {formatCurrency(payment.amount)}</span>
+                        )}
+                      </TableCell>
+
+                      {/* Status */}
+                      <TableCell className="py-3 text-center">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${paymentStatusClasses[payment.status] || "bg-zinc-800 text-zinc-455 border-zinc-700"}`}>
+                          {payment.status}
+                        </span>
+                      </TableCell>
+
+                      {/* Timestamp */}
+                      <TableCell className="py-3 text-zinc-500 font-mono text-right text-[11px]">
+                        {formatDate(payment.paymentDate)}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
@@ -622,13 +620,13 @@ export default function PaymentsPage() {
           <div className="overflow-x-auto rounded-xl border border-zinc-800">
             <Table className="min-w-[1000px]">
               <TableHeader className="bg-zinc-900/30">
-                <TableRow className="border-b border-zinc-800">
-                  <TableHead className="text-zinc-400 font-semibold">Payment Number</TableHead>
-                  <TableHead className="text-zinc-400 font-semibold">Order ID</TableHead>
-                  <TableHead className="text-zinc-400 font-semibold">Customer</TableHead>
-                  <TableHead className="text-zinc-400 font-semibold">Amount</TableHead>
-                  <TableHead className="text-zinc-400 font-semibold">Method</TableHead>
-                  <TableHead className="text-zinc-400 font-semibold text-right">Actions</TableHead>
+                <TableRow className="border-b border-zinc-800 text-[11px] uppercase tracking-wider text-zinc-400">
+                  <TableHead className="font-semibold py-3 text-zinc-400">Payment Number</TableHead>
+                  <TableHead className="font-semibold py-3 text-zinc-400">Order ID</TableHead>
+                  <TableHead className="font-semibold py-3 text-zinc-400">Customer</TableHead>
+                  <TableHead className="font-semibold py-3 text-zinc-400 text-right">Amount</TableHead>
+                  <TableHead className="font-semibold py-3 text-zinc-400">Method</TableHead>
+                  <TableHead className="font-semibold py-3 text-zinc-400 text-right w-28">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -645,17 +643,17 @@ export default function PaymentsPage() {
                     </TableCell>
                   </TableRow>
                 ) : pendingPayments.map((p) => (
-                  <TableRow key={p._id} className="border-b border-zinc-800/50 hover:bg-zinc-900/10">
-                    <TableCell className="font-mono text-zinc-200 font-bold text-xs">{p.paymentNumber}</TableCell>
-                    <TableCell className="font-mono text-zinc-400 text-xs">{p.order?.orderNumber || "—"}</TableCell>
-                    <TableCell className="text-zinc-200 text-xs font-semibold">{p.customer?.name || "Customer unavailable"}</TableCell>
-                    <TableCell className="font-mono text-zinc-200 text-xs font-bold">{formatCurrency(p.amount)}</TableCell>
-                    <TableCell>
+                  <TableRow key={p._id} className="border-b border-zinc-800/50 hover:bg-zinc-900/10 text-xs">
+                    <TableCell className="font-mono text-zinc-200 font-bold py-2.5">{p.paymentNumber}</TableCell>
+                    <TableCell className="font-mono text-zinc-400 py-2.5">{p.order?.orderNumber || "—"}</TableCell>
+                    <TableCell className="text-zinc-200 font-semibold py-2.5">{p.customer?.name || "Customer unavailable"}</TableCell>
+                    <TableCell className="font-mono text-amber-500 font-bold py-2.5 text-right">{formatCurrency(p.amount)}</TableCell>
+                    <TableCell className="py-2.5">
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${paymentTypeClasses[p.paymentMethod] || "bg-zinc-800 border-zinc-700"}`}>
                         {p.paymentMethod}
                       </span>
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="py-2.5 text-right">
                       <Button 
                         onClick={(e) => {
                           e.stopPropagation();
@@ -688,13 +686,13 @@ export default function PaymentsPage() {
           <div className="overflow-x-auto rounded-xl border border-zinc-800">
             <Table className="min-w-[1000px]">
               <TableHeader className="bg-zinc-900/30">
-                <TableRow className="border-b border-zinc-800">
-                  <TableHead className="text-zinc-400 font-semibold">Refund ID</TableHead>
-                  <TableHead className="text-zinc-400 font-semibold">Linked Payment</TableHead>
-                  <TableHead className="text-zinc-400 font-semibold">Refund Amount</TableHead>
-                  <TableHead className="text-zinc-400 font-semibold">Reason</TableHead>
-                  <TableHead className="text-zinc-400 font-semibold">Status</TableHead>
-                  <TableHead className="text-zinc-400 font-semibold">Processed Date</TableHead>
+                <TableRow className="border-b border-zinc-800 text-[11px] uppercase tracking-wider text-zinc-400">
+                  <TableHead className="font-semibold py-3 text-zinc-400">Refund ID</TableHead>
+                  <TableHead className="font-semibold py-3 text-zinc-400">Linked Payment</TableHead>
+                  <TableHead className="font-semibold py-3 text-zinc-400 text-right">Refund Amount</TableHead>
+                  <TableHead className="font-semibold py-3 text-zinc-400">Reason</TableHead>
+                  <TableHead className="font-semibold py-3 text-zinc-400 text-center">Status</TableHead>
+                  <TableHead className="font-semibold py-3 text-zinc-400 text-center">Processed Date</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -711,19 +709,23 @@ export default function PaymentsPage() {
                     </TableCell>
                   </TableRow>
                 ) : refunds.map((r) => (
-                  <TableRow key={r._id} className="border-b border-zinc-800/50 hover:bg-zinc-900/10">
-                    <TableCell className="font-mono text-zinc-200 text-xs font-bold">{r._id}</TableCell>
-                    <TableCell className="font-mono text-zinc-400 text-xs">
-                      {r.payment?.paymentNumber || "—"} ({r.payment?.order?.orderNumber || "—"})
-                    </TableCell>
-                    <TableCell className="font-mono text-zinc-200 text-xs font-bold">{formatCurrency(r.refundAmount)}</TableCell>
-                    <TableCell className="text-zinc-300 text-xs">{r.reason || "—"}</TableCell>
-                    <TableCell>
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-300 border border-emerald-500/25">
-                        {r.status}
+                  <TableRow key={r._id} className="border-b border-zinc-800/50 hover:bg-zinc-900/10 text-xs">
+                    <TableCell className="font-mono text-zinc-400 py-2.5">
+                      <span className="bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded text-zinc-300 font-mono text-[10px]">
+                        {r._id.toString().slice(-8).toUpperCase()}
                       </span>
                     </TableCell>
-                    <TableCell className="text-zinc-450 text-xs font-mono">{formatDate(r.processedDate || r.createdAt)}</TableCell>
+                    <TableCell className="font-mono text-zinc-450 text-zinc-500 py-2.5">
+                      {r.payment?.paymentNumber || "—"} <span className="text-[10px] text-zinc-500 font-bold">({r.payment?.order?.orderNumber || "—"})</span>
+                    </TableCell>
+                    <TableCell className="font-mono text-rose-400 font-bold py-2.5 text-right">- {formatCurrency(r.refundAmount)}</TableCell>
+                    <TableCell className="text-zinc-300 py-2.5 truncate max-w-[150px] capitalize" title={r.reason}>{r.reason || "Customer Return"}</TableCell>
+                    <TableCell className="py-2.5 text-center">
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/15 text-purple-300 border border-purple-500/25">
+                        {r.status || "Processed"}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-zinc-500 text-center py-2.5 font-mono">{formatDate(r.processedDate || r.createdAt)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -748,13 +750,13 @@ export default function PaymentsPage() {
           <div className="overflow-x-auto rounded-xl border border-zinc-800">
             <Table className="min-w-[1000px]">
               <TableHeader className="bg-zinc-900/30">
-                <TableRow className="border-b border-zinc-800">
-                  <TableHead className="text-zinc-400 font-semibold">Payment Number</TableHead>
-                  <TableHead className="text-zinc-400 font-semibold">Order ID</TableHead>
-                  <TableHead className="text-zinc-400 font-semibold">Customer</TableHead>
-                  <TableHead className="text-zinc-400 font-semibold">Amount</TableHead>
-                  <TableHead className="text-zinc-400 font-semibold">Method</TableHead>
-                  <TableHead className="text-zinc-400 font-semibold">Failure Reason / Remarks</TableHead>
+                <TableRow className="border-b border-zinc-800 text-[11px] uppercase tracking-wider text-zinc-400">
+                  <TableHead className="font-semibold py-3 text-zinc-400">Payment Number</TableHead>
+                  <TableHead className="font-semibold py-3 text-zinc-400">Order ID</TableHead>
+                  <TableHead className="font-semibold py-3 text-zinc-400">Customer</TableHead>
+                  <TableHead className="font-semibold py-3 text-zinc-400 text-right">Amount</TableHead>
+                  <TableHead className="font-semibold py-3 text-zinc-400">Method</TableHead>
+                  <TableHead className="font-semibold py-3 text-zinc-400">Failure Reason / Remarks</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -771,17 +773,17 @@ export default function PaymentsPage() {
                     </TableCell>
                   </TableRow>
                 ) : failedPayments.map((p) => (
-                  <TableRow key={p._id} className="border-b border-zinc-800/50 hover:bg-zinc-900/10">
-                    <TableCell className="font-mono text-zinc-200 font-bold text-xs">{p.paymentNumber}</TableCell>
-                    <TableCell className="font-mono text-zinc-400 text-xs">{p.order?.orderNumber || "—"}</TableCell>
-                    <TableCell className="text-zinc-200 text-xs font-semibold">{p.customer?.name || "Customer unavailable"}</TableCell>
-                    <TableCell className="font-mono text-zinc-200 text-xs font-bold">{formatCurrency(p.amount)}</TableCell>
-                    <TableCell>
+                  <TableRow key={p._id} className="border-b border-zinc-800/50 hover:bg-zinc-900/10 text-xs opacity-75">
+                    <TableCell className="font-mono text-zinc-400 py-2.5">{p.paymentNumber}</TableCell>
+                    <TableCell className="font-mono text-zinc-550 text-zinc-500 py-2.5">{p.order?.orderNumber || "—"}</TableCell>
+                    <TableCell className="text-zinc-200 font-semibold py-2.5">{p.customer?.name || "Customer unavailable"}</TableCell>
+                    <TableCell className="font-mono text-zinc-500 line-through py-2.5 text-right font-bold">{formatCurrency(p.amount)}</TableCell>
+                    <TableCell className="py-2.5">
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${paymentTypeClasses[p.paymentMethod] || "bg-zinc-800 border-zinc-700"}`}>
                         {p.paymentMethod}
                       </span>
                     </TableCell>
-                    <TableCell className="text-rose-350 text-xs italic">{p.failureReason || p.remarks || "Gateway transaction failed"}</TableCell>
+                    <TableCell className="text-rose-400 text-xs italic py-2.5">{p.failureReason || p.remarks || "Gateway transaction failed"}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -834,14 +836,14 @@ export default function PaymentsPage() {
           <div className="overflow-x-auto rounded-xl border border-zinc-800">
             <Table className="min-w-[1000px]">
               <TableHeader className="bg-zinc-900/30">
-                <TableRow className="border-b border-zinc-800">
-                  <TableHead className="text-zinc-400 font-semibold">Settlement ID</TableHead>
-                  <TableHead className="text-zinc-400 font-semibold">Gateway</TableHead>
-                  <TableHead className="text-zinc-400 font-semibold">Amount</TableHead>
-                  <TableHead className="text-zinc-400 font-semibold">Destination Bank</TableHead>
-                  <TableHead className="text-zinc-400 font-semibold">Settle Date</TableHead>
-                  <TableHead className="text-zinc-400 font-semibold">Linked Payments</TableHead>
-                  <TableHead className="text-zinc-400 font-semibold">Status</TableHead>
+                <TableRow className="border-b border-zinc-800 text-[11px] uppercase tracking-wider text-zinc-400">
+                  <TableHead className="font-semibold py-3 text-zinc-400">Settlement ID</TableHead>
+                  <TableHead className="font-semibold py-3 text-zinc-400">Gateway</TableHead>
+                  <TableHead className="font-semibold py-3 text-zinc-400 text-right">Amount</TableHead>
+                  <TableHead className="font-semibold py-3 text-zinc-400">Destination Bank</TableHead>
+                  <TableHead className="font-semibold py-3 text-zinc-400">Settle Date</TableHead>
+                  <TableHead className="font-semibold py-3 text-zinc-400">Linked Payments</TableHead>
+                  <TableHead className="font-semibold py-3 text-zinc-400 text-center">Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -858,14 +860,18 @@ export default function PaymentsPage() {
                     </TableCell>
                   </TableRow>
                 ) : settlements.map((s) => (
-                  <TableRow key={s._id} className="border-b border-zinc-800/50 hover:bg-zinc-900/10">
-                    <TableCell className="font-mono text-zinc-200 text-xs font-bold">{s.settlementId}</TableCell>
-                    <TableCell className="text-zinc-300 text-xs font-bold">{s.gateway}</TableCell>
-                    <TableCell className="font-mono text-zinc-200 text-xs font-bold">{formatCurrency(s.amount)}</TableCell>
-                    <TableCell className="text-zinc-300 text-xs">{s.bank || "—"}</TableCell>
-                    <TableCell className="text-zinc-450 text-xs font-mono">{formatDate(s.settlementDate)}</TableCell>
-                    <TableCell className="text-zinc-450 text-xs font-mono font-semibold">{s.payments?.length || 0} items</TableCell>
-                    <TableCell>
+                  <TableRow key={s._id} className="border-b border-zinc-800/50 hover:bg-zinc-900/10 text-xs">
+                    <TableCell className="font-mono text-zinc-400 py-2.5">
+                      <span className="bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded text-zinc-300 font-mono text-[10px]">
+                        {s.settlementId}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-zinc-300 font-bold py-2.5">{s.gateway}</TableCell>
+                    <TableCell className="font-mono text-emerald-400 font-bold py-2.5 text-right">+ {formatCurrency(s.amount)}</TableCell>
+                    <TableCell className="text-zinc-400 py-2.5">{s.bank || "—"}</TableCell>
+                    <TableCell className="text-zinc-500 font-mono py-2.5">{formatDate(s.settlementDate)}</TableCell>
+                    <TableCell className="text-zinc-500 font-mono font-semibold py-2.5">{s.payments?.length || 0} items</TableCell>
+                    <TableCell className="py-2.5 text-center">
                       <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-300 border border-emerald-500/25">
                         {s.status}
                       </span>
@@ -878,91 +884,15 @@ export default function PaymentsPage() {
         </div>
       )}
 
-      {/* 8. INVOICES TAB */}
-      {activeTab === "invoices" && (
-        <div className="bg-[#0c0c0e] border border-zinc-800 rounded-2xl p-6 space-y-4">
-          <div className="border-b border-zinc-800 pb-3 flex justify-between items-center">
-            <div>
-              <h2 className="text-sm font-bold text-zinc-200">Invoice Registry</h2>
-              <p className="text-[11px] text-zinc-500 mt-1">Registry of billed invoices issued for stationery orders.</p>
-            </div>
-          </div>
-
-          <div className="overflow-x-auto rounded-xl border border-zinc-800">
-            <Table className="min-w-[1000px]">
-              <TableHeader className="bg-zinc-900/30">
-                <TableRow className="border-b border-zinc-800">
-                  <TableHead className="text-zinc-400 font-semibold">Invoice Number</TableHead>
-                  <TableHead className="text-zinc-400 font-semibold">Order Number</TableHead>
-                  <TableHead className="text-zinc-400 font-semibold">Customer</TableHead>
-                  <TableHead className="text-zinc-400 font-semibold">Amount</TableHead>
-                  <TableHead className="text-zinc-400 font-semibold">Due Date</TableHead>
-                  <TableHead className="text-zinc-400 font-semibold">Status</TableHead>
-                  <TableHead className="text-zinc-400 font-semibold text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isInvoicesLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="h-32 text-center">
-                      <Loader2 className="w-4 h-4 animate-spin mx-auto text-zinc-500" />
-                    </TableCell>
-                  </TableRow>
-                ) : invoices.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="h-32 text-center text-xs text-zinc-500">
-                      No invoices recorded in database.
-                    </TableCell>
-                  </TableRow>
-                ) : invoices.map((inv) => (
-                  <TableRow key={inv._id} className="border-b border-zinc-800/50 hover:bg-zinc-900/10">
-                    <TableCell className="font-mono text-zinc-200 text-xs font-bold">{inv.invoiceNumber}</TableCell>
-                    <TableCell className="font-mono text-zinc-400 text-xs">{inv.order?.orderNumber || "—"}</TableCell>
-                    <TableCell className="text-zinc-200 text-xs font-semibold">
-                      {inv.customer?.name || "Customer unavailable"}
-                      {inv.customer?.email && <span className="block text-[10px] text-zinc-500 font-normal">{inv.customer.email}</span>}
-                    </TableCell>
-                    <TableCell className="font-mono text-zinc-200 text-xs font-bold">{formatCurrency(inv.amount)}</TableCell>
-                    <TableCell className="text-zinc-450 text-xs font-mono">{formatDate(inv.dueDate)}</TableCell>
-                    <TableCell>
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${inv.status === "Paid" ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/25" : "bg-amber-500/10 text-amber-300 border-amber-500/25"}`}>
-                        {inv.status}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-                        <Button 
-                          onClick={() => inv.order?._id && router.push(`/admin/orders/${inv.order._id}`)}
-                          variant="outline" 
-                          className="border-zinc-800 hover:border-zinc-700 bg-zinc-900/60 text-zinc-350 hover:text-white text-[10px] font-semibold h-7 rounded-lg px-2.5 cursor-pointer"
-                        >
-                          View Invoice
-                        </Button>
-                        <Button 
-                          onClick={() => downloadInvoicePDF(inv)}
-                          className="bg-zinc-850 hover:bg-zinc-800 border border-zinc-750 text-zinc-200 text-[10px] font-semibold h-7 rounded-lg px-2.5 cursor-pointer"
-                        >
-                          Download PDF
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </div>
-      )}
-
       {/* RECORD REFUND OVERLAY MODAL */}
       {showRefundModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+          <div className="bg-zinc-950 border border-zinc-805 border-zinc-800 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
             <div className="border-b border-zinc-800 pb-3 flex justify-between items-center">
               <h3 className="text-sm font-bold text-zinc-200 flex items-center gap-1.5">
                 <RotateCcw className="w-4 h-4 text-purple-400" /> Record Refund
               </h3>
-              <button onClick={() => setShowRefundModal(false)} className="text-zinc-450 hover:text-white text-lg">×</button>
+              <button onClick={() => setShowRefundModal(false)} className="text-zinc-450 hover:text-white text-lg font-bold">×</button>
             </div>
             <div className="space-y-3">
               <div>
