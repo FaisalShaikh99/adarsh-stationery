@@ -342,6 +342,7 @@ export default function BrandManagementPage() {
             isLoading={brandsLoading || allBrandsLoading} 
             onEdit={handleEdit}
             onDelete={handleDeleteTrigger}
+            onAddClick={() => { setEditingBrand(null); setIsModalOpen(true); }}
           />
         ) : (
           <BrandGrid 
@@ -349,6 +350,7 @@ export default function BrandManagementPage() {
             isLoading={brandsLoading || allBrandsLoading} 
             onEdit={handleEdit}
             onDelete={handleDeleteTrigger}
+            onAddClick={() => { setEditingBrand(null); setIsModalOpen(true); }}
           />
         )}
       </div>

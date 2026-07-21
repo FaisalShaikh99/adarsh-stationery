@@ -16,9 +16,10 @@ import {
   Loader2,
   LayoutGrid,
   User,
-  CreditCard
+  CreditCard,
+  Package
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
  
 export default function AdminSidebar({ isCollapsed, setIsCollapsed }) {
   const pathname = usePathname();
@@ -48,7 +49,8 @@ export default function AdminSidebar({ isCollapsed, setIsCollapsed }) {
     { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
     { name: "Team Members", href: "/admin/team-members", icon: Users, requireSuperAdmin: true },
     { name: "Category Management", href: "/admin/categories", icon: LayoutGrid},
-    { name: "Products & Stock", href: "/admin/products", icon: ShoppingBag },
+    { name: "Product Catalogue", href: "/admin/products", icon: ShoppingBag },
+    { name: "Inventory Control", href: "/admin/inventory", icon: Package },
     { name: "Brands & Manufactors", href: "/admin/brands", icon: ShoppingBag },
     { name: "Invoices / Orders", href: "/admin/orders", icon: FileText },
     { name: "Payments Control", href: "/admin/payments", icon: CreditCard },

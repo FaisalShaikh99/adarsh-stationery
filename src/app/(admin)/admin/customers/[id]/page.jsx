@@ -432,7 +432,7 @@ export default function CustomerDetailPage() {
           <div className="bg-[#0c0c0e] border border-zinc-800/80 p-5 rounded-2xl shadow-sm space-y-4">
             <h2 className="text-sm font-bold text-white uppercase tracking-wider text-zinc-400">Order History</h2>
             <div className="overflow-x-auto rounded-xl border border-zinc-800 bg-zinc-900/10">
-              <Table>
+              <Table className="min-w-[800px]">
                 <TableHeader className="bg-zinc-900/40">
                   <TableRow className="border-b border-zinc-800 hover:bg-transparent">
                     <TableHead className="font-semibold text-zinc-400">Order Number</TableHead>

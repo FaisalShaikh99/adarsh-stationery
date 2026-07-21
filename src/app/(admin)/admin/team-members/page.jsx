@@ -248,7 +248,21 @@ export default function TeamMembersPage() {
                 </td>
               </tr>
             ) : filteredTeam.length === 0 ? (
-              <tr><td colSpan="8" className="p-8 text-center text-zinc-500">No workers found matching your search.</td></tr>
+              <tr>
+                <td colSpan="8" className="p-12 text-center text-zinc-500">
+                  <div className="flex flex-col items-center justify-center space-y-4">
+                    <p className="text-sm font-semibold text-zinc-400">No workers found matching your search.</p>
+                    {session?.user?.role === "superadmin" && (
+                      <Button
+                        onClick={() => setIsOpen(true)}
+                        className="bg-white text-black font-semibold hover:bg-zinc-200 rounded-xl px-4 h-9 text-xs cursor-pointer shadow-md"
+                      >
+                        + Invite New Member
+                      </Button>
+                    )}
+                  </div>
+                </td>
+              </tr>
             ) : (
               filteredTeam.map((member, index) => (
                 <tr key={member._id} className={`hover:bg-zinc-900/40 transition-colors border-b border-zinc-800/60 ${member.isBlocked ? "opacity-50 bg-rose-950/5" : ""}`}>

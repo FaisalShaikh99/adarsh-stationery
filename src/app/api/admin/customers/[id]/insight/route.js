@@ -7,6 +7,7 @@ import Order from "@/models/order.model";
 import { ApiError } from "@/utils/ApiError";
 import { ApiResponse } from "@/utils/ApiResponse";
 import { asyncHandler } from "@/utils/asyncHandler";
+import { sanitizeOrder } from "../../../orders/_utils";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
@@ -56,6 +57,7 @@ export const GET = asyncHandler(async (request, { params }) => {
       path: "items.product",
       populate: { path: "category", select: "name" }
     })
+    .populate("payment")
     .sort({ createdAt: 1 })
     .lean();
 
@@ -65,8 +67,10 @@ export const GET = asyncHandler(async (request, { params }) => {
     );
   }
 
+  const sanitizedOrders = orders.map(sanitizeOrder);
+
   // Format order history for prompt context
-  const orderHistorySummary = orders.map((order, idx) => {
+  const orderHistorySummary = sanitizedOrders.map((order, idx) => {
     const itemsText = order.items.map(item => {
       const categoryName = item.product?.category?.name || "Stationery";
       return `${item.quantity}x "${item.productName}" (Category: ${categoryName})`;

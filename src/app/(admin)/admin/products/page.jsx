@@ -19,6 +19,7 @@ import {
   Bell,
   Percent,
   Send,
+  Package
 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -868,7 +869,7 @@ export default function ProductManagementPage() {
         {/* 4. CORE INVENTORY DISPLAY (TABLE / GRID) */}
         {viewMode === "table" ? (
           <div className="overflow-x-auto rounded-xl border border-zinc-800 bg-zinc-900/10">
-            <Table>
+            <Table className="min-w-[1000px]">
               <TableHeader className="bg-zinc-900/40">
                 <TableRow className="border-b border-zinc-800">
                   <TableHead className="w-16 font-semibold text-zinc-400">Sr No.</TableHead>
@@ -890,62 +891,74 @@ export default function ProductManagementPage() {
                     </TableCell>
                   </TableRow>
                 ) : filteredProducts.length === 0 ? (
-                  <TableRow><TableCell colSpan={9} className="text-center h-32 text-zinc-500">No products found matching criteria.</TableCell></TableRow>
+                  <TableRow>
+                    <TableCell colSpan={9} className="py-12 text-center text-zinc-500">
+                      <div className="flex flex-col items-center justify-center space-y-4">
+                        <p className="text-sm font-semibold text-zinc-400">No products found matching criteria.</p>
+                        <Button
+                          onClick={openCreateModal}
+                          className="bg-white text-black font-semibold hover:bg-zinc-200 rounded-xl px-4 h-9 text-xs cursor-pointer shadow-md"
+                        >
+                          + Add New Product
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
                 ) : (
                   paginatedProducts.map((p, index) => (
                     <TableRow key={p._id} className="border-b border-zinc-800/60 hover:bg-zinc-900/20 transition-colors">
-                      <TableCell className="font-mono text-zinc-500 py-4">{(currentPage - 1) * itemsPerPage + index + 1}</TableCell>
-                      <TableCell className="font-semibold capitalize py-4">
+                      <TableCell className="font-mono text-zinc-500 py-2.5">{(currentPage - 1) * itemsPerPage + index + 1}</TableCell>
+                      <TableCell className="font-semibold capitalize py-2.5">
                         <div className="flex items-center gap-3">
                           {p.images?.[0] && (
                             <img 
                               src={p.images[0]} 
-                              className="w-12 h-12 object-contain rounded-xl bg-white border border-zinc-800 p-0.5 shadow-sm shrink-0" 
+                              className="w-10 h-10 object-contain rounded-lg bg-white border border-zinc-800 p-0.5 shadow-sm shrink-0" 
                               alt={p.name} 
                               referrerPolicy="no-referrer"
                             />
                           )}
-                          <span className="font-bold tracking-tight text-sm text-zinc-100 capitalize">{p.name}</span>
+                          <span className="font-bold tracking-tight text-xs text-zinc-100 capitalize">{p.name}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="text-zinc-400 py-4">{p.category?.name || "Uncategorized"}</TableCell>
-                      <TableCell className="py-4">
+                      <TableCell className="text-zinc-450 text-xs py-2.5">{p.category?.name || "Uncategorized"}</TableCell>
+                      <TableCell className="py-2.5">
                         {p.company?.logo ? (
                           <img 
                             src={p.company.logo} 
-                            className="w-12 h-12 object-contain rounded-xl bg-white border border-zinc-800 p-0.5 shadow-sm shrink-0" 
+                            className="w-10 h-10 object-contain rounded-lg bg-white border border-zinc-800 p-0.5 shadow-sm shrink-0" 
                             alt={p.company?.name} 
                             referrerPolicy="no-referrer"
                           />
                         ) : (
-                          <span className="text-xs font-mono text-zinc-500">{p.company?.name || "No Brand"}</span>
+                          <span className="text-[11px] font-mono text-zinc-500">{p.company?.name || "No Brand"}</span>
                         )}
                       </TableCell>
-                      <TableCell className="font-mono text-sm py-4">
-                        <span className="text-emerald-400 font-bold">{p.stock}</span> {p.stockUnit}
+                      <TableCell className="font-mono text-xs py-2.5">
+                        <span className="text-emerald-450 text-emerald-400 font-bold">{p.stock}</span> {p.stockUnit}
                       </TableCell>
-                      <TableCell className="font-mono text-sm py-4">₹{p.sellingPrice}/-</TableCell>
-                      <TableCell className="py-4">
+                      <TableCell className="font-mono text-xs py-2.5">₹{p.sellingPrice}/-</TableCell>
+                      <TableCell className="py-2.5">
                         <div className="flex items-center gap-2">
                           <Switch 
                             checked={p.isVisible !== false}
                             onCheckedChange={() => toggleVisibilityMutation.mutate(p._id)}
-                            className="data-[state=checked]:bg-emerald-600 scale-90"
+                            className="data-[state=checked]:bg-emerald-600 scale-75"
                           />
-                          <span className={`text-[10px] font-bold uppercase min-w-[50px] ${p.isVisible !== false ? "text-emerald-400" : "text-zinc-500"}`}>
+                          <span className={`text-[9px] font-bold uppercase min-w-[50px] ${p.isVisible !== false ? "text-emerald-400" : "text-zinc-500"}`}>
                             {p.isVisible !== false ? "Visible" : "Hidden"}
                           </span>
                         </div>
                       </TableCell>
-                      <TableCell className="font-mono text-xs text-zinc-400 py-4">
+                      <TableCell className="font-mono text-[11px] text-zinc-450 py-2.5">
                         {p.createdAt ? (
                           new Date(p.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
                         ) : "—"}
                       </TableCell>
-                      <TableCell className="text-center py-4">
+                      <TableCell className="text-center py-2.5">
                         <div className="flex justify-center gap-3">
-                          <Button onClick={() => openEditModal(p)} variant="ghost" className="p-1 h-auto text-zinc-400 hover:text-white transition-colors"><Edit2 className="w-4 h-4" /></Button>
-                          <Button onClick={() => { setPendingDeleteId(p._id); setDeleteDialogOpen(true); }} variant="ghost" className="p-1 h-auto text-zinc-500 hover:text-rose-400 transition-colors"><Trash2 className="w-4 h-4" /></Button>
+                          <Button onClick={() => openEditModal(p)} variant="ghost" className="p-1 h-auto text-zinc-400 hover:text-white transition-colors"><Edit2 className="w-3.5 h-3.5" /></Button>
+                          <Button onClick={() => { setPendingDeleteId(p._id); setDeleteDialogOpen(true); }} variant="ghost" className="p-1 h-auto text-zinc-500 hover:text-rose-455 hover:text-rose-400 transition-colors"><Trash2 className="w-3.5 h-3.5" /></Button>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -962,8 +975,20 @@ export default function ProductManagementPage() {
                 <LoadingSpinner size={160} label="Loading items..." className="mx-auto" />
               </div>
             ) : paginatedProducts.length === 0 ? (
-              <div className="text-center py-20 text-zinc-500 border border-dashed border-zinc-800 rounded-2xl bg-zinc-900/10">
-                No products found matching criteria.
+              <div className="flex flex-col items-center justify-center text-center p-12 border border-dashed border-zinc-800 bg-[#0c0c0e]/30 rounded-2xl space-y-4 min-h-[300px]">
+                <div className="w-12 h-12 rounded-full bg-zinc-900 flex items-center justify-center border border-zinc-800 text-zinc-500">
+                  <Package className="w-6 h-6" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-sm font-bold text-zinc-200">No products found matching criteria</h3>
+                  <p className="text-xs text-zinc-500 max-w-sm">No items match your search filters or catalog selection.</p>
+                </div>
+                <Button 
+                  onClick={openCreateModal}
+                  className="bg-white text-black font-semibold hover:bg-zinc-200 rounded-xl px-4 h-9 text-xs cursor-pointer shadow-md"
+                >
+                  + Add New Product
+                </Button>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">

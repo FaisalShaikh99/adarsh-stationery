@@ -1,4 +1,3 @@
-// Made for get customer data in customer directory list page
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { getToken } from "next-auth/jwt";
@@ -8,12 +7,11 @@ import Order from "@/models/order.model";
 import { ApiError } from "@/utils/ApiError";
 import { ApiResponse } from "@/utils/ApiResponse";
 import { asyncHandler } from "@/utils/asyncHandler";
-import { orderPopulation } from "../../orders/_utils";
+import { orderPopulation, sanitizeOrder } from "../../orders/_utils";
 
 export const GET = asyncHandler(async (request, { params }) => {
   await dbConnect();
 
-  // Secure authorization
   const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
   if (!token) {
     throw new ApiError(401, "Access Denied. Please sign in to view customer details.");
@@ -35,12 +33,14 @@ export const GET = asyncHandler(async (request, { params }) => {
     .sort({ createdAt: -1 })
     .lean();
 
+  const sanitizedOrders = orders.map(sanitizeOrder);
+
   return NextResponse.json(
     new ApiResponse(
       200,
       {
         ...customer,
-        orders,
+        orders: sanitizedOrders,
       },
       "Customer details and order history fetched successfully."
     )

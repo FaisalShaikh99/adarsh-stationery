@@ -1,4 +1,3 @@
-// this routes show detail of whole order
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { getToken } from "next-auth/jwt";
@@ -7,7 +6,7 @@ import Order from "@/models/order.model";
 import { ApiError } from "@/utils/ApiError";
 import { ApiResponse } from "@/utils/ApiResponse";
 import { asyncHandler } from "@/utils/asyncHandler";
-import { orderPopulation } from "../_utils";
+import { orderPopulation, sanitizeOrder } from "../_utils";
 
 export const GET = asyncHandler(async (request, { params }) => {
   await dbConnect();
@@ -38,7 +37,8 @@ export const GET = asyncHandler(async (request, { params }) => {
       ],
       _id: { $ne: order._id }
     })
-    .select("orderNumber status totalAmount createdAt")
+    .populate("payment")
+    .select("orderNumber status totalAmount createdAt payment")
     .sort({ createdAt: -1 })
     .lean();
   } else {
@@ -54,15 +54,19 @@ export const GET = asyncHandler(async (request, { params }) => {
         $or: queryConditions,
         _id: { $ne: order._id }
       })
-      .select("orderNumber status totalAmount createdAt")
+      .populate("payment")
+      .select("orderNumber status totalAmount createdAt payment")
       .sort({ createdAt: -1 })
       .lean();
     }
   }
 
+  const sanitizedOrder = sanitizeOrder(order);
+  const sanitizedOtherOrders = otherOrders.map(sanitizeOrder);
+
   const orderData = {
-    ...order,
-    otherOrders
+    ...sanitizedOrder,
+    otherOrders: sanitizedOtherOrders
   };
 
   return NextResponse.json(new ApiResponse(200, orderData, "Order fetched successfully."));

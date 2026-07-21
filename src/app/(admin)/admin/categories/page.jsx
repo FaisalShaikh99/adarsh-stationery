@@ -321,7 +321,7 @@ export default function CategoryManagementPage() {
 
         {/* 📊 CORE DATA TABLE NODE LAYER */}
         <div className="overflow-x-auto rounded-xl border border-zinc-800 bg-zinc-900/50">
-          <Table>
+          <Table className="min-w-[800px]">
             <TableHeader>
               <TableRow className="border-b border-zinc-800 bg-zinc-900/80 hover:bg-transparent">
                 <TableHead className="w-16 text-center text-zinc-400 font-semibold">no</TableHead>
@@ -342,8 +342,16 @@ export default function CategoryManagementPage() {
                 </TableRow>
               ) : filteredCategories.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center text-zinc-500">
-                    No categorical records found matching criteria.
+                  <TableCell colSpan={7} className="py-12 text-center text-zinc-500">
+                    <div className="flex flex-col items-center justify-center space-y-4">
+                      <p className="text-sm font-semibold text-zinc-400">No categories found matching search criteria.</p>
+                      <Button
+                        onClick={openCreateModal}
+                        className="bg-white text-black font-semibold hover:bg-zinc-200 rounded-xl px-4 h-9 text-xs cursor-pointer shadow-md"
+                      >
+                        + Add New Category
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ) : (
@@ -352,22 +360,22 @@ export default function CategoryManagementPage() {
                     key={category._id} 
                     className={`border-b border-zinc-800 hover:bg-zinc-900/40 transition-colors ${!category.isActive ? "opacity-60 bg-zinc-950/20" : ""}`}
                   >
-                    <TableCell className="text-center font-medium text-zinc-500 py-4">{index + 1}</TableCell>
-                    <TableCell className="py-4">
+                    <TableCell className="text-center font-medium text-zinc-500 py-2.5 text-xs">{index + 1}</TableCell>
+                    <TableCell className="py-2.5">
                       <img 
                         src={category.image} 
                         alt="" 
-                        className="w-12 h-12 rounded-xl object-contain border border-zinc-800 bg-white p-0.5" 
+                        className="w-10 h-10 rounded-lg object-contain border border-zinc-800 bg-white p-0.5" 
                         referrerPolicy="no-referrer"
                       />
                     </TableCell>
-                    <TableCell className="font-bold tracking-tight text-sm text-zinc-100 capitalize py-4">{category.name}</TableCell>
-                    <TableCell className="font-mono text-sm py-4">
-                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${category.totalProducts > 0 ? "bg-blue-500/10 text-blue-400 border border-blue-500/20" : "bg-zinc-800 text-zinc-500"}`}>
+                    <TableCell className="font-bold tracking-tight text-xs text-zinc-100 capitalize py-2.5">{category.name}</TableCell>
+                    <TableCell className="font-mono text-xs py-2.5">
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${category.totalProducts > 0 ? "bg-blue-500/10 text-blue-400 border border-blue-500/20" : "bg-zinc-800 text-zinc-500"}`}>
                         {String(category.totalProducts).padStart(2, '0')} Products
                       </span>
                     </TableCell>
-                    <TableCell className="py-4">
+                    <TableCell className="py-2.5">
                       {((statusToggleMutation.isPending && statusToggleMutation.variables === category._id) || (deleteMutation.isPending && deleteMutation.variables === category._id)) ? (
                         <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
                       ) : (
@@ -375,30 +383,30 @@ export default function CategoryManagementPage() {
                           <Switch 
                             checked={category.isActive}
                             onCheckedChange={() => handleStatusToggle(category._id)}
-                            className="data-[state=checked]:bg-emerald-600"
+                            className="data-[state=checked]:bg-emerald-600 scale-75"
                           />
-                          <span className={`text-xs font-bold uppercase min-w-[50px] ${category.isActive ? "text-emerald-400" : "text-zinc-500"}`}>
+                          <span className={`text-[10px] font-bold uppercase min-w-[50px] ${category.isActive ? "text-emerald-400" : "text-zinc-500"}`}>
                             {category.isActive ? "Active" : "Disabled"}
                           </span>
                         </div>
                       )}
                     </TableCell>
-                    <TableCell className="text-xs text-zinc-400 font-mono py-4">
+                    <TableCell className="text-xs text-zinc-400 font-mono py-2.5">
                       {new Date(category.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </TableCell>
-                    <TableCell className="py-4">
-                      <div className="flex items-center justify-center gap-4">
+                    <TableCell className="py-2.5">
+                      <div className="flex items-center justify-center gap-3">
                         <button 
                           onClick={() => openEditModal(category)}
-                          className="text-zinc-400 hover:text-white transition-colors p-1"
+                          className="text-zinc-400 hover:text-white transition-colors p-1.5"
                         >
-                          <Edit2 className="h-4 w-4" />
+                          <Edit2 className="h-3.5 w-3.5" />
                         </button>
                         <button 
                           onClick={() => triggerDeleteCheck(category._id)}
-                          className="text-zinc-500 hover:text-rose-400 transition-colors p-1"
+                          className="text-zinc-500 hover:text-rose-400 transition-colors p-1.5"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-3.5 w-3.5" />
                         </button>
                       </div>
                     </TableCell>

@@ -65,8 +65,19 @@ async function seedOrders() {
 
   const db = mongoose.connection.db;
 
-  // Always reset existing seed orders to prevent duplication and allow clean re-runs
-  console.log("Resetting seed orders...");
+  // Always reset existing seed orders, payments, and invoices to prevent duplication and allow clean re-runs
+  console.log("Resetting seed payments and invoices...");
+  const seedPayments = await db.collection("payments").find({ gatewayOrderId: SEED_MARKER }).toArray();
+  const seedPaymentIds = seedPayments.map(p => p._id);
+  const seedOrderIds = seedPayments.map(p => p.order).filter(Boolean);
+
+  if (seedPaymentIds.length > 0) {
+    await db.collection("payments").deleteMany({ _id: { $in: seedPaymentIds } });
+  }
+  if (seedOrderIds.length > 0) {
+    await db.collection("orders").deleteMany({ _id: { $in: seedOrderIds } });
+    await db.collection("invoices").deleteMany({ order: { $in: seedOrderIds } });
+  }
   await db.collection("orders").deleteMany({ razorpayOrderId: SEED_MARKER });
 
   // Clear existing customer profiles matching seed phone numbers to keep seeding clean
@@ -152,19 +163,83 @@ async function seedOrders() {
   // Sort orders in ascending order of creation date to process them in chronological order
   const sortedOrders = [...orders].sort((a, b) => a.createdAt - b.createdAt);
 
+  const paymentsToInsert = [];
+  const invoicesToInsert = [];
+
   // Match or create a customer for each order and update the customer field
-  for (const order of sortedOrders) {
+  for (const [index, order] of sortedOrders.entries()) {
     const customerDoc = await matchOrCreateCustomer(
       order.shippingAddress,
       order.totalAmount,
       order.createdAt
     );
     order.customer = customerDoc._id;
+    order._id = new mongoose.Types.ObjectId(); // Ensure _id is defined so we can map it back in payment
+
+    const paymentId = new mongoose.Types.ObjectId();
+    const invoiceId = new mongoose.Types.ObjectId();
+    const paymentNumber = `PAY-${order.createdAt.getFullYear()}-${String(index + 1).padStart(5, "0")}`;
+    const invoiceNumber = `INV-${order.orderNumber.split("-").pop()}`;
+
+    const paymentDoc = {
+      _id: paymentId,
+      paymentNumber,
+      order: order._id,
+      customer: customerDoc._id,
+      invoice: invoiceId,
+      gatewayTransactionId: order.paymentStatus === "Paid" ? `pay_seed_${String(index + 1).padStart(4, "0")}` : undefined,
+      gatewayOrderId: `seed-order-${order.createdAt.getFullYear()}-${String(index + 1).padStart(2, "0")}`,
+      gateway: order.paymentStatus === "Paid" ? "Razorpay" : "None",
+      paymentMethod: "UPI",
+      type: "Incoming",
+      amount: order.totalAmount,
+      currency: "INR",
+      status: order.paymentStatus,
+      paymentDate: order.createdAt,
+      remarks: "Seed transaction",
+      isArchived: false,
+      statusHistory: [{
+        status: order.paymentStatus,
+        changedAt: order.createdAt,
+        changedBy: "System",
+        remarks: "Seed transaction initialized"
+      }],
+      createdAt: order.createdAt,
+      updatedAt: order.createdAt
+    };
+
+    const invoiceDoc = {
+      _id: invoiceId,
+      invoiceNumber,
+      order: order._id,
+      customer: customerDoc._id,
+      amount: order.totalAmount,
+      dueDate: new Date(new Date(order.createdAt).setDate(order.createdAt.getDate() + 15)),
+      status: order.paymentStatus === "Paid" ? "Paid" : "Sent",
+      createdAt: order.createdAt,
+      updatedAt: order.createdAt
+    };
+
+    paymentsToInsert.push(paymentDoc);
+    invoicesToInsert.push(invoiceDoc);
+    order.payment = paymentId;
+
+    // Delete legacy properties
+    delete order.paymentStatus;
+    delete order.paymentId;
+    delete order.razorpayOrderId;
   }
 
-  // Insert orders into database
+  // Insert payments, invoices, and orders into database
+  if (paymentsToInsert.length > 0) {
+    await db.collection("payments").insertMany(paymentsToInsert);
+  }
+  if (invoicesToInsert.length > 0) {
+    await db.collection("invoices").insertMany(invoicesToInsert);
+  }
   await db.collection("orders").insertMany(sortedOrders);
-  console.log(`Successfully inserted ${sortedOrders.length} development seed orders and generated corresponding Customer profiles.`);
+
+  console.log(`Successfully inserted ${sortedOrders.length} development seed orders and generated corresponding Customer, Payment & Invoice profiles.`);
 }
 
 seedOrders()

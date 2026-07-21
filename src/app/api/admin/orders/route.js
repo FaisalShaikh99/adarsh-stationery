@@ -3,10 +3,11 @@ import { getToken } from "next-auth/jwt";
 import { dbConnect } from "@/lib/dbConnect";
 import { Admin } from "@/models/admin.model";
 import Order from "@/models/order.model";
+import Payment from "@/models/payment.model";
 import { ApiError } from "@/utils/ApiError";
 import { ApiResponse } from "@/utils/ApiResponse";
 import { asyncHandler } from "@/utils/asyncHandler";
-import { orderPopulation } from "./_utils";
+import { orderPopulation, sanitizeOrder } from "./_utils";
 
 export const GET = asyncHandler(async (request) => {
   await dbConnect();
@@ -25,7 +26,13 @@ export const GET = asyncHandler(async (request) => {
   const filter = {};
 
   if (status) filter.status = status;
-  if (paymentStatus) filter.paymentStatus = paymentStatus;
+
+  if (paymentStatus) {
+    const matchingPayments = await Payment.find({ status: paymentStatus, isArchived: false })
+      .select("_id")
+      .lean();
+    filter.payment = { $in: matchingPayments.map((p) => p._id) };
+  }
 
   if (search) {
     const customers = await Admin.find(
@@ -48,9 +55,11 @@ export const GET = asyncHandler(async (request) => {
     Order.countDocuments(filter),
   ]);
 
+  const sanitizedOrders = orders.map(sanitizeOrder);
+
   return NextResponse.json(
     new ApiResponse(200, {
-      orders,
+      orders: sanitizedOrders,
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     }, "Orders fetched successfully."),
   );

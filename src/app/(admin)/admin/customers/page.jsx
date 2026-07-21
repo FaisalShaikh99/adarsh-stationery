@@ -185,7 +185,7 @@ export default function CustomersPage() {
 
         {/* 5. DATA TABLE */}
         <div className="overflow-x-auto rounded-xl border border-zinc-800 bg-zinc-900/10">
-          <Table>
+          <Table className="min-w-[1000px]">
             <TableHeader className="bg-zinc-900/40">
               <TableRow className="border-b border-zinc-800 hover:bg-transparent">
                 <TableHead className="font-semibold text-zinc-400">Customer Name</TableHead>
@@ -206,8 +206,11 @@ export default function CustomersPage() {
                 </TableRow>
               ) : customers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-48 text-center text-sm text-zinc-500">
-                    No customers match these filters.
+                  <TableCell colSpan={7} className="py-12 text-center text-sm text-zinc-500">
+                    <div className="flex flex-col items-center justify-center space-y-2">
+                      <p className="font-semibold text-zinc-400">No customers match these filters.</p>
+                      <p className="text-xs text-zinc-550 text-zinc-500">Try adjusting your search query or segments filter.</p>
+                    </div>
                   </TableCell>
                 </TableRow>
               ) : customers.map((customer) => (

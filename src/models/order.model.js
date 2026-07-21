@@ -51,17 +51,9 @@ const orderSchema = new mongoose.Schema(
     totalAmount: { type: Number, required: true, min: 0 },
     shippingAddress: { type: shippingAddressSchema, required: true },
     status: { type: String, enum: ORDER_STATUSES, default: "Pending" },
-    paymentStatus: {
-      type: String,
-      enum: ["Pending", "Paid", "Failed"],
-      default: "Pending",
-    },
-    paymentId: { type: String, trim: true },
-    razorpayOrderId: { type: String, trim: true },
-    paymentMethod: {
-      type: String,
-      enum: ["COD", "UPI", "Card", "NetBanking"],
-      default: "UPI",
+    payment: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Payment",
     },
     statusHistory: { type: [statusHistorySchema], default: [] },
   },

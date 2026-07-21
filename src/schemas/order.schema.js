@@ -24,10 +24,7 @@ export const createOrderSchema = z.object({
   items: z.array(orderItemSchema).min(1, "At least one item is required"),
   totalAmount: z.coerce.number().nonnegative("Total amount cannot be negative"),
   shippingAddress: shippingAddressSchema,
-  paymentStatus: z.enum(["Pending", "Paid", "Failed"]).optional(),
-  paymentId: z.string().trim().optional(),
-  razorpayOrderId: z.string().trim().optional(),
-  paymentMethod: z.enum(["COD", "UPI", "Card", "NetBanking"]).optional().default("UPI"),
+  payment: z.string().optional(),
 });
 
 export const updateShippingAddressSchema = shippingAddressSchema;

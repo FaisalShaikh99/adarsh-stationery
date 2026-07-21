@@ -147,7 +147,7 @@ export default function OrdersPage() {
 
         {/* 4. ORDERS TABLE */}
         <div className="overflow-x-auto rounded-xl border border-zinc-800 bg-zinc-900/10">
-          <Table>
+          <Table className="min-w-[1000px]">
             <TableHeader className="bg-zinc-900/40">
               <TableRow className="border-b border-zinc-800 hover:bg-transparent">
                 <TableHead className="font-semibold text-zinc-400">Order</TableHead>
@@ -167,8 +167,11 @@ export default function OrdersPage() {
                 </TableRow>
               ) : orders.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-48 text-center text-sm text-zinc-500">
-                    No orders match these filters.
+                  <TableCell colSpan={6} className="py-12 text-center text-sm text-zinc-500">
+                    <div className="flex flex-col items-center justify-center space-y-2">
+                      <p className="font-semibold text-zinc-400">No orders match these filters.</p>
+                      <p className="text-xs text-zinc-650 text-zinc-500">Try clearing active search queries or status filters.</p>
+                    </div>
                   </TableCell>
                 </TableRow>
               ) : orders.map((order) => (
