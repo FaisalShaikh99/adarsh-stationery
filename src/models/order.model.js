@@ -13,6 +13,7 @@ const orderItemSchema = new mongoose.Schema(
     productName: { type: String, required: true, trim: true },
     quantity: { type: Number, required: true, min: 1 },
     pricePerUnit: { type: Number, required: true, min: 0 },
+    costPricePerUnit: { type: Number, min: 0, default: 0 },
     subtotal: { type: Number, required: true, min: 0 },
   },
   { _id: false },

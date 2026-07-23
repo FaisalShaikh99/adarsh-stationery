@@ -266,12 +266,9 @@ export default function CategoryManagementPage() {
       {/* Top Header Grid Section */}
       <div className="flex justify-between items-center border-b border-zinc-800 pb-5">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Category Management</h1>
-          <p className="text-sm text-zinc-400 mt-1">
-            Category counter :{" "}
-            <span className="text-blue-400 font-mono font-bold text-base tracking-widest">
-              {String(categories.length).padStart(3, "0")}
-            </span>
+          <h1 className="text-xl font-bold tracking-tight text-white">Categories</h1>
+          <p className="mt-1 text-xs text-zinc-400">
+            Organize stationery product categories ({String(categories.length).padStart(2, "0")} active categories).
           </p>
         </div>
         

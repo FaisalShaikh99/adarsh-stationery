@@ -85,7 +85,7 @@ async function seedOrders() {
   console.log("Resetting seed customers...");
   await db.collection("customers").deleteMany({ phone: { $in: seedPhones } });
 
-  const products = await db.collection("products").find({}, { projection: { name: 1, sellingPrice: 1 } }).toArray();
+  const products = await db.collection("products").find({}, { projection: { name: 1, sellingPrice: 1, costPrice: 1 } }).toArray();
   if (products.length === 0) {
     throw new Error("No products found. Create product test data before running npm run seed:orders.");
   }
@@ -111,6 +111,7 @@ async function seedOrders() {
       const product = products[(index + productOffset) % products.length];
       const quantity = 1 + ((index + productOffset) % 5);
       const pricePerUnit = Number(product.sellingPrice);
+      const costPricePerUnit = Number(product.costPrice || 0);
 
       if (!Number.isFinite(pricePerUnit) || pricePerUnit < 0) {
         throw new Error(`Product ${product._id} does not have a valid sellingPrice.`);
@@ -121,6 +122,7 @@ async function seedOrders() {
         productName: product.name,
         quantity,
         pricePerUnit,
+        costPricePerUnit,
         subtotal: pricePerUnit * quantity,
       };
     });
@@ -129,6 +131,7 @@ async function seedOrders() {
     if (ADDRESSES[index].name === "Rohan Mehta") {
       const targetProduct = products[0];
       const price = Number(targetProduct.sellingPrice);
+      const costPrice = Number(targetProduct.costPrice || 0);
       const exists = items.some(item => String(item.product) === String(targetProduct._id));
       if (!exists) {
         items.push({
@@ -136,6 +139,7 @@ async function seedOrders() {
           productName: targetProduct.name,
           quantity: 1,
           pricePerUnit: price,
+          costPricePerUnit: costPrice,
           subtotal: price,
         });
       }

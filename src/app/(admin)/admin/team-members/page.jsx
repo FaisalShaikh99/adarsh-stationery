@@ -184,11 +184,11 @@ export default function TeamMembersPage() {
   return (
     <div className="min-h-screen bg-zinc-950 p-8 text-white font-sans">
       
-      <div className="flex items-center justify-between border-b border-zinc-800 pb-5">
+      <div className="flex justify-between items-center border-b border-zinc-800 pb-5">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Team Members</h1>
-          <p className="text-sm text-zinc-400 mt-1.5">
-            Total Members : <span className="text-blue-400 font-mono font-bold text-base">{String(team.length).padStart(4, '0')}</span>
+          <h1 className="text-xl font-bold tracking-tight text-white">Team Members</h1>
+          <p className="mt-1 text-xs text-zinc-400">
+            Manage admin staff accounts, system roles, and operational access ({String(team.length).padStart(2, '0')} total members).
           </p>
         </div>
 

@@ -3,31 +3,51 @@
 import { useState } from "react";
 import { usePathname } from "next/navigation"; 
 import AdminSidebar from "@/components/ui/AdminSidebar";
+import AdminHeader from "@/components/ui/AdminHeader";
 
 export default function AdminLayout({ children }) {
   const [isCollapsed, setIsCollapsed] = useState(true);
-  const pathname = usePathname(); // 👈 Current URL path nikaala
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const pathname = usePathname();
 
   const isLoginPage = pathname === "/admin/sign-in";
 
-  return (
-    <div className="min-h-screen bg-zinc-950 text-white flex">
-      
-      {!isLoginPage && (
-        <AdminSidebar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
-      )}
+  if (isLoginPage) {
+    return (
+      <div className="min-h-screen bg-zinc-950 text-white">
+        <main>{children}</main>
+      </div>
+    );
+  }
 
-      {/*  Main Content Layout Spacing */}
+  return (
+    <div className="min-h-screen bg-zinc-950 text-white flex flex-col">
+      
+      {/* Two-Level Admin Sidebar Component */}
+      <AdminSidebar 
+        isCollapsed={isCollapsed} 
+        setIsCollapsed={setIsCollapsed}
+        isMobileOpen={isMobileOpen}
+        setIsMobileOpen={setIsMobileOpen}
+      />
+
+      {/* Main Content & Sticky Header Container */}
       <div 
-        className={`flex-1 min-h-screen bg-gradient-to-b from-zinc-950 via-zinc-950 to-zinc-900/60 transition-all duration-300 ease-in-out overflow-x-auto ${
-          isLoginPage 
-            ? "pl-0" // 👈 Login page par koi sidebar nahi hai, toh padding ZERO (Full Screen)
-            : isCollapsed 
-            ? "pl-20" 
-            : "pl-64"
+        className={`flex-1 flex flex-col min-h-screen bg-gradient-to-b from-zinc-950 via-zinc-950 to-zinc-900/60 transition-all duration-300 ease-in-out ${
+          isCollapsed 
+            ? "lg:pl-[68px]" 
+            : "lg:pl-[308px]"
         }`}
       >
-        <main className={isLoginPage ? "" : "p-6 max-w-[1400px] mx-auto w-full"}>
+        {/* Sticky Header */}
+        <AdminHeader 
+          onToggleMobileDrawer={() => setIsMobileOpen(!isMobileOpen)}
+          isCollapsed={isCollapsed}
+          setIsCollapsed={setIsCollapsed}
+        />
+
+        {/* Page Content Body */}
+        <main className="flex-1 p-4 md:p-6 max-w-[1400px] w-full mx-auto">
           {children}
         </main>
       </div>

@@ -17,6 +17,10 @@ const AdminSchema = new mongoose.Schema({
         required : true,
         sparse: true
     },
+    password : {
+        type : String,
+        default : null
+    },
     image : {
         type : String
     },
@@ -42,10 +46,22 @@ const AdminSchema = new mongoose.Schema({
         ref : "Admin",
         default : null,
     },
-}, {timestamps : true})
+    notifyNewOrder: {
+        type: Boolean,
+        default: true
+    },
+    notifyLowStock: {
+        type: Boolean,
+        default: true
+    },
+    notifyNewTeamMember: {
+        type: Boolean,
+        default: true
+    }
+}, {timestamps : true});
 
-// Indexes — queries fast 
-AdminSchema.index({ email: 1 })
-AdminSchema.index({ role: 1 })
+// Indexes
+AdminSchema.index({ email: 1 });
+AdminSchema.index({ role: 1 });
 
 export const Admin = mongoose.models.Admin || mongoose.model("Admin", AdminSchema);

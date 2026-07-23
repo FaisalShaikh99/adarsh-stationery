@@ -682,9 +682,12 @@ export default function ProductManagementPage() {
  
       {/* 1. TOP NAVBAR / ROW METRICS */}
       <div className="flex flex-wrap gap-3 justify-between items-center border-b border-zinc-800 pb-5">
-        <div className="flex items-center gap-4">
-          <h1 className="text-xl font-bold tracking-tight">Product Management</h1>
-          <span className="text-xs bg-zinc-800 text-zinc-400 px-3 py-1 rounded-lg border border-zinc-700 font-medium capitalize">{viewMode} view</span>
+        <div>
+          <div className="flex items-center gap-3">
+            <h1 className="text-xl font-bold tracking-tight text-white">Products Catalog</h1>
+            <span className="text-xs bg-zinc-800 text-zinc-400 px-3 py-1 rounded-lg border border-zinc-700 font-medium capitalize">{viewMode} view</span>
+          </div>
+          <p className="mt-1 text-xs text-zinc-400">Manage product inventory, pricing, stock levels, and catalog items.</p>
         </div>
         <div className="flex items-center gap-3">
           <Button onClick={handleCsvExport} variant="outline" className="border-zinc-800 bg-zinc-900 text-zinc-300 rounded-xl px-4 h-9 text-xs font-semibold"><Download className="w-3.5 h-3.5 mr-2" /> Export</Button>

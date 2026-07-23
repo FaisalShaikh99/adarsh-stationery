@@ -16,6 +16,7 @@ export const orderItemSchema = z.object({
   productName: z.string().trim().min(1, "Product name is required"),
   quantity: z.coerce.number().int().positive("Quantity must be at least 1"),
   pricePerUnit: z.coerce.number().nonnegative("Price cannot be negative"),
+  costPricePerUnit: z.coerce.number().nonnegative("Cost price cannot be negative").optional().default(0),
   subtotal: z.coerce.number().nonnegative("Subtotal cannot be negative"),
 });
 

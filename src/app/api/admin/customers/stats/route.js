@@ -6,6 +6,8 @@ import { ApiError } from "@/utils/ApiError";
 import { ApiResponse } from "@/utils/ApiResponse";
 import { asyncHandler } from "@/utils/asyncHandler";
 
+export const dynamic = "force-dynamic";
+
 export const GET = asyncHandler(async (request) => {
   await dbConnect();
 

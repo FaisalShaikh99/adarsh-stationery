@@ -114,6 +114,8 @@ export const authOptions = {
                     await dbConnect();
                     const admin = await Admin.findOne({ email: targetEmail });
                     if (admin) {
+                        token.name = admin.name;
+                        token.picture = admin.image;
                         token.role = admin.role;
                         token.id = admin._id.toString();
                         token.lastLogin = admin.lastLogin;
@@ -129,16 +131,18 @@ export const authOptions = {
         async session({ session, token }) {
             try {
                 if (token) {
-                session.user.role = token.role   
-                session.user.id = token.id   
-                session.user.lastLogin = token.lastLogin;    
+                    if (token.name) session.user.name = token.name;
+                    if (token.picture) session.user.image = token.picture;
+                    session.user.role = token.role;
+                    session.user.id = token.id;
+                    session.user.lastLogin = token.lastLogin;
                 }
-                return session
+                return session;
             } catch (error) {
-                console.log("Session error:", error)
-                return session
+                console.log("Session error:", error);
+                return session;
             }
-            }           
+        }
     },
 
     session: {
