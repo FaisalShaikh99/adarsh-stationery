@@ -1,15 +1,10 @@
 "use client";
  
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import {
-  Loader2,
-  Plus,
   Download,
   RefreshCw,
-  X,
-  ChevronLeft,
-  ChevronRight,
   Search,
   Package,
   TrendingUp,
@@ -20,15 +15,13 @@ import {
   History,
   SlidersHorizontal,
   Eye,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { Switch } from "@/components/ui/switch";
- 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import useFuzzySearch from "@/hooks/useFuzzySearch";
@@ -58,15 +51,15 @@ export default function InventoryManagementPage() {
   });
   const brands = brandsData || [];
  
-  // Core Products Query
+  // Core Inventory Computed Products Query
   const { 
     data: productsData, 
     isLoading: productsLoading, 
     refetch: refetchProducts 
   } = useQuery({
-    queryKey: ["products"],
+    queryKey: ["inventoryProducts"],
     queryFn: async () => {
-      const res = await axios.get("/api/admin/products");
+      const res = await axios.get("/api/admin/products/inventory");
       return res.data?.data || [];
     },
     refetchOnMount: true
@@ -115,10 +108,11 @@ export default function InventoryManagementPage() {
     }
   };
  
-  // Stock Level Adjustment Mutation (updating the product record stock attribute via PUT /api/admin/products)
+  // Stock Level Adjustment Mutation
   const adjustStockMutation = useMutation({
     mutationFn: async ({ product, quantity, type, reason }) => {
-      let nextStock = product.stock || 0;
+      let currentStock = product.currentStock !== undefined ? product.currentStock : (product.stock || 0);
+      let nextStock = currentStock;
       const qtyNum = Number(quantity);
       if (type === "add") {
         nextStock += qtyNum;
@@ -133,6 +127,8 @@ export default function InventoryManagementPage() {
         category: product.category?._id || product.category,
         company: product.company?._id || product.company,
         stock: nextStock,
+        minStock: product.minStock,
+        supplier: product.supplier,
         stockUnit: product.stockUnit || "Pcs",
         costPrice: product.costPrice,
         sellingPrice: product.sellingPrice,
@@ -147,19 +143,18 @@ export default function InventoryManagementPage() {
         type,
         quantity: qtyNum,
         reason,
-        previousStock: product.stock || 0,
+        previousStock: currentStock,
         newStock: nextStock,
         date: new Date().toISOString()
       });
       localStorage.setItem(`stock_history_${product._id}`, JSON.stringify(logs));
  
-      return { response: response.data, updatedProduct: { ...product, stock: nextStock } };
+      return { response: response.data, updatedProduct: { ...product, currentStock: nextStock, stock: nextStock } };
     },
     onSuccess: (data) => {
       toast.success("Stock level updated successfully!");
       setIsAdjustStockOpen(false);
       
-      // Update local override state to match
       setLocalOverrides(prev => {
         const updated = { ...prev };
         delete updated[data.updatedProduct._id];
@@ -169,7 +164,6 @@ export default function InventoryManagementPage() {
       queryClient.invalidateQueries({ queryKey: ["inventoryProducts"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
       
-      // Update local drawers if active
       if (selectedDetailProduct && selectedDetailProduct._id === data.updatedProduct._id) {
         setSelectedDetailProduct(data.updatedProduct);
       }
@@ -180,24 +174,21 @@ export default function InventoryManagementPage() {
   });
 
   const handleOptimisticAdjust = (product, delta, type) => {
-    const currentStock = localOverrides[product._id] !== undefined ? localOverrides[product._id] : (product.stock || 0);
+    const currentStock = localOverrides[product._id] !== undefined ? localOverrides[product._id] : (product.currentStock || product.stock || 0);
     const newStock = type === "add" ? currentStock + delta : Math.max(0, currentStock - delta);
     
-    // 1. Update UI optimistically
     setLocalOverrides(prev => ({
       ...prev,
       [product._id]: newStock
     }));
     
-    // 2. Fire mutation
     adjustStockMutation.mutate({
-      product: { ...product, stock: currentStock },
+      product: { ...product, currentStock },
       quantity: delta,
       type,
       reason: "Rapid adjustment"
     }, {
-      onError: (err) => {
-        // Rollback
+      onError: () => {
         setLocalOverrides(prev => ({
           ...prev,
           [product._id]: currentStock
@@ -211,7 +202,7 @@ export default function InventoryManagementPage() {
       toast.error("Please enter a valid non-negative stock quantity.");
       return;
     }
-    const currentStock = localOverrides[product._id] !== undefined ? localOverrides[product._id] : (product.stock || 0);
+    const currentStock = localOverrides[product._id] !== undefined ? localOverrides[product._id] : (product.currentStock || product.stock || 0);
     if (targetStock === currentStock) {
       setEditingProductId(null);
       return;
@@ -222,21 +213,18 @@ export default function InventoryManagementPage() {
     
     setEditingProductId(null);
     
-    // 1. Update UI optimistically
     setLocalOverrides(prev => ({
       ...prev,
       [product._id]: targetStock
     }));
     
-    // 2. Fire mutation
     adjustStockMutation.mutate({
-      product: { ...product, stock: currentStock },
+      product: { ...product, currentStock },
       quantity: delta,
       type,
       reason: "Manual inline override"
     }, {
-      onError: (err) => {
-        // Rollback
+      onError: () => {
         setLocalOverrides(prev => ({
           ...prev,
           [product._id]: currentStock
@@ -244,7 +232,7 @@ export default function InventoryManagementPage() {
       }
     });
   };
- 
+
   const handleAdjustStockSubmit = (e) => {
     e.preventDefault();
     const qtyNum = Number(adjustForm.quantity);
@@ -268,10 +256,10 @@ export default function InventoryManagementPage() {
       return [
         {
           type: "initial",
-          quantity: product.stock || 0,
+          quantity: product.currentStock || product.stock || 0,
           reason: "Initial baseline inventory count",
           previousStock: 0,
-          newStock: product.stock || 0,
+          newStock: product.currentStock || product.stock || 0,
           date: product.createdAt || new Date().toISOString()
         }
       ];
@@ -291,38 +279,50 @@ export default function InventoryManagementPage() {
       "Category",
       "Brand",
       "Current Stock",
+      "Reserved Stock",
+      "Available Stock",
       "Minimum Stock",
       "Cost Price",
       "Selling Price",
       "Inventory Value",
+      "Supplier",
       "Stock Status",
-      "Last Updated"
+      "Last Restocked"
     ];
  
     const rows = sortedProducts.map((p) => {
-      const sku = `PROD-${p._id.toString().slice(-6).toUpperCase()}`;
-      const stockVal = p.stock || 0;
+      const sku = p.productId || `PROD-${p._id.toString().slice(-6).toUpperCase()}`;
+      const stockVal = localOverrides[p._id] !== undefined ? localOverrides[p._id] : (p.currentStock || p.stock || 0);
+      const reservedVal = p.reservedStock || 0;
+      const availableVal = stockVal - reservedVal;
+      const minStockVal = p.minStock !== undefined ? p.minStock : 10;
       const costVal = p.costPrice || 0;
       const invValue = stockVal * costVal;
-      let status = "In Stock";
-      if (stockVal === 0) status = "Out of Stock";
-      else if (stockVal <= 10) status = "Low Stock";
+      const supplierVal = p.supplier || p.company?.name || "Direct Supplier";
       
-      const updatedDate = p.updatedAt || p.createdAt || new Date();
-      const dateStr = new Date(updatedDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
- 
+      let status = "In Stock";
+      if (availableVal <= 0) status = "Out of Stock";
+      else if (availableVal <= minStockVal) status = "Low Stock";
+      
+      const restockedDate = p.lastRestocked
+        ? new Date(p.lastRestocked).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+        : "—";
+
       return [
         sku,
         `"${p.name.replace(/"/g, '""')}"`,
         `"${(p.category?.name || "Uncategorized").replace(/"/g, '""')}"`,
         `"${(p.company?.name || "No Brand").replace(/"/g, '""')}"`,
         stockVal,
-        10, // Min stock mocked
+        reservedVal,
+        availableVal,
+        minStockVal,
         costVal,
         p.sellingPrice || 0,
         invValue,
+        `"${supplierVal.replace(/"/g, '""')}"`,
         status,
-        `"${dateStr}"`
+        `"${restockedDate}"`
       ];
     });
  
@@ -346,47 +346,6 @@ export default function InventoryManagementPage() {
     toast.success("CSV export downloaded successfully!");
   };
  
-  // Toggle Visibility Mutation
-  const toggleVisibilityMutation = useMutation({
-    mutationFn: async (id) => {
-      const res = await axios.patch(`/api/admin/products/toggle-visibility?id=${id}`);
-      return res.data;
-    },
-    onMutate: async (id) => {
-      await queryClient.cancelQueries({ queryKey: ["products"] });
-      const previousProducts = queryClient.getQueryData(["products"]);
- 
-      queryClient.setQueryData(["products"], (old) => {
-        if (!old) return old;
-        const currentData = Array.isArray(old) ? old : (old.data || []);
-        
-        const toggled = currentData.map((p) => {
-          if (p._id === id) {
-            return { ...p, isVisible: p.isVisible === false };
-          }
-          return p;
-        });
- 
-        if (Array.isArray(old)) return toggled;
-        return { ...old, data: toggled };
-      });
- 
-      return { previousProducts };
-    },
-    onError: (err, id, context) => {
-      if (context?.previousProducts) {
-        queryClient.setQueryData(["products"], context.previousProducts);
-      }
-      toast.error(err.response?.data?.message || "Visibility toggle failed.");
-    },
-    onSuccess: (data) => {
-      toast.success(data.message);
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["products"] });
-    }
-  });
- 
   // Fuzzy Search Hook Binding
   const { results: fuzzyMatchedProducts, suggestion: spellingSuggestion } = useFuzzySearch(
     products,
@@ -401,21 +360,24 @@ export default function InventoryManagementPage() {
       const brandId = p.company?._id || p.company;
       const matchesBrand = selectedBrands.length === 0 || selectedBrands.includes(brandId?.toString());
       
-      const stock = p.stock || 0;
+      const stock = localOverrides[p._id] !== undefined ? localOverrides[p._id] : (p.currentStock || p.stock || 0);
+      const minStock = p.minStock !== undefined ? p.minStock : 10;
+      const available = stock - (p.reservedStock || 0);
+
       let matchesStock = true;
       if (selectedStockStatus === "InStock") {
-        matchesStock = stock > 10;
+        matchesStock = available > minStock;
       } else if (selectedStockStatus === "LowStock") {
-        matchesStock = stock > 0 && stock <= 10;
+        matchesStock = available > 0 && available <= minStock;
       } else if (selectedStockStatus === "OutOfStock") {
-        matchesStock = stock === 0;
+        matchesStock = available <= 0;
       } else if (selectedStockStatus === "ReorderRequired") {
-        matchesStock = stock <= 10;
+        matchesStock = available <= minStock;
       }
  
       return matchesCategory && matchesBrand && matchesStock;
     });
-  }, [fuzzyMatchedProducts, selectedCategoryFilter, selectedBrands, selectedStockStatus]);
+  }, [fuzzyMatchedProducts, selectedCategoryFilter, selectedBrands, selectedStockStatus, localOverrides]);
  
   // Inventory Sorting Logic
   const sortedProducts = useMemo(() => {
@@ -425,13 +387,13 @@ export default function InventoryManagementPage() {
     } else if (sortBy === "name-desc") {
       list.sort((a, b) => b.name.localeCompare(a.name));
     } else if (sortBy === "stock-desc") {
-      list.sort((a, b) => (b.stock || 0) - (a.stock || 0));
+      list.sort((a, b) => ((b.currentStock || b.stock || 0) - (a.currentStock || a.stock || 0)));
     } else if (sortBy === "stock-asc") {
-      list.sort((a, b) => (a.stock || 0) - (b.stock || 0));
+      list.sort((a, b) => ((a.currentStock || a.stock || 0) - (b.currentStock || b.stock || 0)));
     } else if (sortBy === "value-desc") {
       list.sort((a, b) => {
-        const valA = (a.stock || 0) * (a.costPrice || 0);
-        const valB = (b.stock || 0) * (b.costPrice || 0);
+        const valA = (a.currentStock || a.stock || 0) * (a.costPrice || 0);
+        const valB = (b.currentStock || b.stock || 0) * (b.costPrice || 0);
         return valB - valA;
       });
     } else if (sortBy === "price-desc") {
@@ -449,12 +411,14 @@ export default function InventoryManagementPage() {
     let outOfStock = 0;
  
     products.forEach((p) => {
-      const stock = p.stock || 0;
+      const stock = localOverrides[p._id] !== undefined ? localOverrides[p._id] : (p.currentStock || p.stock || 0);
+      const minStock = p.minStock !== undefined ? p.minStock : 10;
+      const available = stock - (p.reservedStock || 0);
       const cost = p.costPrice || 0;
       totalValue += stock * cost;
       
-      if (stock > 10) inStock++;
-      else if (stock > 0) lowStock++;
+      if (available > minStock) inStock++;
+      else if (available > 0) lowStock++;
       else outOfStock++;
     });
  
@@ -468,7 +432,7 @@ export default function InventoryManagementPage() {
       outOfStock,
       reorderRequired
     };
-  }, [products]);
+  }, [products, localOverrides]);
  
   const totalItems = sortedProducts.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
@@ -485,11 +449,9 @@ export default function InventoryManagementPage() {
     }).format(val || 0);
   };
  
-  // Loader Skeleton State
   if (productsLoading) {
     return (
       <div className="w-full max-w-full min-h-screen bg-[#09090b] text-white p-4 sm:p-6 space-y-6 font-sans overflow-x-hidden">
-        {/* Skeleton Top Header */}
         <div className="flex justify-between items-center border-b border-zinc-800 pb-5 animate-pulse">
           <div className="space-y-2">
             <div className="h-6 w-56 bg-zinc-850 rounded-lg"></div>
@@ -500,7 +462,6 @@ export default function InventoryManagementPage() {
           </div>
         </div>
         
-        {/* Skeleton Stats Grid */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="bg-[#0c0c0e] border border-zinc-850 p-4 rounded-2xl h-[105px] animate-pulse flex flex-col justify-between">
@@ -510,7 +471,6 @@ export default function InventoryManagementPage() {
           ))}
         </div>
  
-        {/* Skeleton Table Container */}
         <div className="bg-[#0c0c0e] border border-zinc-800 rounded-2xl p-6 space-y-4 animate-pulse">
           <div className="h-11 w-full bg-zinc-900 rounded-xl"></div>
           <div className="space-y-3 pt-4">
@@ -533,7 +493,7 @@ export default function InventoryManagementPage() {
           <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
             <Package className="w-5 h-5 text-zinc-400" /> Inventory Control Center
           </h1>
-          <p className="mt-1 text-xs text-zinc-400">Reconcile current stock counts, track minimum thresholds, and adjust inventory reserves.</p>
+          <p className="mt-1 text-xs text-zinc-400">Reconcile current stock counts, track reserved & available stock, minimum thresholds, and supplier details.</p>
         </div>
         <div className="flex items-center gap-3">
           <Button onClick={handleCsvExport} variant="outline" className="border-zinc-800 bg-zinc-900 text-zinc-300 rounded-xl px-4 h-9 text-xs font-semibold cursor-pointer">
@@ -558,7 +518,7 @@ export default function InventoryManagementPage() {
           <div className="mt-2.5">
             <p className="text-2xl font-bold font-mono tracking-tight text-white">{summaryMetrics.totalProducts}</p>
             <div className="flex items-center gap-1 text-[9px] text-emerald-400 font-semibold mt-1">
-              <TrendingUp className="w-3 h-3" /> +1.2% catalogue growth
+              <TrendingUp className="w-3 h-3" /> Catalogue items
             </div>
           </div>
         </div>
@@ -621,7 +581,7 @@ export default function InventoryManagementPage() {
         {/* Card 5: Out of Stock Products */}
         <div 
           onClick={() => setSelectedStockStatus("OutOfStock")}
-          className={`bg-[#0c0c0e] border p-4.5 rounded-2xl flex flex-col justify-between min-h-[105px] cursor-pointer transition-all duration-205 select-none ${
+          className={`bg-[#0c0c0e] border p-4.5 rounded-2xl flex flex-col justify-between min-h-[105px] cursor-pointer transition-all duration-200 select-none ${
             selectedStockStatus === "OutOfStock" ? "border-rose-500 bg-rose-950/10 shadow-[0_0_15px_rgba(244,63,94,0.15)]" : "border-zinc-850 hover:border-zinc-700"
           }`}
         >
@@ -680,8 +640,6 @@ export default function InventoryManagementPage() {
           </div>
           
           <div className="flex flex-wrap items-center gap-3">
-
- 
             {/* Sorting Selector */}
             <select
               value={sortBy}
@@ -824,42 +782,46 @@ export default function InventoryManagementPage() {
           </div>
         ) : (
           <div className="overflow-x-auto rounded-xl border border-zinc-800 bg-zinc-900/10">
-            <Table className="min-w-[1100px]">
-              <TableHeader className="bg-zinc-900/40">
+            <Table className="min-w-[1300px]">
+              <TableHeader className="bg-zinc-900/60 sticky top-0 z-10 backdrop-blur-md">
                 <TableRow className="border-b border-zinc-800 text-[11px] uppercase tracking-wider text-zinc-400">
-                  <TableHead className="font-semibold py-3 text-zinc-400">Product</TableHead>
-                  <TableHead className="font-semibold py-3 text-zinc-400">SKU</TableHead>
-                  <TableHead className="font-semibold py-3 text-zinc-400 text-right">Current Stock</TableHead>
-                  <TableHead className="font-semibold py-3 text-zinc-400 text-right">Reserved Stock</TableHead>
-                  <TableHead className="font-semibold py-3 text-zinc-400 text-right">Available Stock</TableHead>
-                  <TableHead className="font-semibold py-3 text-zinc-400 text-right">Min Stock</TableHead>
-                  <TableHead className="font-semibold py-3 text-zinc-400 text-right">Cost Price</TableHead>
-                  <TableHead className="font-semibold py-3 text-zinc-400 text-right">Selling Price</TableHead>
-                  <TableHead className="font-semibold py-3 text-zinc-400 text-right">Inventory Value</TableHead>
-                  <TableHead className="font-semibold py-3 text-zinc-400">Supplier</TableHead>
-          <TableHead className="font-semibold py-3 text-zinc-400 text-center">Status</TableHead>
-                  <TableHead className="font-semibold py-3 text-zinc-400 text-center">Last Restocked</TableHead>
-                  <TableHead className="font-semibold py-3 text-zinc-400 text-right w-28">Actions</TableHead>
+                  <TableHead className="font-semibold py-3 text-zinc-400 text-left min-w-[200px]">Product</TableHead>
+                  <TableHead className="font-semibold py-3 text-zinc-400 text-left w-28">SKU</TableHead>
+                  <TableHead className="font-semibold py-3 text-zinc-400 text-right w-36">Current Stock</TableHead>
+                  <TableHead className="font-semibold py-3 text-zinc-400 text-right w-32">Reserved Stock</TableHead>
+                  <TableHead className="font-semibold py-3 text-zinc-400 text-right w-32">Available Stock</TableHead>
+                  <TableHead className="font-semibold py-3 text-zinc-400 text-right w-24">Min Stock</TableHead>
+                  <TableHead className="font-semibold py-3 text-zinc-400 text-right w-28">Cost Price</TableHead>
+                  <TableHead className="font-semibold py-3 text-zinc-400 text-right w-28">Selling Price</TableHead>
+                  <TableHead className="font-semibold py-3 text-zinc-400 text-right w-32">Inventory Value</TableHead>
+                  <TableHead className="font-semibold py-3 text-zinc-400 text-left w-32">Supplier</TableHead>
+                  <TableHead className="font-semibold py-3 text-zinc-400 text-center w-28">Status</TableHead>
+                  <TableHead className="font-semibold py-3 text-zinc-400 text-center w-32">Last Restocked</TableHead>
+                  <TableHead className="font-semibold py-3 text-zinc-400 text-right w-24">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginatedProducts.map((p) => {
-                  const stockVal = localOverrides[p._id] !== undefined ? localOverrides[p._id] : (p.stock || 0);
+                  const stockVal = localOverrides[p._id] !== undefined ? localOverrides[p._id] : (p.currentStock || p.stock || 0);
+                  const reservedVal = p.reservedStock || 0;
+                  const availableVal = stockVal - reservedVal;
+                  const minStockVal = p.minStock !== undefined ? p.minStock : 10;
                   const costVal = p.costPrice || 0;
                   const sellVal = p.sellingPrice || 0;
                   const invVal = stockVal * costVal;
-                  const sku = `PROD-${p._id.toString().slice(-6).toUpperCase()}`;
+                  const sku = p.productId || `PROD-${p._id.toString().slice(-6).toUpperCase()}`;
+                  const supplier = p.supplier || p.company?.name || "Direct Supplier";
                   
-                  const reservedVal = Math.round(stockVal * 0.1);
-                  const availableVal = Math.max(0, stockVal - reservedVal);
-                  
-                  const lastUpdate = p.updatedAt || p.createdAt || new Date();
-                  const lastUpdateStr = new Date(lastUpdate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+                  const statusText = p.status || (availableVal <= 0 ? "Out of Stock" : availableVal <= minStockVal ? "Low Stock" : "In Stock");
+
+                  const restockedDateStr = p.lastRestocked 
+                    ? new Date(p.lastRestocked).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+                    : "—";
 
                   return (
-                    <TableRow key={p._id} className="border-b border-zinc-800/60 hover:bg-zinc-900/20 transition-colors text-xs animate-fadeIn">
+                    <TableRow key={p._id} className="border-b border-zinc-800/60 hover:bg-zinc-900/20 transition-colors text-xs">
                       {/* Product */}
-                      <TableCell className="py-3">
+                      <TableCell className="py-3 text-left min-w-[200px]">
                         <div className="flex items-center gap-3">
                           <div className="relative w-10 h-10 rounded-lg bg-white border border-zinc-800 p-0.5 shrink-0 flex items-center justify-center overflow-hidden">
                             {p.images?.[0] ? (
@@ -886,10 +848,10 @@ export default function InventoryManagementPage() {
                       </TableCell>
 
                       {/* SKU */}
-                      <TableCell className="font-mono font-bold text-zinc-400 py-3">{sku}</TableCell>
+                      <TableCell className="font-mono font-bold text-zinc-400 py-3 text-left w-28">{sku}</TableCell>
                       
-                      {/* Current Stock with inline adjustments */}
-                      <TableCell className="font-mono font-bold py-3 text-right" onClick={(e) => e.stopPropagation()}>
+                      {/* Current Stock */}
+                      <TableCell className="font-mono font-bold py-3 text-right w-36" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-1.5 select-none">
                           {editingProductId === p._id ? (
                             <input
@@ -923,12 +885,8 @@ export default function InventoryManagementPage() {
                                   setEditingProductId(p._id);
                                   setEditValue(String(stockVal));
                                 }}
-                                onDoubleClick={() => {
-                                  setEditingProductId(p._id);
-                                  setEditValue(String(stockVal));
-                                }}
-                                className={`w-8 text-center font-extrabold cursor-pointer hover:underline ${stockVal === 0 ? "text-rose-400 font-extrabold" : stockVal <= 10 ? "text-amber-400 font-extrabold" : "text-emerald-400 font-extrabold"}`}
-                                title="Click or Double click to type value"
+                                className={`w-8 text-center font-extrabold cursor-pointer hover:underline ${stockVal === 0 ? "text-rose-400" : stockVal <= minStockVal ? "text-amber-400" : "text-emerald-400"}`}
+                                title="Click to type value"
                               >
                                 {stockVal}
                               </span>
@@ -946,53 +904,53 @@ export default function InventoryManagementPage() {
                       </TableCell>
 
                       {/* Reserved Stock */}
-                      <TableCell className="font-mono text-zinc-400 text-right py-3">
+                      <TableCell className="font-mono text-amber-400 text-right py-3 font-semibold w-32">
                         {reservedVal} <span className="text-[10px] text-zinc-600">{p.stockUnit || "Pcs"}</span>
                       </TableCell>
 
                       {/* Available Stock */}
-                      <TableCell className="font-mono text-emerald-450 text-emerald-400 text-right py-3">
-                        {availableVal} <span className="text-[10px] text-zinc-650">{p.stockUnit || "Pcs"}</span>
+                      <TableCell className="font-mono text-emerald-400 text-right py-3 font-bold w-32">
+                        {availableVal} <span className="text-[10px] text-zinc-500">{p.stockUnit || "Pcs"}</span>
                       </TableCell>
                       
                       {/* Min Stock */}
-                      <TableCell className="font-mono text-zinc-500 text-right py-3">10</TableCell>
+                      <TableCell className="font-mono text-zinc-400 text-right py-3 w-24">{minStockVal}</TableCell>
                       
-                      {/* Prices */}
-                      <TableCell className="font-mono text-zinc-350 text-right py-3">{formatCurrency(costVal)}</TableCell>
-                      <TableCell className="font-mono text-zinc-100 font-semibold text-right py-3">{formatCurrency(sellVal)}</TableCell>
-                      <TableCell className="font-mono text-zinc-200 font-bold text-right py-3">{formatCurrency(invVal)}</TableCell>
+                      {/* Prices & Value */}
+                      <TableCell className="font-mono text-zinc-400 text-right py-3 w-28">₹{costVal}</TableCell>
+                      <TableCell className="font-mono text-zinc-100 font-semibold text-right py-3 w-28">₹{sellVal}</TableCell>
+                      <TableCell className="font-mono text-zinc-200 font-bold text-right py-3 w-32">{formatCurrency(invVal)}</TableCell>
                       
                       {/* Supplier */}
-                      <TableCell className="text-zinc-350 capitalize py-3 truncate max-w-[120px]" title={p.company?.name || "No Brand"}>
-                        {p.company?.name || "Direct Supplier"}
+                      <TableCell className="text-zinc-300 capitalize py-3 truncate text-left w-32" title={supplier}>
+                        {supplier}
                       </TableCell>
 
                       {/* Status */}
-                      <TableCell className="text-center py-3">
-                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold whitespace-nowrap inline-flex items-center gap-1.5 ${
-                          stockVal === 0 
+                      <TableCell className="text-center py-3 w-28">
+                        <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold whitespace-nowrap inline-flex items-center gap-1.5 ${
+                          statusText === "Out of Stock" 
                             ? "bg-rose-500/10 text-rose-400 border border-rose-500/25" 
-                            : stockVal <= 10 
+                            : statusText === "Low Stock" 
                               ? "bg-amber-500/10 text-amber-400 border border-amber-500/25" 
                               : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/25"
                         }`}>
                           <span className={`w-1.5 h-1.5 rounded-full ${
-                            stockVal === 0 
+                            statusText === "Out of Stock" 
                               ? "bg-rose-500 animate-pulse" 
-                              : stockVal <= 10 
+                              : statusText === "Low Stock" 
                                 ? "bg-amber-500 animate-pulse" 
                                 : "bg-emerald-500"
                           }`} />
-                          {stockVal === 0 ? "Out of Stock" : stockVal <= 10 ? "Low Stock" : "In Stock"}
+                          {statusText}
                         </span>
                       </TableCell>
 
                       {/* Last Restocked */}
-                      <TableCell className="font-mono text-[10px] text-zinc-500 text-center py-3">{lastUpdateStr}</TableCell>
+                      <TableCell className="font-mono text-[11px] text-zinc-400 text-center py-3 w-32">{restockedDateStr}</TableCell>
 
                       {/* Actions */}
-                      <TableCell className="py-3 text-right">
+                      <TableCell className="py-3 text-right w-24">
                         <div className="flex justify-end items-center gap-1">
                           <Button 
                             onClick={() => { setSelectedDetailProduct(p); setIsDrawerOpen(true); }} 
@@ -1077,306 +1035,192 @@ export default function InventoryManagementPage() {
       {/* 5. PRODUCT DETAILS DRAWER */}
       {isDrawerOpen && selectedDetailProduct && (() => {
         const p = selectedDetailProduct;
-        const sku = `PROD-${p._id.toString().slice(-6).toUpperCase()}`;
-        const stockVal = p.stock || 0;
+        const sku = p.productId || `PROD-${p._id.toString().slice(-6).toUpperCase()}`;
+        const stockVal = localOverrides[p._id] !== undefined ? localOverrides[p._id] : (p.currentStock || p.stock || 0);
         const costVal = p.costPrice || 0;
         const sellVal = p.sellingPrice || 0;
         const invVal = stockVal * costVal;
         
-        let statusText = "In Stock";
+        let statusText = p.status || "In Stock";
         let statusClass = "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
-        if (stockVal === 0) {
-          statusText = "Out of Stock";
-          statusClass = "bg-rose-500/10 text-rose-455 border border-rose-500/20";
-        } else if (stockVal <= 10) {
-          statusText = "Low Stock";
+        if (statusText === "Out of Stock") {
+          statusClass = "bg-rose-500/10 text-rose-400 border border-rose-500/20";
+        } else if (statusText === "Low Stock") {
           statusClass = "bg-amber-500/10 text-amber-400 border border-amber-500/20";
         }
  
         const marginAmt = sellVal - costVal;
         const marginPct = sellVal > 0 ? Math.round((marginAmt / sellVal) * 100) : 0;
- 
+
         return (
           <div className="fixed inset-0 z-50 flex justify-end">
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity" onClick={() => setIsDrawerOpen(false)} />
-            
-            <div className="relative w-full max-w-lg bg-zinc-950 border-l border-zinc-850 p-6 overflow-y-auto space-y-6 shadow-2xl z-10 h-full flex flex-col justify-between">
-              <div className="space-y-6">
-                <div className="flex justify-between items-start border-b border-zinc-800 pb-4">
-                  <div>
-                    <span className="text-[10px] uppercase font-bold tracking-wider text-zinc-550 text-zinc-500">Asset Record Details</span>
-                    <h2 className="text-lg font-bold text-white capitalize mt-0.5">{p.name}</h2>
-                    <span className="text-xs font-mono text-zinc-500 mt-1 block">SKU: {sku}</span>
-                  </div>
-                  <button 
-                    onClick={() => setIsDrawerOpen(false)}
-                    className="p-1 text-zinc-400 hover:text-white bg-zinc-900 border border-zinc-800 rounded-lg cursor-pointer"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-xs" onClick={() => setIsDrawerOpen(false)} />
+            <div className="relative w-full max-w-md bg-[#0c0c0e] border-l border-zinc-800 h-full p-6 overflow-y-auto space-y-6 shadow-2xl z-10">
+              <div className="flex items-center justify-between border-b border-zinc-800 pb-4">
+                <div>
+                  <span className="text-[10px] text-zinc-500 font-mono font-bold">{sku}</span>
+                  <h3 className="text-lg font-bold text-white capitalize">{p.name}</h3>
                 </div>
- 
-                <div className="bg-white border border-zinc-850 rounded-2xl p-4 flex items-center justify-center h-48 overflow-hidden relative">
+                <button onClick={() => setIsDrawerOpen(false)} className="text-zinc-500 hover:text-white p-1 rounded-lg">✕</button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="h-48 w-full bg-white rounded-2xl p-4 flex items-center justify-center border border-zinc-800">
                   {p.images?.[0] ? (
-                    <img 
-                      src={p.images[0]} 
-                      alt="" 
-                      className="max-h-full object-contain"
-                      referrerPolicy="no-referrer"
-                    />
+                    <img src={p.images[0]} alt={p.name} className="h-full object-contain" referrerPolicy="no-referrer" />
                   ) : (
-                    <span className="text-xs font-mono text-zinc-400 uppercase">No image uploaded</span>
+                    <span className="text-zinc-400 font-mono text-xs">No image</span>
                   )}
-                  <span className={`absolute top-3 right-3 px-2 py-0.5 rounded-full text-[9px] font-bold ${statusClass}`}>
-                    {statusText}
-                  </span>
                 </div>
- 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-zinc-900/30 border border-zinc-850 p-3 rounded-xl">
-                    <span className="text-[10px] text-zinc-500 block uppercase font-semibold">Current Stock</span>
-                    <span className="text-base font-bold font-mono text-zinc-200 mt-1 block">
-                      {stockVal} <span className="text-xs text-zinc-500 font-normal">{p.stockUnit || "Pcs"}</span>
+
+                <div className="grid grid-cols-2 gap-3 text-xs font-mono">
+                  <div className="bg-zinc-900/40 border border-zinc-800/80 p-3 rounded-xl">
+                    <span className="text-zinc-500 text-[10px] block font-sans">Current Stock</span>
+                    <span className="text-white font-bold text-sm mt-0.5 block">{stockVal} {p.stockUnit || "Pcs"}</span>
+                  </div>
+                  <div className="bg-zinc-900/40 border border-zinc-800/80 p-3 rounded-xl">
+                    <span className="text-zinc-500 text-[10px] block font-sans">Available Stock</span>
+                    <span className="text-emerald-400 font-bold text-sm mt-0.5 block">{(stockVal - (p.reservedStock || 0))} {p.stockUnit || "Pcs"}</span>
+                  </div>
+                  <div className="bg-zinc-900/40 border border-zinc-800/80 p-3 rounded-xl">
+                    <span className="text-zinc-500 text-[10px] block font-sans">Reserved Stock</span>
+                    <span className="text-amber-400 font-bold text-sm mt-0.5 block">{p.reservedStock || 0} {p.stockUnit || "Pcs"}</span>
+                  </div>
+                  <div className="bg-zinc-900/40 border border-zinc-800/80 p-3 rounded-xl">
+                    <span className="text-zinc-500 text-[10px] block font-sans">Min Stock Threshold</span>
+                    <span className="text-zinc-300 font-bold text-sm mt-0.5 block">{p.minStock !== undefined ? p.minStock : 10}</span>
+                  </div>
+                </div>
+
+                <div className="bg-zinc-900/40 border border-zinc-800/80 p-4 rounded-xl space-y-2 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-zinc-400">Cost Price</span>
+                    <span className="font-mono text-zinc-300">₹{costVal}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-zinc-400">Selling Price</span>
+                    <span className="font-mono text-zinc-100 font-bold">₹{sellVal}</span>
+                  </div>
+                  <div className="flex justify-between border-t border-zinc-800 pt-2">
+                    <span className="text-zinc-400">Profit Margin</span>
+                    <span className="font-mono text-emerald-400 font-bold">₹{marginAmt} ({marginPct}%)</span>
+                  </div>
+                  <div className="flex justify-between border-t border-zinc-800 pt-2">
+                    <span className="text-zinc-400">Inventory Asset Value</span>
+                    <span className="font-mono text-white font-bold">{formatCurrency(invVal)}</span>
+                  </div>
+                </div>
+
+                <div className="bg-zinc-900/40 border border-zinc-800/80 p-4 rounded-xl space-y-2 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-zinc-400">Supplier</span>
+                    <span className="text-zinc-200 font-semibold">{p.supplier || p.company?.name || "Direct Supplier"}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-zinc-400">Status</span>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${statusClass}`}>{statusText}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-zinc-400">Last Restocked</span>
+                    <span className="font-mono text-zinc-300">
+                      {p.lastRestocked ? new Date(p.lastRestocked).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : "—"}
                     </span>
                   </div>
-                  <div className="bg-zinc-900/30 border border-zinc-850 p-3 rounded-xl">
-                    <span className="text-[10px] text-zinc-500 block uppercase font-semibold">Min Stock Threshold</span>
-                    <span className="text-base font-bold font-mono text-zinc-500 mt-1 block">10 Pcs</span>
-                  </div>
-                  <div className="bg-zinc-900/30 border border-zinc-850 p-3 rounded-xl">
-                    <span className="text-[10px] text-zinc-500 block uppercase font-semibold">Max Stock Threshold</span>
-                    <span className="text-base font-bold font-mono text-zinc-500 mt-1 block">100 Pcs</span>
-                  </div>
-                  <div className="bg-zinc-900/30 border border-zinc-850 p-3 rounded-xl">
-                    <span className="text-[10px] text-zinc-500 block uppercase font-semibold">Inventory Value</span>
-                    <span className="text-base font-bold font-mono text-emerald-400 mt-1 block">{formatCurrency(invVal)}</span>
-                  </div>
                 </div>
- 
-                <div className="bg-[#0c0c0e] border border-zinc-800 p-4.5 rounded-2xl space-y-3">
-                  <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wide">Pricing &amp; Asset Value Ledger</h4>
-                  
-                  <div className="grid grid-cols-3 gap-2 text-center border-b border-zinc-850 pb-3">
-                    <div>
-                      <span className="text-[9px] text-zinc-500 block uppercase">Cost Price</span>
-                      <span className="text-sm font-mono font-bold text-zinc-450 mt-1 block">{formatCurrency(costVal)}</span>
-                    </div>
-                    <div>
-                      <span className="text-[9px] text-zinc-500 block uppercase">Selling Price</span>
-                      <span className="text-sm font-mono font-bold text-white mt-1 block">{formatCurrency(sellVal)}</span>
-                    </div>
-                    <div>
-                      <span className="text-[9px] text-zinc-500 block uppercase">Gross Margin</span>
-                      <span className="text-sm font-mono font-bold text-emerald-400 mt-1 block">{marginPct}%</span>
-                    </div>
-                  </div>
-                  
-                  <div className="flex justify-between items-center text-[11px] pt-1">
-                    <span className="text-zinc-500">Gross Margin Profit (per unit)</span>
-                    <span className="font-mono text-emerald-400 font-bold">+{formatCurrency(marginAmt)}</span>
-                  </div>
-                </div>
- 
-                <div className="border border-zinc-850 rounded-2xl p-4.5 space-y-2.5 text-xs">
-                  <div className="flex justify-between">
-                    <span className="text-zinc-500">Brand Provider</span>
-                    <span className="text-zinc-300 font-semibold capitalize">{p.company?.name || "No Brand"}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-zinc-500">Catalog Category</span>
-                    <span className="text-zinc-300 font-semibold capitalize">{p.category?.name || "Uncategorized"}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-zinc-500">Last Supply Date</span>
-                    <span className="text-zinc-300 font-mono">12-Jul-2026 (Mocked)</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-zinc-500">Last Sale Registry</span>
-                    <span className="text-zinc-300 font-mono">20-Jul-2026 (Mocked)</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-zinc-500">Primary Supplier</span>
-                    <span className="text-zinc-300 font-semibold">Adarsh Stationery Wholesale</span>
-                  </div>
-                </div>
-              </div>
- 
-              <div className="border-t border-zinc-800 pt-4 flex gap-3 mt-6">
-                <Button 
-                  onClick={() => { setSelectedAdjustProduct(p); setIsAdjustStockOpen(true); setIsDrawerOpen(false); }}
-                  variant="outline" 
-                  className="flex-1 border-zinc-800 hover:border-zinc-700 bg-zinc-900 text-zinc-300 rounded-xl h-11 text-xs font-semibold cursor-pointer"
-                >
-                  <SlidersHorizontal className="w-3.5 h-3.5 mr-2" /> Adjust Stock
-                </Button>
-                <Button 
-                  onClick={() => setIsDrawerOpen(false)}
-                  className="flex-1 bg-white text-black font-semibold hover:bg-zinc-200 rounded-xl h-11 text-xs shadow-md cursor-pointer"
-                >
-                  Close Details
-                </Button>
               </div>
             </div>
           </div>
         );
       })()}
- 
-      {/* 6. ADJUST STOCK LEVEL MODAL */}
+
+      {/* 6. ADJUST STOCK MODAL */}
       <Dialog open={isAdjustStockOpen} onOpenChange={setIsAdjustStockOpen}>
-        <DialogContent className="max-w-md w-full bg-zinc-950 border border-zinc-800 text-white rounded-3xl p-6 shadow-2xl">
-          <DialogHeader className="border-b border-zinc-800 pb-3 mb-4">
-            <div className="flex items-center gap-2">
-              <SlidersHorizontal className="text-blue-500 w-5 h-5" />
-              <DialogTitle className="text-base font-bold text-white">Adjust Stock Level</DialogTitle>
-            </div>
+        <DialogContent className="bg-[#0c0c0e] border border-zinc-800 text-white rounded-2xl max-w-sm p-6 space-y-4">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold text-white">Adjust Stock Level</DialogTitle>
           </DialogHeader>
- 
           {selectedAdjustProduct && (
-            <form onSubmit={handleAdjustStockSubmit} className="space-y-4">
-              <div className="bg-zinc-900/40 border border-zinc-850 p-3.5 rounded-2xl flex items-center justify-between text-xs">
-                <div>
-                  <span className="text-zinc-500">Product Name</span>
-                  <p className="font-bold text-zinc-200 mt-0.5 capitalize">{selectedAdjustProduct.name}</p>
-                </div>
-                <div className="text-right">
-                  <span className="text-zinc-500">Current Stock</span>
-                  <p className="font-bold font-mono text-zinc-200 mt-0.5">
-                    {selectedAdjustProduct.stock} {selectedAdjustProduct.stockUnit || "Pcs"}
-                  </p>
-                </div>
+            <form onSubmit={handleAdjustStockSubmit} className="space-y-4 text-xs">
+              <div>
+                <p className="text-zinc-400 font-bold capitalize">{selectedAdjustProduct.name}</p>
+                <p className="text-zinc-500 text-[10px]">Current Stock: <span className="text-emerald-400 font-mono font-bold">{selectedAdjustProduct.currentStock || selectedAdjustProduct.stock || 0}</span></p>
               </div>
- 
-              <div className="space-y-1.5">
-                <Label className="text-xs text-zinc-400 font-bold uppercase">Adjustment Type</Label>
+
+              <div className="space-y-1">
+                <label className="text-zinc-400 font-semibold">Adjustment Type</label>
                 <select
                   value={adjustForm.type}
                   onChange={(e) => setAdjustForm(prev => ({ ...prev, type: e.target.value }))}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl h-11 px-3 text-xs text-zinc-200 focus:outline-none focus:border-blue-550 focus:ring-1 focus:ring-blue-550/20 cursor-pointer"
+                  className="w-full bg-zinc-900 border border-zinc-700 rounded-xl h-10 px-3 text-xs text-zinc-200 outline-none"
                 >
                   <option value="add">Add Stock (+)</option>
-                  <option value="subtract">Subtract Stock (-)</option>
-                  <option value="set">Set Stock Count (=)</option>
+                  <option value="subtract">Reduce Stock (-)</option>
+                  <option value="set">Set Fixed Total (=)</option>
                 </select>
               </div>
- 
-              <div className="space-y-1.5">
-                <Label className="text-xs text-zinc-400 font-bold uppercase">Adjustment Quantity</Label>
-                <Input 
-                  type="number" 
+
+              <div className="space-y-1">
+                <label className="text-zinc-400 font-semibold">Quantity</label>
+                <Input
+                  type="number"
                   min="1"
                   value={adjustForm.quantity}
                   onChange={(e) => setAdjustForm(prev => ({ ...prev, quantity: e.target.value }))}
-                  placeholder="Enter quantity"
-                  className="bg-zinc-950 border border-zinc-800 h-11 text-xs rounded-xl focus-visible:ring-1 focus-visible:ring-blue-500"
+                  className="bg-zinc-900 border-zinc-700 text-zinc-100 h-10 rounded-xl"
                 />
               </div>
- 
-              <div className="space-y-1.5">
-                <Label className="text-xs text-zinc-400 font-bold uppercase">Reason of Adjustment</Label>
-                <select
+
+              <div className="space-y-1">
+                <label className="text-zinc-400 font-semibold">Reason</label>
+                <Input
+                  type="text"
                   value={adjustForm.reason}
                   onChange={(e) => setAdjustForm(prev => ({ ...prev, reason: e.target.value }))}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl h-11 px-3 text-xs text-zinc-200 focus:outline-none focus:border-blue-550 focus:ring-1 focus:ring-blue-550/20 cursor-pointer"
-                >
-                  <option value="Physical count">Physical count check</option>
-                  <option value="Received shipment">Received shipment supply</option>
-                  <option value="Damaged goods">Damaged / Defective goods</option>
-                  <option value="Return to supplier">Return to supplier</option>
-                  <option value="Shrinkage">Shrinkage correction</option>
-                </select>
+                  placeholder="e.g. Shipment received, Damage writeoff"
+                  className="bg-zinc-900 border-zinc-700 text-zinc-100 h-10 rounded-xl"
+                />
               </div>
- 
-              <div className="border-t border-zinc-800 pt-4 flex gap-3 justify-end mt-2">
-                <Button 
-                  type="button" 
-                  onClick={() => setIsAdjustStockOpen(false)}
-                  variant="ghost"
-                  className="rounded-xl border border-zinc-800 bg-zinc-900 px-4 h-10 text-xs font-semibold text-zinc-350 cursor-pointer"
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  type="submit" 
-                  disabled={adjustStockMutation.isPending}
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl px-5 h-10 text-xs shadow-md cursor-pointer"
-                >
-                  {adjustStockMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Save Adjustment"}
+
+              <div className="flex justify-end gap-2 pt-2">
+                <Button type="button" variant="outline" onClick={() => setIsAdjustStockOpen(false)} className="border-zinc-800 bg-zinc-900 text-zinc-400 h-9 text-xs rounded-xl">Cancel</Button>
+                <Button type="submit" disabled={adjustStockMutation.isPending} className="bg-white text-black hover:bg-zinc-200 h-9 text-xs font-bold rounded-xl">
+                  {adjustStockMutation.isPending ? "Saving..." : "Save Adjustment"}
                 </Button>
               </div>
             </form>
           )}
         </DialogContent>
       </Dialog>
- 
-      {/* 7. VIEW LOG HISTORY TIMELINE */}
+
+      {/* 7. AUDIT LOG HISTORY MODAL */}
       <Dialog open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
-        <DialogContent className="max-w-md w-full bg-zinc-950 border border-zinc-800 text-white rounded-3xl p-6 shadow-2xl">
-          <DialogHeader className="border-b border-zinc-800 pb-3 mb-4">
-            <div className="flex items-center gap-2">
-              <History className="text-amber-500 w-5 h-5" />
-              <DialogTitle className="text-base font-bold text-white">Stock Adjustment History</DialogTitle>
-            </div>
+        <DialogContent className="bg-[#0c0c0e] border border-zinc-800 text-white rounded-2xl max-w-md p-6 space-y-4">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold text-white">Stock Adjustment Audit Log</DialogTitle>
           </DialogHeader>
- 
-          {selectedHistoryProduct && (() => {
-            const logs = getProductHistory(selectedHistoryProduct);
-            return (
-              <div className="space-y-4">
-                <div className="bg-zinc-900/40 border border-zinc-850 p-3 rounded-xl flex items-center justify-between text-xs mb-2">
-                  <span className="font-bold text-zinc-300 capitalize">{selectedHistoryProduct.name}</span>
-                  <span className="font-mono text-zinc-450 text-zinc-500">SKU: PROD-{selectedHistoryProduct._id.toString().slice(-6).toUpperCase()}</span>
-                </div>
- 
-                <div className="max-h-72 overflow-y-auto space-y-4 pr-1 custom-scrollbar">
-                  {logs.map((log, idx) => {
-                    const isAdd = log.type === "add" || log.type === "initial";
-                    const isSub = log.type === "subtract";
-                    const badgeClass = isAdd 
-                      ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" 
-                      : isSub 
-                        ? "bg-rose-500/10 text-rose-455 border border-rose-500/20" 
-                        : "bg-blue-500/10 text-blue-400 border border-blue-500/20";
-                    
-                    const dateStr = new Date(log.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
- 
-                    return (
-                      <div key={idx} className="relative pl-6 border-l border-zinc-805 border-zinc-800 text-xs pb-1">
-                        <span className={`absolute -left-1.5 top-1 w-3 h-3 rounded-full border border-zinc-950 ${isAdd ? "bg-emerald-500" : isSub ? "bg-rose-500" : "bg-blue-500"}`} />
-                        
-                        <div className="space-y-1">
-                          <div className="flex justify-between items-center">
-                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${badgeClass} uppercase`}>
-                              {log.type === "initial" ? "Registered" : log.type === "set" ? "Set Stock" : `${log.type} ${log.quantity}`}
-                            </span>
-                            <span className="font-mono text-[10px] text-zinc-500">{dateStr}</span>
-                          </div>
-                          
-                          <p className="text-zinc-350">{log.reason}</p>
-                          <div className="flex items-center gap-2 text-[10px] text-zinc-550 text-zinc-500 font-mono">
-                            <span>Prev: {log.previousStock}</span>
-                            <span>→</span>
-                            <span className="text-zinc-300 font-bold">New: {log.newStock}</span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
- 
-                <div className="border-t border-zinc-800 pt-4 flex justify-end">
-                  <Button 
-                    onClick={() => setIsHistoryOpen(false)}
-                    className="bg-zinc-900 border border-zinc-850 hover:bg-zinc-800 text-zinc-350 hover:text-white rounded-xl px-5 h-9 text-xs font-semibold cursor-pointer"
-                  >
-                    Close History
-                  </Button>
-                </div>
+          {selectedHistoryProduct && (
+            <div className="space-y-3">
+              <p className="text-xs text-zinc-400 font-bold capitalize">{selectedHistoryProduct.name}</p>
+              <div className="max-h-60 overflow-y-auto space-y-2 border-t border-zinc-800/80 pt-3 text-xs">
+                {getProductHistory(selectedHistoryProduct).map((log, idx) => (
+                  <div key={idx} className="bg-zinc-900/40 border border-zinc-800/60 p-3 rounded-xl flex justify-between items-center">
+                    <div>
+                      <p className="font-semibold text-zinc-200 capitalize">{log.reason || "Manual update"}</p>
+                      <p className="text-[10px] text-zinc-500 font-mono mt-0.5">{new Date(log.date).toLocaleString('en-IN')}</p>
+                    </div>
+                    <div className="text-right font-mono">
+                      <span className={`font-bold ${log.type === "add" ? "text-emerald-400" : log.type === "subtract" ? "text-rose-400" : "text-blue-400"}`}>
+                        {log.type === "add" ? `+${log.quantity}` : log.type === "subtract" ? `-${log.quantity}` : log.quantity}
+                      </span>
+                      <span className="text-[10px] text-zinc-500 block">Stock: {log.newStock}</span>
+                    </div>
+                  </div>
+                ))}
               </div>
-            );
-          })()}
+            </div>
+          )}
         </DialogContent>
       </Dialog>
- 
     </div>
   );
 }

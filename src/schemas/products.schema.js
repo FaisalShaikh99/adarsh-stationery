@@ -14,6 +14,11 @@ export const productValidationSchema = z.object({
     parseNumberField,
     z.number({ required_error: "Stock is required." }).min(0, "Stock quantity cannot be negative.")
   ),
+  minStock: z.preprocess(
+    parseNumberField,
+    z.number().min(0, "Min stock cannot be negative.").optional().default(10)
+  ),
+  supplier: z.string().optional().default(""),
   stockUnit: z.string().min(1, "Stock unit is required.").trim(),
   costPrice: z.preprocess(
     parseNumberField,

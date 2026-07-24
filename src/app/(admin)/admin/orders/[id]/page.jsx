@@ -306,44 +306,72 @@ export default function OrderDetailPage() {
 
           {/* Order Items Table */}
           <div className="bg-[#0c0c0e] border border-zinc-800/80 p-5 rounded-2xl shadow-sm space-y-4">
-            <h2 className="text-sm font-bold text-white uppercase tracking-wider text-zinc-400">Order Items</h2>
+            <h2 className="text-sm font-bold text-white uppercase tracking-wider text-zinc-400">Order Items & Profit Breakdown</h2>
             <div className="overflow-x-auto rounded-xl border border-zinc-800 bg-zinc-900/10">
-              <Table className="min-w-[600px]">
+              <Table className="min-w-[700px]">
                 <TableHeader className="bg-zinc-900/40">
                   <TableRow className="border-b border-zinc-800 hover:bg-transparent">
                     <TableHead className="font-semibold text-zinc-400">Product</TableHead>
-                    <TableHead className="font-semibold text-zinc-400 text-center w-20">Qty</TableHead>
-                    <TableHead className="font-semibold text-zinc-400 text-right w-32">Price</TableHead>
-                    <TableHead className="font-semibold text-zinc-400 text-right w-32">Subtotal</TableHead>
+                    <TableHead className="font-semibold text-zinc-400 text-center w-16">Qty</TableHead>
+                    <TableHead className="font-semibold text-zinc-400 text-right w-24">Cost Price</TableHead>
+                    <TableHead className="font-semibold text-zinc-400 text-right w-24">Selling Price</TableHead>
+                    <TableHead className="font-semibold text-zinc-400 text-right w-28">Profit/Item</TableHead>
+                    <TableHead className="font-semibold text-zinc-400 text-right w-28">Subtotal</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {order.items?.map((item, idx) => (
-                    <TableRow key={idx} className="border-b border-zinc-800/60 hover:bg-zinc-900/20 transition-colors">
-                      <TableCell className="py-4">
-                        <div className="flex items-center gap-3">
-                          {item.product?.images?.[0] ? (
-                            <img 
-                              src={item.product.images[0]} 
-                              className="w-12 h-12 object-contain rounded-xl bg-white border border-zinc-800 p-0.5 shadow-sm shrink-0" 
-                              alt={item.productName} 
-                              referrerPolicy="no-referrer"
-                            />
-                          ) : (
-                            <div className="w-12 h-12 rounded-xl bg-zinc-900 border border-zinc-850 flex items-center justify-center text-zinc-500 text-[10px] font-mono shrink-0">No Image</div>
-                          )}
-                          <span className="font-bold tracking-tight text-xs sm:text-sm text-zinc-100 capitalize">{item.productName}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center font-mono py-4 text-zinc-300 text-xs sm:text-sm">{item.quantity}</TableCell>
-                      <TableCell className="text-right font-mono py-4 text-zinc-300 text-xs sm:text-sm">₹{item.pricePerUnit}</TableCell>
-                      <TableCell className="text-right font-mono py-4 text-zinc-100 font-semibold text-xs sm:text-sm">₹{item.subtotal}</TableCell>
-                    </TableRow>
-                  ))}
-                  <TableRow className="bg-zinc-900/20 font-bold border-t border-zinc-800">
-                    <TableCell colSpan={3} className="py-4 text-zinc-100 text-sm sm:text-base">Grand Total</TableCell>
-                    <TableCell className="text-right font-mono py-4 text-sm sm:text-base text-emerald-400">{formatCurrency(order.totalAmount)}</TableCell>
-                  </TableRow>
+                  {(() => {
+                    let totalOrderProfit = 0;
+
+                    return (
+                      <>
+                        {order.items?.map((item, idx) => {
+                          const costPrice = item.costPricePerUnit !== undefined ? item.costPricePerUnit : 0;
+                          const sellingPrice = item.pricePerUnit || 0;
+                          const profitPerItem = sellingPrice - costPrice;
+                          const itemTotalProfit = profitPerItem * item.quantity;
+                          totalOrderProfit += itemTotalProfit;
+
+                          return (
+                            <TableRow key={idx} className="border-b border-zinc-800/60 hover:bg-zinc-900/20 transition-colors">
+                              <TableCell className="py-4">
+                                <div className="flex items-center gap-3">
+                                  {item.product?.images?.[0] ? (
+                                    <img 
+                                      src={item.product.images[0]} 
+                                      className="w-12 h-12 object-contain rounded-xl bg-white border border-zinc-800 p-0.5 shadow-sm shrink-0" 
+                                      alt={item.productName} 
+                                      referrerPolicy="no-referrer"
+                                    />
+                                  ) : (
+                                    <div className="w-12 h-12 rounded-xl bg-zinc-900 border border-zinc-850 flex items-center justify-center text-zinc-500 text-[10px] font-mono shrink-0">No Image</div>
+                                  )}
+                                  <span className="font-bold tracking-tight text-xs sm:text-sm text-zinc-100 capitalize">{item.productName}</span>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-center font-mono py-4 text-zinc-300 text-xs sm:text-sm">{item.quantity}</TableCell>
+                              <TableCell className="text-right font-mono py-4 text-zinc-400 text-xs sm:text-sm">₹{costPrice}</TableCell>
+                              <TableCell className="text-right font-mono py-4 text-zinc-300 text-xs sm:text-sm">₹{sellingPrice}</TableCell>
+                              <TableCell className="text-right font-mono py-4 text-xs sm:text-sm">
+                                <span className={`px-2 py-0.5 rounded-md font-bold ${profitPerItem >= 0 ? "text-emerald-400 bg-emerald-500/10 border border-emerald-500/20" : "text-rose-400 bg-rose-500/10 border border-rose-500/20"}`}>
+                                  ₹{profitPerItem}
+                                </span>
+                              </TableCell>
+                              <TableCell className="text-right font-mono py-4 text-zinc-100 font-semibold text-xs sm:text-sm">₹{item.subtotal}</TableCell>
+                            </TableRow>
+                          );
+                        })}
+                        <TableRow className="bg-zinc-900/40 border-t border-zinc-800">
+                          <TableCell colSpan={5} className="py-3 text-zinc-400 text-xs sm:text-sm font-semibold">Total Order Profit</TableCell>
+                          <TableCell className="text-right font-mono py-3 text-xs sm:text-sm text-emerald-400 font-bold">{formatCurrency(totalOrderProfit)}</TableCell>
+                        </TableRow>
+                        <TableRow className="bg-zinc-900/20 font-bold border-t border-zinc-800">
+                          <TableCell colSpan={5} className="py-4 text-zinc-100 text-sm sm:text-base">Grand Total Amount</TableCell>
+                          <TableCell className="text-right font-mono py-4 text-sm sm:text-base text-emerald-400">{formatCurrency(order.totalAmount)}</TableCell>
+                        </TableRow>
+                      </>
+                    );
+                  })()}
                 </TableBody>
               </Table>
             </div>

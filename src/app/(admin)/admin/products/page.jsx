@@ -185,6 +185,8 @@ export default function ProductManagementPage() {
       category: editingProduct.category?._id || editingProduct.category || "",
       company: editingProduct.company?._id || editingProduct.company || "",
       stock: editingProduct.stock,
+      minStock: editingProduct.minStock !== undefined ? editingProduct.minStock : 10,
+      supplier: editingProduct.supplier || "",
       stockUnit: editingProduct.stockUnit || "Pcs",
       costPrice: editingProduct.costPrice,
       sellingPrice: editingProduct.sellingPrice,
@@ -196,6 +198,8 @@ export default function ProductManagementPage() {
       category: categories[0]?._id || "",
       company: brands[0]?._id || "",
       stock: "",
+      minStock: 10,
+      supplier: "",
       stockUnit: "Pcs",
       costPrice: "",
       sellingPrice: "",
@@ -250,6 +254,8 @@ export default function ProductManagementPage() {
           category: data.category,
           company: data.company,
           stock: data.stock,
+          minStock: data.minStock,
+          supplier: data.supplier,
           stockUnit: data.stockUnit,
           costPrice: data.costPrice,
           sellingPrice: data.sellingPrice,
@@ -403,6 +409,8 @@ export default function ProductManagementPage() {
       category: categories[0]?._id || "",
       company: brands[0]?._id || "",
       stock: "",
+      minStock: 10,
+      supplier: "",
       stockUnit: "Pcs",
       costPrice: "",
       sellingPrice: "",
@@ -421,6 +429,8 @@ export default function ProductManagementPage() {
       category: p.category?._id || p.category || "",
       company: p.company?._id || p.company || "",
       stock: p.stock,
+      minStock: p.minStock !== undefined ? p.minStock : 10,
+      supplier: p.supplier || "",
       stockUnit: p.stockUnit || "Pcs",
       costPrice: p.costPrice,
       sellingPrice: p.sellingPrice,
@@ -440,6 +450,8 @@ export default function ProductManagementPage() {
       category: "",
       company: "",
       stock: "",
+      minStock: 10,
+      supplier: "",
       stockUnit: "Pcs",
       costPrice: "",
       sellingPrice: "",
@@ -872,7 +884,7 @@ export default function ProductManagementPage() {
         {/* 4. CORE INVENTORY DISPLAY (TABLE / GRID) */}
         {viewMode === "table" ? (
           <div className="overflow-x-auto rounded-xl border border-zinc-800 bg-zinc-900/10">
-            <Table className="min-w-[1000px]">
+            <Table className="min-w-[1100px]">
               <TableHeader className="bg-zinc-900/40">
                 <TableRow className="border-b border-zinc-800">
                   <TableHead className="w-16 font-semibold text-zinc-400">Sr No.</TableHead>
@@ -880,7 +892,9 @@ export default function ProductManagementPage() {
                   <TableHead className="font-semibold text-zinc-400">Category</TableHead>
                   <TableHead className="font-semibold text-zinc-400">Brand</TableHead>
                   <TableHead className="font-semibold text-zinc-400">Stock</TableHead>
-                  <TableHead className="font-semibold text-zinc-400">Price</TableHead>
+                  <TableHead className="font-semibold text-zinc-400">Cost Price</TableHead>
+                  <TableHead className="font-semibold text-zinc-400">Selling Price</TableHead>
+                  <TableHead className="font-semibold text-zinc-400">Profit</TableHead>
                   <TableHead className="font-semibold text-zinc-400">Visibility</TableHead>
                   <TableHead className="font-semibold text-zinc-400">Date Added</TableHead>
                   <TableHead className="text-center w-32 font-semibold text-zinc-400">Actions</TableHead>
@@ -889,13 +903,13 @@ export default function ProductManagementPage() {
               <TableBody>
                 {productsLoading ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-6 text-zinc-550 font-medium">
+                    <TableCell colSpan={11} className="text-center py-6 text-zinc-550 font-medium">
                       <LoadingSpinner size={140} label="Loading items..." className="mx-auto" />
                     </TableCell>
                   </TableRow>
                 ) : filteredProducts.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="py-12 text-center text-zinc-500">
+                    <TableCell colSpan={11} className="py-12 text-center text-zinc-500">
                       <div className="flex flex-col items-center justify-center space-y-4">
                         <p className="text-sm font-semibold text-zinc-400">No products found matching criteria.</p>
                         <Button
@@ -908,64 +922,85 @@ export default function ProductManagementPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  paginatedProducts.map((p, index) => (
-                    <TableRow key={p._id} className="border-b border-zinc-800/60 hover:bg-zinc-900/20 transition-colors">
-                      <TableCell className="font-mono text-zinc-500 py-2.5">{(currentPage - 1) * itemsPerPage + index + 1}</TableCell>
-                      <TableCell className="font-semibold capitalize py-2.5">
-                        <div className="flex items-center gap-3">
-                          {p.images?.[0] && (
+                  paginatedProducts.map((p, index) => {
+                    const cost = Number(p.costPrice || 0);
+                    const selling = Number(p.sellingPrice || 0);
+                    const profit = selling - cost;
+                    const marginPercent = selling > 0 ? Number(((profit / selling) * 100).toFixed(0)) : 0;
+
+                    let colorClass = "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+                    if (profit < 0) {
+                      colorClass = "bg-rose-500/10 text-rose-400 border-rose-500/20";
+                    } else if (marginPercent <= 15) {
+                      colorClass = "bg-amber-500/10 text-amber-400 border-amber-500/20";
+                    }
+
+                    return (
+                      <TableRow key={p._id} className="border-b border-zinc-800/60 hover:bg-zinc-900/20 transition-colors">
+                        <TableCell className="font-mono text-zinc-500 py-2.5">{(currentPage - 1) * itemsPerPage + index + 1}</TableCell>
+                        <TableCell className="font-semibold capitalize py-2.5">
+                          <div className="flex items-center gap-3">
+                            {p.images?.[0] && (
+                              <img 
+                                src={p.images[0]} 
+                                className="w-10 h-10 object-contain rounded-lg bg-white border border-zinc-800 p-0.5 shadow-sm shrink-0" 
+                                alt={p.name} 
+                                referrerPolicy="no-referrer"
+                              />
+                            )}
+                            <span className="font-bold tracking-tight text-xs text-zinc-100 capitalize">{p.name}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-zinc-450 text-xs py-2.5">{p.category?.name || "Uncategorized"}</TableCell>
+                        <TableCell className="py-2.5">
+                          {p.company?.logo ? (
                             <img 
-                              src={p.images[0]} 
+                              src={p.company.logo} 
                               className="w-10 h-10 object-contain rounded-lg bg-white border border-zinc-800 p-0.5 shadow-sm shrink-0" 
-                              alt={p.name} 
+                              alt={p.company?.name} 
                               referrerPolicy="no-referrer"
                             />
+                          ) : (
+                            <span className="text-[11px] font-mono text-zinc-500">{p.company?.name || "No Brand"}</span>
                           )}
-                          <span className="font-bold tracking-tight text-xs text-zinc-100 capitalize">{p.name}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-zinc-450 text-xs py-2.5">{p.category?.name || "Uncategorized"}</TableCell>
-                      <TableCell className="py-2.5">
-                        {p.company?.logo ? (
-                          <img 
-                            src={p.company.logo} 
-                            className="w-10 h-10 object-contain rounded-lg bg-white border border-zinc-800 p-0.5 shadow-sm shrink-0" 
-                            alt={p.company?.name} 
-                            referrerPolicy="no-referrer"
-                          />
-                        ) : (
-                          <span className="text-[11px] font-mono text-zinc-500">{p.company?.name || "No Brand"}</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="font-mono text-xs py-2.5">
-                        <span className="text-emerald-450 text-emerald-400 font-bold">{p.stock}</span> {p.stockUnit}
-                      </TableCell>
-                      <TableCell className="font-mono text-xs py-2.5">₹{p.sellingPrice}/-</TableCell>
-                      <TableCell className="py-2.5">
-                        <div className="flex items-center gap-2">
-                          <Switch 
-                            checked={p.isVisible !== false}
-                            onCheckedChange={() => toggleVisibilityMutation.mutate(p._id)}
-                            className="data-[state=checked]:bg-emerald-600 scale-75"
-                          />
-                          <span className={`text-[9px] font-bold uppercase min-w-[50px] ${p.isVisible !== false ? "text-emerald-400" : "text-zinc-500"}`}>
-                            {p.isVisible !== false ? "Visible" : "Hidden"}
+                        </TableCell>
+                        <TableCell className="font-mono text-xs py-2.5">
+                          <span className="text-emerald-450 text-emerald-400 font-bold">{p.stock}</span> {p.stockUnit}
+                        </TableCell>
+                        <TableCell className="font-mono text-xs py-2.5 text-zinc-400">₹{cost}/-</TableCell>
+                        <TableCell className="font-mono text-xs py-2.5 text-zinc-200 font-semibold">₹{selling}/-</TableCell>
+                        <TableCell className="font-mono text-xs py-2.5">
+                          <span className={`inline-flex flex-col px-2 py-0.5 rounded-lg border text-[11px] ${colorClass}`}>
+                            <span className="font-bold">₹{profit}/-</span>
+                            <span className="text-[9px] font-normal opacity-80">({marginPercent}%)</span>
                           </span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="font-mono text-[11px] text-zinc-450 py-2.5">
-                        {p.createdAt ? (
-                          new Date(p.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
-                        ) : "—"}
-                      </TableCell>
-                      <TableCell className="text-center py-2.5">
-                        <div className="flex justify-center gap-3">
-                          <Button onClick={() => openEditModal(p)} variant="ghost" className="p-1 h-auto text-zinc-400 hover:text-white transition-colors"><Edit2 className="w-3.5 h-3.5" /></Button>
-                          <Button onClick={() => { setPendingDeleteId(p._id); setDeleteDialogOpen(true); }} variant="ghost" className="p-1 h-auto text-zinc-500 hover:text-rose-455 hover:text-rose-400 transition-colors"><Trash2 className="w-3.5 h-3.5" /></Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                        </TableCell>
+                        <TableCell className="py-2.5">
+                          <div className="flex items-center gap-2">
+                            <Switch 
+                              checked={p.isVisible !== false}
+                              onCheckedChange={() => toggleVisibilityMutation.mutate(p._id)}
+                              className="data-[state=checked]:bg-emerald-600 scale-75"
+                            />
+                            <span className={`text-[9px] font-bold uppercase min-w-[50px] ${p.isVisible !== false ? "text-emerald-400" : "text-zinc-500"}`}>
+                              {p.isVisible !== false ? "Visible" : "Hidden"}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-mono text-[11px] text-zinc-450 py-2.5">
+                          {p.createdAt ? (
+                            new Date(p.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+                          ) : "—"}
+                        </TableCell>
+                        <TableCell className="text-center py-2.5">
+                          <div className="flex justify-center gap-3">
+                            <Button onClick={() => openEditModal(p)} variant="ghost" className="p-1 h-auto text-zinc-400 hover:text-white transition-colors"><Edit2 className="w-3.5 h-3.5" /></Button>
+                            <Button onClick={() => { setPendingDeleteId(p._id); setDeleteDialogOpen(true); }} variant="ghost" className="p-1 h-auto text-zinc-500 hover:text-rose-455 hover:text-rose-400 transition-colors"><Trash2 className="w-3.5 h-3.5" /></Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
                 )}
               </TableBody>
             </Table>
@@ -999,6 +1034,18 @@ export default function ProductManagementPage() {
                   const dateStr = p.createdAt
                     ? new Date(p.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
                     : "—";
+
+                  const costVal = p.costPrice || 0;
+                  const sellVal = p.sellingPrice || 0;
+                  const profitVal = sellVal - costVal;
+                  const marginPct = sellVal > 0 ? Math.round((profitVal / sellVal) * 100) : 0;
+
+                  let profitColorClass = "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+                  if (profitVal < 0) {
+                    profitColorClass = "bg-rose-500/10 text-rose-400 border-rose-500/20";
+                  } else if (marginPct <= 15) {
+                    profitColorClass = "bg-amber-500/10 text-amber-400 border-amber-500/20";
+                  }
 
                   return (
                     <div key={p._id} className="bg-zinc-900/40 border border-zinc-800 rounded-2xl p-4 flex flex-col justify-between hover:border-zinc-700 hover:bg-zinc-900/60 transition-all group">
@@ -1038,12 +1085,25 @@ export default function ProductManagementPage() {
                         </div>
                       </div>
 
-                      {/* Footer Controls */}
+                      {/* Footer Controls & Pricing */}
                       <div className="border-t border-zinc-800/80 pt-3 mt-4 space-y-3">
+                        {/* Pricing & Profit Card */}
+                        <div className="bg-zinc-950/60 border border-zinc-800/80 p-2.5 rounded-xl space-y-1.5 font-mono">
+                          <div className="flex items-center justify-between text-zinc-400 text-xs">
+                            <span>Cost: ₹{costVal}</span>
+                            <span>Sell: <strong className="text-white">₹{sellVal}</strong></span>
+                          </div>
+                          <div className="flex items-center justify-between border-t border-zinc-800/60 pt-1.5">
+                            <span className="text-[10px] text-zinc-500 font-sans uppercase font-bold">Profit</span>
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${profitColorClass}`}>
+                              ₹{profitVal} ({marginPct}%)
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Visibility Switch */}
                         <div className="flex items-center justify-between">
-                          <span className="text-base font-bold text-white font-mono">₹{p.sellingPrice}/-</span>
-                          
-                          {/* Visibility Switch */}
+                          <span className="text-xs font-semibold text-zinc-400">Store Visibility</span>
                           <div className="flex items-center gap-1.5">
                             <Switch 
                               checked={p.isVisible !== false}
@@ -1267,6 +1327,30 @@ export default function ProductManagementPage() {
                         className="bg-slate-950 border border-slate-800 rounded-3xl h-12 text-slate-200 placeholder-slate-500 focus-visible:ring-1 focus-visible:ring-blue-500/20 focus-visible:border-blue-500/60 transition-all"
                       />
                       {errors.sellingPrice && <p className="text-xs text-red-500 mt-1">{errors.sellingPrice.message}</p>}
+                    </div>
+
+                    {/* Min Stock Threshold */}
+                    <div className="space-y-2">
+                      <Label className="text-sm text-slate-300 font-semibold">Min Stock Threshold</Label>
+                      <Input
+                        type="number"
+                        placeholder="10"
+                        {...register("minStock")}
+                        className="bg-slate-950 border border-slate-800 rounded-3xl h-12 text-slate-200 placeholder-slate-500 focus-visible:ring-1 focus-visible:ring-blue-500/20 focus-visible:border-blue-500/60 transition-all"
+                      />
+                      {errors.minStock && <p className="text-xs text-red-500 mt-1">{errors.minStock.message}</p>}
+                    </div>
+
+                    {/* Supplier / Vendor */}
+                    <div className="space-y-2">
+                      <Label className="text-sm text-slate-300 font-semibold">Supplier / Vendor</Label>
+                      <Input
+                        type="text"
+                        placeholder="e.g. Navneet Supplies"
+                        {...register("supplier")}
+                        className="bg-slate-950 border border-slate-800 rounded-3xl h-12 text-slate-200 placeholder-slate-500 focus-visible:ring-1 focus-visible:ring-blue-500/20 focus-visible:border-blue-500/60 transition-all"
+                      />
+                      {errors.supplier && <p className="text-xs text-red-500 mt-1">{errors.supplier.message}</p>}
                     </div>
                   </div>
                 </div>

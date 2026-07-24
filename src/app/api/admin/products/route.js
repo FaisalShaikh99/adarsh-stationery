@@ -21,7 +21,7 @@ export const POST = asyncHandler(async (request) => {
 
     const body = await request.json();
 
-    // 2. Validate data via your Zod Schema (automatically handles types & arrays min requirements)
+    // 2. Validate data via Zod Schema
     const validationResult = productValidationSchema.safeParse(body);
     if (!validationResult.success) {
         const message = validationResult.error.issues?.[0]?.message || validationResult.error.message || "Invalid product payload.";
@@ -29,7 +29,7 @@ export const POST = asyncHandler(async (request) => {
     }
 
     const { 
-        name, category, company, stock, stockUnit, 
+        name, category, company, stock, minStock, supplier, stockUnit, 
         costPrice, sellingPrice, images, description, isActive 
     } = validationResult.data;
 
@@ -40,9 +40,11 @@ export const POST = asyncHandler(async (request) => {
     }
 
     const companyPrefix = companyDoc.name.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, "X");
-    const currentYear = new Date().getFullYear().toString().slice(-2); // "26"
-    const randomHex = crypto.randomBytes(2).toString("hex").toUpperCase(); // "A1B2"
+    const currentYear = new Date().getFullYear().toString().slice(-2);
+    const randomHex = crypto.randomBytes(2).toString("hex").toUpperCase();
     const customProductId = `${companyPrefix}-${currentYear}-${randomHex}`;
+
+    const newStockNum = Number(stock);
 
     // 4. Save cleanly structured product
     const savedProduct = await Product.create({
@@ -50,7 +52,10 @@ export const POST = asyncHandler(async (request) => {
         name,
         category,
         company,
-        stock,
+        stock: newStockNum,
+        minStock: minStock !== undefined ? Number(minStock) : 10,
+        supplier: supplier ? supplier.trim() : "",
+        lastRestocked: newStockNum > 0 ? new Date() : null,
         stockUnit,
         costPrice,
         sellingPrice,
@@ -168,7 +173,7 @@ export const PUT = asyncHandler(async (request) => {
 
     const body = await request.json();
     const { 
-        name, category, company, stock, stockUnit, 
+        name, category, company, stock, minStock, supplier, stockUnit, 
         costPrice, sellingPrice, images, description, isActive 
     } = body;
 
@@ -198,12 +203,17 @@ export const PUT = asyncHandler(async (request) => {
         customProductId = `${companyPrefix}-${currentYear}-${randomHex}`;
     }
 
+    const newStockNum = stock !== undefined && stock !== "" ? Number(stock) : 0;
+    const oldStockNum = Number(existingProduct.stock || 0);
+
     const updatedProductPayload = {
         productId: customProductId,
         name: name.trim(),
         category,
         company,
-        stock: stock !== undefined && stock !== "" ? Number(stock) : 0,
+        stock: newStockNum,
+        minStock: minStock !== undefined && minStock !== "" ? Number(minStock) : (existingProduct.minStock || 10),
+        supplier: supplier !== undefined ? supplier.trim() : (existingProduct.supplier || ""),
         stockUnit: stockUnit || "Pcs",
         costPrice: Number(costPrice),
         sellingPrice: Number(sellingPrice),
@@ -211,6 +221,11 @@ export const PUT = asyncHandler(async (request) => {
         description: description ? description.trim() : "",
         isActive: isActive !== undefined ? isActive : existingProduct.isActive
     };
+
+    // Update lastRestocked timestamp ONLY if stock quantity increased
+    if (newStockNum > oldStockNum) {
+        updatedProductPayload.lastRestocked = new Date();
+    }
 
     const savedProduct = await Product.findByIdAndUpdate(
         productId,

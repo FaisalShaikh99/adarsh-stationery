@@ -28,6 +28,20 @@ const ProductSchema = new mongoose.Schema(
       min: [0, "Stock cannot be negative"],
       default: 0
     },
+    minStock: {
+      type: Number,
+      min: [0, "Minimum stock cannot be negative"],
+      default: 10
+    },
+    supplier: {
+      type: String,
+      trim: true,
+      default: ""
+    },
+    lastRestocked: {
+      type: Date,
+      default: null
+    },
     stockUnit: {
       type: String,
       required: [true, "Stock unit is required"],

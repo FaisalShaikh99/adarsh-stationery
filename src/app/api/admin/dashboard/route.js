@@ -11,6 +11,12 @@ import { getCurrentSeasonalReminder } from "@/lib/seasonalReminders";
 
 export const dynamic = "force-dynamic";
 
+function formatDateRangeStr(startDate, endDate) {
+  const startStr = startDate.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const endStr = endDate.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  return `${startStr} - ${endStr}`;
+}
+
 export async function GET(req) {
   try {
     const session = await getServerSession(authOptions);
@@ -30,12 +36,28 @@ export async function GET(req) {
     await dbConnect();
 
     const now = new Date();
-    const d7 = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const d14 = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
-    const d30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    const d60 = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
 
-    // 1. Top KPI numbers
+    // 1. Explicit Date Ranges
+    // "This Week": rolling last-7-days window ending now
+    const thisWeekStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const thisWeekEnd = now;
+
+    // Prior Week: rolling 7 days preceding thisWeekStart
+    const priorWeekStart = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+    const priorWeekEnd = thisWeekStart;
+
+    // "This Month": current calendar month to date (starts on 1st of month)
+    const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+    const thisMonthEnd = now;
+
+    // Prior Month: previous calendar month
+    const priorMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0);
+    const priorMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+
+    // 30 days for revenue trend & category purchase trend
+    const d30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    // Top KPI numbers
     const [
       paidOrdersRevenueAgg,
       totalOrders,
@@ -73,6 +95,7 @@ export async function GET(req) {
     const totalRevenue = paidOrdersRevenueAgg[0]?.totalRevenue || 0;
 
     // Helper for profit calculation across paid orders in a date range
+    // EXCLUDES items missing costPricePerUnit entirely to prevent profit inflation
     const getProfitForPeriod = async (startDate, endDate) => {
       const res = await Order.aggregate([
         {
@@ -95,6 +118,11 @@ export async function GET(req) {
         },
         { $unwind: "$items" },
         {
+          $match: {
+            "items.costPricePerUnit": { $exists: true, $ne: null },
+          },
+        },
+        {
           $group: {
             _id: null,
             profit: {
@@ -103,7 +131,7 @@ export async function GET(req) {
                   {
                     $subtract: [
                       "$items.pricePerUnit",
-                      { $ifNull: ["$items.costPricePerUnit", 0] },
+                      "$items.costPricePerUnit",
                     ],
                   },
                   "$items.quantity",
@@ -116,13 +144,47 @@ export async function GET(req) {
       return res[0]?.profit || 0;
     };
 
+    // Check data completeness (true if any Paid order in current month/week missing costPricePerUnit on any item)
+    const missingCostAgg = await Order.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: thisMonthStart, $lt: now },
+        },
+      },
+      {
+        $lookup: {
+          from: "payments",
+          localField: "payment",
+          foreignField: "_id",
+          as: "paymentDetails",
+        },
+      },
+      {
+        $match: {
+          "paymentDetails.status": "Paid",
+        },
+      },
+      { $unwind: "$items" },
+      {
+        $match: {
+          $or: [
+            { "items.costPricePerUnit": { $exists: false } },
+            { "items.costPricePerUnit": null },
+          ],
+        },
+      },
+      { $limit: 1 },
+    ]);
+
+    const dataCompletenessWarning = missingCostAgg.length > 0;
+
     // 2. Profit / Loss Summary
     const [thisWeekProfit, lastWeekProfit, thisMonthProfit, lastMonthProfit] =
       await Promise.all([
-        getProfitForPeriod(d7, now),
-        getProfitForPeriod(d14, d7),
-        getProfitForPeriod(d30, now),
-        getProfitForPeriod(d60, d30),
+        getProfitForPeriod(thisWeekStart, thisWeekEnd),
+        getProfitForPeriod(priorWeekStart, priorWeekEnd),
+        getProfitForPeriod(thisMonthStart, thisMonthEnd),
+        getProfitForPeriod(priorMonthStart, priorMonthEnd),
       ]);
 
     const weekPercentageChange =
@@ -310,7 +372,7 @@ export async function GET(req) {
       { $limit: 8 },
     ]);
 
-    // 7. Recently new customers (last 8 Customer documents sorted by firstOrderDate/createdAt descending)
+    // 7. Recently new customers
     const rawCustomers = await Customer.find()
       .sort({ firstOrderDate: -1, createdAt: -1 })
       .limit(8)
@@ -405,16 +467,23 @@ export async function GET(req) {
         profitLoss: {
           thisWeek: {
             label: "This Week",
+            dateRangeStr: formatDateRangeStr(thisWeekStart, thisWeekEnd),
+            startDate: thisWeekStart,
+            endDate: thisWeekEnd,
             profit: thisWeekProfit,
             priorProfit: lastWeekProfit,
             percentageChange: weekPercentageChange,
           },
           thisMonth: {
             label: "This Month",
+            dateRangeStr: formatDateRangeStr(thisMonthStart, thisMonthEnd),
+            startDate: thisMonthStart,
+            endDate: thisMonthEnd,
             profit: thisMonthProfit,
             priorProfit: lastMonthProfit,
             percentageChange: monthPercentageChange,
           },
+          dataCompletenessWarning,
         },
         bestSellingProducts: bestSellingProductsAgg,
         lowStockAlerts,

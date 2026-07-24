@@ -6,10 +6,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ChevronLeft, ChevronRight, Loader2, RefreshCw, Search, Eye } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import OrderDetailDrawer from "./OrderDetailDrawer";
 
 const statuses = ["Pending", "Confirmed", "Shipped", "Delivered", "Cancelled"];
 const paymentStatuses = ["Pending", "Paid", "Failed"];
@@ -37,12 +36,12 @@ function formatCurrency(amount) {
 }
 
 export default function OrdersPage() {
-  const router = useRouter();
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [paymentStatus, setPaymentStatus] = useState("");
+  const [selectedOrderId, setSelectedOrderId] = useState(null);
 
   const queryParams = useMemo(() => ({ page, limit: 10, search, status, paymentStatus }), [page, search, status, paymentStatus]);
   const { data: ordersResponse, isLoading, isFetching, refetch } = useQuery({
@@ -74,58 +73,58 @@ export default function OrdersPage() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-6">
+    <div className="mx-auto w-full max-w-7xl space-y-4 font-sans pb-12">
       {/* 1. TOP NAVBAR */}
-      <div className="flex flex-wrap gap-3 justify-between items-center border-b border-zinc-800 pb-5">
+      <div className="flex flex-wrap gap-3 justify-between items-center border-b border-zinc-800 pb-3">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-white">Orders & Invoices</h1>
-          <p className="mt-1 text-xs text-zinc-400">Track payments, fulfillment, and customer orders.</p>
+          <p className="mt-0.5 text-xs text-zinc-400">Track payments, fulfillment, and customer orders.</p>
         </div>
         <Button 
           onClick={() => refetch()} 
           disabled={isFetching} 
           variant="outline" 
-          className="h-9 w-9 p-0 border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-white shrink-0 rounded-xl hover:bg-zinc-800"
+          className="h-8 w-8 p-0 border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-white shrink-0 rounded-xl hover:bg-zinc-800 cursor-pointer"
           title="Refresh orders"
         >
-          <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
+          <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`} />
         </Button>
       </div>
 
       {/* 2. STATS CARDS GRID ROW */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
           ["Total orders", stats.totalOrders],
           ["Paid revenue", formatCurrency(stats.totalRevenue)],
           ["Items sold", stats.totalItemsSold],
           ["Awaiting fulfillment", (stats.statusCounts?.Pending || 0) + (stats.statusCounts?.Confirmed || 0)],
         ].map(([label, value]) => (
-          <div key={label} className="bg-[#0c0c0e] border border-zinc-800/80 p-5 rounded-2xl shadow-sm flex flex-col justify-between min-h-[105px]">
+          <div key={label} className="bg-[#0c0c0e]/80 border border-zinc-800/80 p-4 rounded-2xl shadow-sm flex flex-col justify-between">
             <div>
-              <p className="text-xs text-zinc-500 uppercase tracking-wider font-bold">{label}</p>
-              <p className="text-2xl font-bold mt-2 font-mono tracking-tight text-white">{value}</p>
+              <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold">{label}</p>
+              <p className="text-xl font-bold mt-1 font-mono tracking-tight text-white">{value}</p>
             </div>
           </div>
         ))}
       </div>
 
       {/* 3. SEARCH & FILTERS CONTAINER */}
-      <div className="bg-[#0c0c0e] border border-zinc-800 rounded-2xl p-4 sm:p-6 space-y-4 shadow-xl">
+      <div className="bg-[#0c0c0e]/80 border border-zinc-800 rounded-2xl p-4 space-y-3 shadow-xl">
         <div className="flex flex-col gap-3 lg:flex-row items-center justify-between">
-          <div className="flex items-center w-full bg-[#141416] border border-zinc-700 rounded-xl px-3.5 transition-all gap-2 h-11 focus-within:border-zinc-500 focus-within:ring-1 focus-within:ring-zinc-500">
-            <Search className="h-4 w-4 text-zinc-500 shrink-0" />
+          <div className="flex items-center w-full bg-[#141416] border border-zinc-700 rounded-xl px-3 transition-all gap-2 h-9 focus-within:border-zinc-500">
+            <Search className="h-3.5 w-3.5 text-zinc-500 shrink-0" />
             <Input 
               value={search} 
               onChange={resetPage(setSearch)} 
               placeholder="Search order number or customer..." 
-              className="flex-1 bg-transparent border-none text-zinc-300 placeholder-zinc-500 focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none focus:ring-0 text-xs h-full p-0 shadow-none"
+              className="flex-1 bg-transparent border-none text-zinc-300 placeholder-zinc-500 focus-visible:ring-0 text-xs h-full p-0 shadow-none"
             />
           </div>
-          <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto shrink-0">
+          <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto shrink-0">
             <select 
               value={status} 
               onChange={resetPage(setStatus)} 
-              className="h-11 bg-[#141416] border border-zinc-700 rounded-xl px-4 text-xs font-semibold text-zinc-300 hover:text-white hover:border-zinc-500 transition-all outline-none cursor-pointer w-full sm:w-auto sm:min-w-[180px]"
+              className="h-9 bg-[#141416] border border-zinc-700 rounded-xl px-3 text-xs font-semibold text-zinc-300 hover:text-white hover:border-zinc-500 transition-all outline-none cursor-pointer w-full sm:w-auto sm:min-w-[170px]"
             >
               <option value="" className="bg-zinc-950 text-zinc-400">All order statuses</option>
               {statuses.map((item) => (
@@ -135,7 +134,7 @@ export default function OrdersPage() {
             <select 
               value={paymentStatus} 
               onChange={resetPage(setPaymentStatus)} 
-              className="h-11 bg-[#141416] border border-zinc-700 rounded-xl px-4 text-xs font-semibold text-zinc-300 hover:text-white hover:border-zinc-500 transition-all outline-none cursor-pointer w-full sm:w-auto sm:min-w-[180px]"
+              className="h-9 bg-[#141416] border border-zinc-700 rounded-xl px-3 text-xs font-semibold text-zinc-300 hover:text-white hover:border-zinc-500 transition-all outline-none cursor-pointer w-full sm:w-auto sm:min-w-[170px]"
             >
               <option value="" className="bg-zinc-950 text-zinc-400">All payment statuses</option>
               {paymentStatuses.map((item) => (
@@ -147,49 +146,46 @@ export default function OrdersPage() {
 
         {/* 4. ORDERS WORKSPACE CARDS */}
         {isLoading ? (
-          <div className="flex h-48 items-center justify-center bg-[#0c0c0e]/30 border border-zinc-805 border-zinc-800 rounded-2xl">
+          <div className="flex h-40 items-center justify-center bg-[#0c0c0e]/30 border border-zinc-800 rounded-2xl">
             <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
           </div>
         ) : orders.length === 0 ? (
-          <div className="flex flex-col items-center justify-center text-center p-12 border border-dashed border-zinc-805 border-zinc-800 bg-[#0c0c0e]/30 rounded-2xl space-y-2 min-h-[250px]">
-            <p className="font-semibold text-zinc-400">No orders match these filters.</p>
-            <p className="text-xs text-zinc-500">Try clearing active search queries or status filters.</p>
+          <div className="flex flex-col items-center justify-center text-center p-10 border border-dashed border-zinc-800 bg-[#0c0c0e]/30 rounded-2xl space-y-1.5 min-h-[220px]">
+            <p className="font-semibold text-zinc-400 text-xs">No orders match these filters.</p>
+            <p className="text-[11px] text-zinc-500">Try clearing active search queries or status filters.</p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {orders.map((order) => {
               const totalQty = order.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
               return (
                 <div 
                   key={order._id}
-                  className="bg-[#0c0c0e]/60 border border-zinc-805 border-zinc-800 rounded-2xl p-5 hover:border-zinc-700 hover:bg-zinc-900/10 transition-all duration-200 shadow-sm space-y-4"
+                  className="bg-[#0c0c0e]/80 border border-zinc-800 rounded-2xl p-4 hover:border-zinc-700/80 transition-all duration-200 shadow-sm flex flex-col justify-between space-y-3"
                 >
                   {/* Header Row */}
-                  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800/60 pb-3">
-                    <div className="flex items-center gap-3">
-                      <span className="text-[10px] bg-zinc-900 border border-zinc-805 border-zinc-800 px-2.5 py-0.5 rounded-md text-zinc-400 font-mono font-semibold uppercase tracking-wider">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800/60 pb-2.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[9px] bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded text-zinc-400 font-mono font-semibold uppercase tracking-wider">
                         Parcel
                       </span>
                       <button 
-                        onClick={() => router.push(`/admin/orders/${order._id}`)}
-                        className="text-sm font-bold text-white hover:text-blue-400 transition-colors hover:underline"
+                        onClick={() => setSelectedOrderId(order._id)}
+                        className="text-xs font-bold text-white hover:text-blue-400 transition-colors hover:underline cursor-pointer"
                       >
                         {order.orderNumber}
                       </button>
-                      <span className="text-zinc-500 font-mono text-xs">
-                        {new Date(order.createdAt).toLocaleDateString("en-IN", { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })}
-                      </span>
                     </div>
                     
-                    <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
-                      <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold border uppercase tracking-wider ${paymentStatusClasses[order.paymentStatus] || "bg-zinc-800 text-zinc-450 border-zinc-700"}`}>
+                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold border uppercase tracking-wider ${paymentStatusClasses[order.paymentStatus] || "bg-zinc-800 text-zinc-400 border-zinc-700"}`}>
                         {order.paymentStatus}
                       </span>
                       <select 
                         value={order.status} 
                         disabled={statusMutation.isPending || ["Delivered", "Cancelled"].includes(order.status)} 
                         onChange={(event) => statusMutation.mutate({ id: order._id, nextStatus: event.target.value })} 
-                        className={`border px-2.5 py-1 text-xs font-semibold rounded-lg outline-none cursor-pointer disabled:cursor-not-allowed transition-all ${statusClasses[order.status] || "border-zinc-700 text-zinc-300"}`}
+                        className={`border px-2 py-0.5 text-[11px] font-semibold rounded-lg outline-none cursor-pointer disabled:cursor-not-allowed transition-all ${statusClasses[order.status] || "border-zinc-700 text-zinc-300"}`}
                       >
                         <option value={order.status} className="bg-zinc-950 text-zinc-200">{order.status}</option>
                         {statuses.filter((item) => item !== order.status).map((item) => (
@@ -199,22 +195,28 @@ export default function OrdersPage() {
                     </div>
                   </div>
 
-                  {/* Main Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs text-zinc-300">
-                    {/* Customer */}
-                    <div className="space-y-1">
-                      <p className="text-[9px] text-zinc-500 uppercase tracking-wider font-bold">Recipient Customer</p>
-                      <p className="font-bold text-zinc-200 text-sm capitalize">{order.customer?.name || "Customer unavailable"}</p>
-                      <p className="font-mono text-[11px] text-zinc-400">{order.customer?.email || ""}</p>
+                  {/* Content Details */}
+                  <div className="space-y-2 text-xs text-zinc-300 flex-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <div>
+                        <p className="text-[9px] text-zinc-500 uppercase tracking-wider font-bold">Recipient Customer</p>
+                        <p className="font-bold text-zinc-200 text-xs capitalize">{order.customer?.name || "Customer unavailable"}</p>
+                        <p className="font-mono text-[10px] text-zinc-400">{order.customer?.email || ""}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[9px] text-zinc-500 uppercase tracking-wider font-bold">Placed On</p>
+                        <p className="font-mono text-[10px] text-zinc-400">
+                          {new Date(order.createdAt).toLocaleDateString("en-IN", { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })}
+                        </p>
+                      </div>
                     </div>
 
-                    {/* Items */}
-                    <div className="space-y-2 md:col-span-2">
-                      <p className="text-[9px] text-zinc-500 uppercase tracking-wider font-bold">Items to Pack & Dispatch ({totalQty})</p>
-                      <div className="flex flex-wrap gap-2.5">
+                    <div className="space-y-1 pt-1">
+                      <p className="text-[9px] text-zinc-500 uppercase tracking-wider font-bold">Items to Pack ({totalQty})</p>
+                      <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto custom-scrollbar">
                         {order.items?.map((item, idx) => (
-                          <div key={idx} className="flex items-center gap-2 bg-zinc-900/50 border border-zinc-800 rounded-xl p-2 max-w-[200px] shrink-0">
-                            <div className="relative w-8 h-8 rounded-lg bg-white border border-zinc-800 p-0.5 shrink-0 flex items-center justify-center overflow-hidden">
+                          <div key={idx} className="flex items-center gap-1.5 bg-zinc-900/60 border border-zinc-800 rounded-xl p-1.5 max-w-[190px] shrink-0">
+                            <div className="relative w-7 h-7 rounded-lg bg-white border border-zinc-800 p-0.5 shrink-0 flex items-center justify-center overflow-hidden">
                               {item.product?.images?.[0] ? (
                                 <img 
                                   src={item.product.images[0]} 
@@ -228,7 +230,7 @@ export default function OrdersPage() {
                             </div>
                             <div className="min-w-0 flex-1">
                               <p className="font-bold text-zinc-200 truncate capitalize text-[10px]">{item.product?.name || "Product Info"}</p>
-                              <p className="text-[10px] text-zinc-400 font-mono">Qty: {item.quantity}</p>
+                              <p className="text-[9px] text-zinc-400 font-mono">Qty: {item.quantity}</p>
                             </div>
                           </div>
                         ))}
@@ -237,20 +239,18 @@ export default function OrdersPage() {
                   </div>
 
                   {/* Footer Row */}
-                  <div className="flex items-center justify-between border-t border-zinc-900 pt-3 text-xs">
-                    <div className="font-mono font-bold text-zinc-305 text-zinc-300">
-                      Amount: <span className="text-blue-400 text-sm font-extrabold">{formatCurrency(order.totalAmount)}</span>
+                  <div className="flex items-center justify-between border-t border-zinc-900/80 pt-2.5 text-xs">
+                    <div className="font-mono font-bold text-zinc-300">
+                      Amount: <span className="text-emerald-400 text-xs sm:text-sm font-extrabold">{formatCurrency(order.totalAmount)}</span>
                     </div>
                     
-                    <div className="flex items-center gap-2">
-                      <Button
-                        onClick={() => router.push(`/admin/orders/${order._id}`)}
-                        variant="outline"
-                        className="border-zinc-800 bg-zinc-950 text-zinc-400 hover:text-white rounded-xl text-xs font-semibold h-8 px-3 cursor-pointer"
-                      >
-                        <Eye className="w-3.5 h-3.5 mr-1" /> View Fulfillment details
-                      </Button>
-                    </div>
+                    <Button
+                      onClick={() => setSelectedOrderId(order._id)}
+                      variant="outline"
+                      className="border-zinc-800 bg-zinc-950 text-zinc-300 hover:text-white rounded-xl text-xs font-semibold h-7 px-3 cursor-pointer"
+                    >
+                      <Eye className="w-3.5 h-3.5 mr-1 text-blue-400" /> View Details
+                    </Button>
                   </div>
                 </div>
               );
@@ -258,34 +258,41 @@ export default function OrdersPage() {
           </div>
         )}
 
-        {/* 5. PAGINATION CONTROLS */}
-        <div className="flex items-center justify-between text-xs text-zinc-500 font-mono border-t border-zinc-800/80 pt-5 mt-4">
-          <span>{pagination.total} total orders</span>
-          <div className="flex items-center gap-2">
-            <Button 
-              variant="outline" 
-              size="icon" 
-              disabled={page <= 1} 
-              onClick={() => setPage((current) => current - 1)} 
-              className="h-8 w-8 rounded-lg border border-zinc-800 bg-zinc-900/45 flex items-center justify-center text-zinc-450 hover:text-white disabled:opacity-30 disabled:hover:text-zinc-450 transition-all cursor-pointer hover:border-zinc-700" 
-              title="Previous page"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <span className="text-zinc-400">Page {pagination.page} of {pagination.totalPages || 1}</span>
-            <Button 
-              variant="outline" 
-              size="icon" 
-              disabled={page >= (pagination.totalPages || 1)} 
-              onClick={() => setPage((current) => current + 1)} 
-              className="h-8 w-8 rounded-lg border border-zinc-800 bg-zinc-900/45 flex items-center justify-center text-zinc-450 hover:text-white disabled:opacity-30 disabled:hover:text-zinc-450 transition-all cursor-pointer hover:border-zinc-700" 
-              title="Next page"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+        {/* PAGINATION ROW */}
+        {pagination.totalPages > 1 && (
+          <div className="flex items-center justify-between border-t border-zinc-800 pt-3 text-xs">
+            <p className="text-zinc-500 text-[11px]">
+              Page <span className="text-zinc-200 font-bold">{pagination.page}</span> of{" "}
+              <span className="text-zinc-200 font-bold">{pagination.totalPages}</span> ({pagination.total} orders)
+            </p>
+            <div className="flex gap-1.5">
+              <Button
+                disabled={page === 1}
+                onClick={() => setPage(prev => Math.max(prev - 1, 1))}
+                variant="outline"
+                className="h-7 px-2.5 text-xs border-zinc-800 bg-zinc-900 text-zinc-300 hover:text-white disabled:opacity-40"
+              >
+                <ChevronLeft className="w-3.5 h-3.5 mr-1" /> Prev
+              </Button>
+              <Button
+                disabled={page >= pagination.totalPages}
+                onClick={() => setPage(prev => Math.min(prev + 1, pagination.totalPages))}
+                variant="outline"
+                className="h-7 px-2.5 text-xs border-zinc-800 bg-zinc-900 text-zinc-300 hover:text-white disabled:opacity-40"
+              >
+                Next <ChevronRight className="w-3.5 h-3.5 ml-1" />
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
+
+      {/* RIGHT-SIDE ORDER DETAIL DRAWER */}
+      <OrderDetailDrawer 
+        orderId={selectedOrderId} 
+        isOpen={!!selectedOrderId} 
+        onClose={() => setSelectedOrderId(null)} 
+      />
     </div>
   );
 }
