@@ -61,7 +61,6 @@ export default function EditProfileModal({ isOpen, onClose, onSuccess }) {
       return;
     }
 
-    // Limit to 5MB max size for safety
     if (file.size > 5 * 1024 * 1024) {
       toast.error("Image file size should be less than 5MB.");
       return;
@@ -89,10 +88,7 @@ export default function EditProfileModal({ isOpen, onClose, onSuccess }) {
 
       if (response.data?.success) {
         toast.success(response.data.message || "Profile updated successfully!");
-        
-        // Trigger NextAuth session update to re-fetch latest DB data
         await update();
-        
         onSuccess?.();
         onClose();
       } else {
@@ -109,17 +105,17 @@ export default function EditProfileModal({ isOpen, onClose, onSuccess }) {
 
   return (
     <Dialog open={isOpen} onOpenChange={(val) => !val && onClose()}>
-      <DialogContent className="w-full max-w-md border border-zinc-800 bg-zinc-950 p-6 text-white rounded-3xl shadow-2xl">
-        <DialogHeader className="border-b border-zinc-800/80 pb-4 mb-2">
-          <DialogTitle className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-            <Pencil className="h-5 w-5 text-blue-400" /> Edit Admin Profile
+      <DialogContent className="w-full max-w-md border border-border-subtle bg-white/95 backdrop-blur-2xl p-6 text-gray-900 rounded-3xl shadow-2xl space-y-4">
+        <DialogHeader className="border-b border-border-subtle pb-4 mb-2">
+          <DialogTitle className="text-lg font-bold tracking-tight text-gray-900 flex items-center gap-2">
+            <Pencil className="h-5 w-5 text-primary-600" /> Edit Admin Profile
           </DialogTitle>
-          <DialogDescription className="text-xs text-zinc-400 mt-1">
+          <DialogDescription className="text-xs text-zinc-500 mt-1">
             Update your personal name and profile picture for the admin workspace.
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 pt-2">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 pt-2">
           {/* Avatar Upload Area */}
           <div className="flex flex-col items-center justify-center space-y-3">
             <div className="relative group">
@@ -127,11 +123,11 @@ export default function EditProfileModal({ isOpen, onClose, onSuccess }) {
                 <img
                   src={watchImage}
                   alt="Profile Preview"
-                  className="w-24 h-24 rounded-full border-2 border-zinc-700 object-cover shadow-lg"
+                  className="w-24 h-24 rounded-full border-2 border-border-subtle object-cover shadow-xs"
                   referrerPolicy="no-referrer"
                 />
               ) : (
-                <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-blue-600 via-indigo-600 to-orange-500 flex items-center justify-center text-3xl font-extrabold text-white shadow-lg border-2 border-zinc-700">
+                <div className="w-24 h-24 rounded-full bg-primary-600 flex items-center justify-center text-3xl font-extrabold text-white shadow-xs border-2 border-border-subtle">
                   {watchName ? watchName[0].toUpperCase() : "A"}
                 </div>
               )}
@@ -140,7 +136,7 @@ export default function EditProfileModal({ isOpen, onClose, onSuccess }) {
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="absolute bottom-0 right-0 p-2 bg-blue-600 hover:bg-blue-500 text-white rounded-full border-2 border-zinc-950 shadow-md transition-transform hover:scale-110 cursor-pointer"
+                className="absolute bottom-0 right-0 p-2 bg-primary-600 hover:bg-primary-700 text-white rounded-full border-2 border-white shadow-xs transition-transform hover:scale-110 cursor-pointer"
                 title="Upload profile picture"
               >
                 <Camera className="h-4 w-4" />
@@ -159,18 +155,18 @@ export default function EditProfileModal({ isOpen, onClose, onSuccess }) {
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="text-xs text-blue-400 hover:text-blue-300 font-semibold underline cursor-pointer"
+                className="text-xs text-primary-600 hover:text-primary-700 font-extrabold underline cursor-pointer"
               >
                 {watchImage ? "Change Photo" : "Upload Photo"}
               </button>
 
               {watchImage && (
                 <>
-                  <span className="text-zinc-600 text-xs">•</span>
+                  <span className="text-zinc-400 text-xs">•</span>
                   <button
                     type="button"
                     onClick={handleRemoveImage}
-                    className="text-xs text-rose-400 hover:text-rose-300 font-semibold underline cursor-pointer"
+                    className="text-xs text-rose-600 hover:text-rose-700 font-bold underline cursor-pointer"
                   >
                     Remove Photo
                   </button>
@@ -181,56 +177,43 @@ export default function EditProfileModal({ isOpen, onClose, onSuccess }) {
 
           {/* Full Name Input */}
           <div className="space-y-1.5">
-            <Label htmlFor="admin-name" className="text-xs font-semibold text-zinc-300 uppercase tracking-wider">
+            <Label htmlFor="admin-name" className="text-xs font-semibold text-zinc-700 uppercase tracking-wider">
               Full Name
             </Label>
-            <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 h-11 focus-within:border-blue-500 transition-colors">
-              <User className="h-4 w-4 text-zinc-500 mr-2.5 shrink-0" />
+            <div className="flex items-center bg-white border border-border-subtle rounded-xl px-3.5 h-11 focus-within:border-primary-400 shadow-xs transition-colors">
+              <User className="h-4 w-4 text-zinc-400 mr-2.5 shrink-0" />
               <Input
                 id="admin-name"
                 type="text"
                 placeholder="Enter your full name"
                 {...register("name")}
-                className="bg-transparent border-none text-white text-xs placeholder-zinc-500 focus-visible:ring-0 focus-visible:ring-offset-0 h-full p-0 shadow-none"
+                className="bg-transparent border-none text-gray-900 text-xs placeholder-zinc-400 focus-visible:ring-0 focus-visible:ring-offset-0 h-full p-0 shadow-none font-medium"
               />
             </div>
             {errors.name && (
-              <p className="text-xs text-rose-400 mt-1">{errors.name.message}</p>
+              <p className="text-xs text-rose-500 mt-1">{errors.name.message}</p>
             )}
           </div>
 
           {/* Email Address (Read-only Login Identifier) */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <Label htmlFor="admin-email" className="text-xs font-semibold text-zinc-300 uppercase tracking-wider">
+              <Label htmlFor="admin-email" className="text-xs font-semibold text-zinc-700 uppercase tracking-wider">
                 Email Address
               </Label>
               <span className="text-[10px] text-zinc-500 font-medium">Read-Only</span>
             </div>
-            <div className="flex items-center bg-zinc-900/60 border border-zinc-800/80 rounded-xl px-3.5 h-11 cursor-not-allowed opacity-75">
-              <Mail className="h-4 w-4 text-zinc-500 mr-2.5 shrink-0" />
+            <div className="flex items-center bg-zinc-100 border border-border-subtle rounded-xl px-3.5 h-11 cursor-not-allowed opacity-75">
+              <Mail className="h-4 w-4 text-zinc-400 mr-2.5 shrink-0" />
               <input
                 id="admin-email"
                 type="email"
                 value={session?.user?.email || ""}
                 disabled
                 readOnly
-                className="bg-transparent border-none text-zinc-400 text-xs h-full w-full outline-none cursor-not-allowed"
+                className="bg-transparent border-none text-zinc-600 text-xs h-full w-full outline-none cursor-not-allowed font-mono"
               />
             </div>
-            <p className="text-[11px] text-zinc-500 italic mt-1">
-              Email is your primary login identifier and cannot be changed.
-            </p>
-          </div>
-
-          {/* System Role Info */}
-          <div className="p-3 rounded-xl bg-zinc-900/40 border border-zinc-800/60 flex items-center justify-between text-xs">
-            <span className="text-zinc-400 font-medium flex items-center gap-1.5">
-              <Shield className="h-4 w-4 text-blue-400" /> Admin Role:
-            </span>
-            <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-md">
-              {session?.user?.role || "Staff"}
-            </span>
           </div>
 
           {/* Action Buttons */}
@@ -239,14 +222,14 @@ export default function EditProfileModal({ isOpen, onClose, onSuccess }) {
               type="button"
               variant="outline"
               onClick={onClose}
-              className="border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded-xl px-4 h-10 text-xs font-semibold"
+              className="border-border-subtle bg-bg-surface hover:bg-primary-50 text-gray-900 rounded-xl px-4 h-10 text-xs font-semibold cursor-pointer"
             >
               Cancel
             </Button>
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl px-5 h-10 text-xs shadow-lg shadow-blue-500/20"
+              className="bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-xl px-5 h-10 text-xs shadow-xs btn-modern cursor-pointer"
             >
               {isSubmitting ? (
                 <>

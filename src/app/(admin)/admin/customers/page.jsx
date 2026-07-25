@@ -85,26 +85,29 @@ export default function CustomersPage() {
   );
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-6">
+    <div className="w-full max-w-full space-y-6 text-gray-900 overflow-x-hidden">
       
-      {/* 1. TOP NAVBAR */}
-      <div className="flex flex-wrap gap-3 justify-between items-center border-b border-zinc-800 pb-5">
+      {/* 1. UNIQUE HAZED PURPLE GRADIENT TOP CONTAINER UI */}
+      <div className="hazed-purple-banner p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold tracking-tight text-white">Customer Directory</h1>
-          <p className="mt-1 text-xs text-zinc-400">Manage buyer records, segments, duplicate logs, and statuses.</p>
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-3">
+            <Users className="h-7 w-7 text-accent shrink-0" /> Customer Directory & CRM
+          </h1>
+          <p className="mt-1 text-sm text-purple-100 font-semibold max-w-2xl">
+            Manage buyer profiles, customer segmentation, order history, and account access.
+          </p>
         </div>
         <Button 
           onClick={() => refetch()} 
           disabled={isFetching} 
           variant="outline" 
-          className="h-9 w-9 p-0 border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-white shrink-0 rounded-xl hover:bg-zinc-800"
+          className="rounded-xl border-white/40 bg-white/20 text-white hover:bg-white hover:text-primary-800 text-sm font-extrabold px-4 h-10 cursor-pointer shadow-xs btn-modern shrink-0"
           title="Refresh customers list"
         >
-          <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
+          <RefreshCw className={`mr-2 h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
+          <span>Refresh Directory</span>
         </Button>
       </div>
-
-
 
       {/* 3. STATS CARDS GRID */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -114,25 +117,25 @@ export default function CustomersPage() {
           ["New Customers", stats.newCount],
           ["At Risk Customers", stats.atRiskCount],
         ].map(([label, value]) => (
-          <div key={label} className="bg-[#0c0c0e] border border-zinc-800/80 p-5 rounded-2xl shadow-sm flex flex-col justify-between min-h-[105px]">
+          <div key={label} className="bg-bg-surface border border-border-subtle p-5 rounded-2xl shadow-xs flex flex-col justify-between min-h-[105px]">
             <div>
               <p className="text-xs text-zinc-500 uppercase tracking-wider font-bold">{label}</p>
-              <p className="text-2xl font-bold mt-2 font-mono tracking-tight text-white">{value}</p>
+              <p className="text-2xl font-bold mt-2 font-mono tracking-tight text-gray-900">{value}</p>
             </div>
           </div>
         ))}
       </div>
 
       {/* 4. SEARCH & FILTERS CONTAINER */}
-      <div className="bg-[#0c0c0e] border border-zinc-800 rounded-2xl p-4 sm:p-6 space-y-4 shadow-xl">
+      <div className="bg-bg-surface border border-border-subtle rounded-2xl p-4 sm:p-6 space-y-4 shadow-xs">
         <div className="flex flex-col gap-3 lg:flex-row items-center justify-between">
-          <div className="flex items-center w-full bg-[#141416] border border-zinc-700 rounded-xl px-3.5 transition-all gap-2 h-11 focus-within:border-zinc-500 focus-within:ring-1 focus-within:ring-zinc-500">
-            <Search className="h-4 w-4 text-zinc-500 shrink-0" />
+          <div className="flex items-center w-full bg-bg-surface border border-border-subtle rounded-xl px-3.5 transition-all gap-2 h-11 focus-within:border-primary-400 focus-within:ring-1 focus-within:ring-primary-400">
+            <Search className="h-4 w-4 text-zinc-400 shrink-0" />
             <Input 
               value={search} 
               onChange={resetPage(setSearch)} 
               placeholder="Search customers by name, phone, or email..." 
-              className="flex-1 bg-transparent border-none text-zinc-300 placeholder-zinc-500 focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none focus:ring-0 text-xs h-full p-0 shadow-none"
+              className="flex-1 bg-transparent border-none text-xs text-gray-900 placeholder-zinc-400 focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none focus:ring-0 text-xs h-full p-0 shadow-none"
             />
             <VoiceSearchButton 
               onResult={(text) => {
@@ -146,28 +149,28 @@ export default function CustomersPage() {
             <select 
               value={tag} 
               onChange={resetPage(setTag)} 
-              className="h-11 bg-[#141416] border border-zinc-700 rounded-xl px-4 text-xs font-semibold text-zinc-300 hover:text-white hover:border-zinc-500 transition-all outline-none cursor-pointer w-full sm:w-auto sm:min-w-[180px]"
+              className="h-11 bg-bg-surface border border-border-subtle rounded-xl px-4 text-xs font-semibold text-gray-900 hover:border-primary-300 transition-all outline-none cursor-pointer w-full sm:w-auto sm:min-w-[180px] shadow-xs"
             >
-              <option value="" className="bg-zinc-950 text-zinc-400">All tags</option>
-              <option value="VIP" className="bg-zinc-950 text-zinc-200">VIP</option>
-              <option value="New" className="bg-zinc-950 text-zinc-200">New</option>
-              <option value="At Risk" className="bg-zinc-950 text-zinc-200">At Risk</option>
+              <option value="" className="bg-white text-gray-900">All tags</option>
+              <option value="VIP" className="bg-white text-gray-900">VIP</option>
+              <option value="New" className="bg-white text-gray-900">New</option>
+              <option value="At Risk" className="bg-white text-gray-900">At Risk</option>
             </select>
             <select 
               value={status} 
               onChange={resetPage(setStatus)} 
-              className="h-11 bg-[#141416] border border-zinc-700 rounded-xl px-4 text-xs font-semibold text-zinc-300 hover:text-white hover:border-zinc-500 transition-all outline-none cursor-pointer w-full sm:w-auto sm:min-w-[180px]"
+              className="h-11 bg-bg-surface border border-border-subtle rounded-xl px-4 text-xs font-semibold text-gray-900 hover:border-primary-300 transition-all outline-none cursor-pointer w-full sm:w-auto sm:min-w-[180px] shadow-xs"
             >
-              <option value="" className="bg-zinc-950 text-zinc-400">All statuses</option>
-              <option value="Active" className="bg-zinc-950 text-zinc-200">Active</option>
-              <option value="Blocked" className="bg-zinc-950 text-zinc-200">Blocked</option>
+              <option value="" className="bg-white text-gray-900">All statuses</option>
+              <option value="Active" className="bg-white text-gray-900">Active</option>
+              <option value="Blocked" className="bg-white text-gray-900">Blocked</option>
             </select>
           </div>
         </div>
 
         {/* Spelling Ribbon Suggestion */}
         {spellingSuggestion && (
-          <div className="text-xs text-zinc-400 bg-blue-500/10 border border-blue-500/20 px-3 py-1.5 rounded-lg w-fit mx-auto">
+          <div className="text-xs text-primary-700 bg-primary-50 border border-primary-200 px-3 py-1.5 rounded-lg w-fit mx-auto font-medium">
             Did you mean:{" "}
             <button
               type="button"
@@ -175,7 +178,7 @@ export default function CustomersPage() {
                 setSearch(spellingSuggestion);
                 setPage(1);
               }}
-              className="text-blue-400 font-semibold hover:underline"
+              className="text-primary-700 font-extrabold hover:underline"
             >
               {spellingSuggestion}
             </button>
@@ -186,12 +189,12 @@ export default function CustomersPage() {
         {/* 5. DATA TABLE */}
         {/* 👤 CRM CUSTOMER CARDS GRID */}
         {isLoading ? (
-          <div className="flex h-48 items-center justify-center bg-[#0c0c0e]/30 border border-zinc-800 rounded-2xl">
-            <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
+          <div className="flex h-48 items-center justify-center bg-bg-surface border border-border-subtle rounded-2xl">
+            <Loader2 className="h-6 w-6 animate-spin text-primary-600" />
           </div>
         ) : customers.length === 0 ? (
-          <div className="flex flex-col items-center justify-center text-center p-12 border border-dashed border-zinc-800 bg-[#0c0c0e]/30 rounded-2xl space-y-2 min-h-[200px]">
-            <p className="font-semibold text-zinc-400">No customers match these filters.</p>
+          <div className="flex flex-col items-center justify-center text-center p-12 border border-dashed border-border-subtle bg-bg-surface rounded-2xl space-y-2 min-h-[200px]">
+            <p className="font-semibold text-gray-900 text-sm">No customers match these filters.</p>
             <p className="text-xs text-zinc-500">Try adjusting your search query or segments filter.</p>
           </div>
         ) : (
@@ -200,8 +203,8 @@ export default function CustomersPage() {
               <div 
                 key={customer._id}
                 onClick={() => router.push(`/admin/customers/${customer._id}`)}
-                className={`bg-zinc-900/30 border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900/10 rounded-2xl p-5 flex flex-col justify-between transition-all duration-300 relative group cursor-pointer ${
-                  customer.status === "Blocked" ? "opacity-60 bg-rose-950/5 border-rose-900/10" : ""
+                className={`bg-bg-surface border border-border-subtle hover:border-primary-300 rounded-2xl p-5 flex flex-col justify-between transition-all duration-300 relative group cursor-pointer shadow-xs text-gray-900 ${
+                  customer.status === "Blocked" ? "opacity-75 bg-rose-50/40 border-rose-200" : ""
                 }`}
               >
                 {/* Header: Tags & Status Switch */}
@@ -209,12 +212,12 @@ export default function CustomersPage() {
                   <div className="flex flex-wrap gap-1.5">
                     {customer.tags && customer.tags.length > 0 ? (
                       customer.tags.map((item) => (
-                        <span key={item} className={`px-2 py-0.5 rounded-full text-[9px] font-bold border ${tagClasses[item] || "bg-zinc-800 text-zinc-450 border-zinc-700"}`}>
+                        <span key={item} className="px-2.5 py-0.5 rounded-full text-[9px] font-bold border bg-primary-50 text-primary-700 border-primary-200">
                           {item}
                         </span>
                       ))
                     ) : (
-                      <span className="text-zinc-600 text-[10px] uppercase font-bold tracking-widest font-mono">Standard</span>
+                      <span className="text-zinc-500 text-[10px] uppercase font-bold tracking-widest font-mono">Standard</span>
                     )}
                   </div>
 
@@ -222,44 +225,35 @@ export default function CustomersPage() {
                     <Switch
                       checked={customer.status === "Active"}
                       onCheckedChange={() => toggleStatusMutation.mutate(customer._id)}
-                      disabled={toggleStatusMutation.isPending}
-                      className="data-[state=checked]:bg-emerald-600 scale-75"
-                      aria-label="Toggle status"
+                      className="data-[state=checked]:bg-emerald-600 data-[state=unchecked]:bg-zinc-300 scale-75 cursor-pointer"
                     />
-                    <span className={`text-[9px] font-bold uppercase ${customer.status === "Active" ? "text-emerald-400" : "text-rose-400"}`}>
-                      {customer.status || "Active"}
+                    <span className={`text-[9px] font-bold uppercase ${customer.status === "Active" ? "text-emerald-600" : "text-rose-600"}`}>
+                      {customer.status}
                     </span>
                   </div>
                 </div>
 
-                {/* Profile Block */}
-                <div className="flex items-center gap-4 py-2 border-b border-zinc-900 pb-4 mb-4">
-                  <div className="w-11 h-11 rounded-full bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center text-base font-bold text-indigo-400 capitalize shrink-0 shadow-inner">
+                {/* Info Block */}
+                <div className="flex items-center gap-3 py-2">
+                  <div className="w-10 h-10 rounded-full bg-primary-100 border border-primary-200 flex items-center justify-center text-sm font-extrabold text-primary-700 capitalize shrink-0">
                     {customer.name ? customer.name[0] : "C"}
                   </div>
-                  
                   <div className="min-w-0 flex-1">
-                    <h3 className="font-bold text-zinc-100 truncate capitalize text-xs group-hover:text-white transition-colors">
-                      {customer.name}
-                    </h3>
-                    <p className="text-[11px] text-zinc-400 font-mono mt-0.5 truncate">{customer.email || "No Email Provided"}</p>
-                    <p className="text-[10px] text-zinc-500 font-mono mt-0.5">{customer.phone || "No Phone"}</p>
+                    <h3 className="font-extrabold text-gray-900 truncate capitalize text-xs">{customer.name}</h3>
+                    <p className="text-[11px] text-zinc-500 font-mono truncate">{customer.email || "No Email Provided"}</p>
+                    <p className="text-[11px] text-zinc-500 font-mono truncate">{customer.phone || "No Phone Registered"}</p>
                   </div>
                 </div>
 
-                {/* Metrics Row */}
-                <div className="grid grid-cols-2 gap-4 text-xs">
-                  <div className="space-y-1">
-                    <p className="text-[9px] text-zinc-500 uppercase tracking-wider font-bold">Total Orders</p>
-                    <p className="font-bold font-mono text-zinc-200 text-xs">
-                      {String(customer.orderCount || 0).padStart(2, '0')}
-                    </p>
+                {/* Footer Metrics */}
+                <div className="mt-4 border-t border-border-subtle pt-3 flex items-center justify-between text-[11px] font-mono">
+                  <div>
+                    <span className="text-[9px] text-zinc-500 uppercase tracking-wider font-bold block font-sans">Total Orders</span>
+                    <span className="font-extrabold text-gray-900">{String(customer.orderCount || 0).padStart(2, "0")}</span>
                   </div>
-                  <div className="space-y-1 text-right">
-                    <p className="text-[9px] text-zinc-500 uppercase tracking-wider font-bold">Lifetime Spent</p>
-                    <p className="font-bold font-mono text-blue-400 text-xs">
-                      {formatCurrency(customer.totalSpent || 0)}
-                    </p>
+                  <div className="text-right">
+                    <span className="text-[9px] text-zinc-500 uppercase tracking-wider font-bold block font-sans">Lifetime Spent</span>
+                    <span className="font-extrabold text-emerald-600">{formatCurrency(customer.totalSpent)}</span>
                   </div>
                 </div>
               </div>

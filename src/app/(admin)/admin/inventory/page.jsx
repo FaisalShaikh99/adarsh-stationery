@@ -26,6 +26,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import useFuzzySearch from "@/hooks/useFuzzySearch";
 import VoiceSearchButton from "@/components/ui/voice-search-button";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
  
 export default function InventoryManagementPage() {
   const queryClient = useQueryClient();
@@ -451,53 +452,28 @@ export default function InventoryManagementPage() {
  
   if (productsLoading) {
     return (
-      <div className="w-full max-w-full min-h-screen bg-[#09090b] text-white p-4 sm:p-6 space-y-6 font-sans overflow-x-hidden">
-        <div className="flex justify-between items-center border-b border-zinc-800 pb-5 animate-pulse">
-          <div className="space-y-2">
-            <div className="h-6 w-56 bg-zinc-850 rounded-lg"></div>
-            <div className="h-3 w-80 bg-zinc-850 rounded-lg"></div>
-          </div>
-          <div className="flex gap-3">
-            <div className="h-9 w-32 bg-zinc-850 rounded-xl"></div>
-          </div>
-        </div>
-        
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="bg-[#0c0c0e] border border-zinc-850 p-4 rounded-2xl h-[105px] animate-pulse flex flex-col justify-between">
-              <div className="h-3 w-20 bg-zinc-850 rounded"></div>
-              <div className="h-6 w-24 bg-zinc-850 rounded mt-2"></div>
-            </div>
-          ))}
-        </div>
- 
-        <div className="bg-[#0c0c0e] border border-zinc-800 rounded-2xl p-6 space-y-4 animate-pulse">
-          <div className="h-11 w-full bg-zinc-900 rounded-xl"></div>
-          <div className="space-y-3 pt-4">
-            <div className="h-10 w-full bg-zinc-900 rounded-lg"></div>
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-12 w-full bg-zinc-900/60 rounded-lg"></div>
-            ))}
-          </div>
-        </div>
+      <div className="flex h-[70vh] items-center justify-center">
+        <LoadingSpinner size={240} label="Loading inventory catalog..." />
       </div>
     );
   }
- 
+
   return (
-    <div className="w-full max-w-full min-h-screen bg-[#09090b] text-white p-4 sm:p-6 space-y-6 font-sans overflow-x-hidden">
+    <div className="w-full max-w-full min-h-screen text-gray-900 p-2 sm:p-4 space-y-6 font-sans overflow-x-hidden">
  
-      {/* 1. TOP NAVBAR / ROW ACTION RIBBON */}
-      <div className="flex flex-wrap gap-3 justify-between items-center border-b border-zinc-800 pb-5">
+      {/* 1. UNIQUE HAZED PURPLE GRADIENT TOP CONTAINER UI */}
+      <div className="hazed-purple-banner p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-            <Package className="w-5 h-5 text-zinc-400" /> Inventory Control Center
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-3">
+            <Package className="h-7 w-7 text-accent shrink-0" /> Inventory Control Center
           </h1>
-          <p className="mt-1 text-xs text-zinc-400">Reconcile current stock counts, track reserved & available stock, minimum thresholds, and supplier details.</p>
+          <p className="mt-1 text-sm text-purple-100 font-semibold max-w-2xl">
+            Reconcile live stock levels, reserved allocation, reorder points, and supplier valuations.
+          </p>
         </div>
-        <div className="flex items-center gap-3">
-          <Button onClick={handleCsvExport} variant="outline" className="border-zinc-800 bg-zinc-900 text-zinc-300 rounded-xl px-4 h-9 text-xs font-semibold cursor-pointer">
-            <Download className="w-3.5 h-3.5 mr-2" /> Export Inventory CSV
+        <div className="flex items-center gap-3 shrink-0">
+          <Button onClick={handleCsvExport} variant="outline" className="border-white/40 bg-white/20 text-white hover:bg-white hover:text-primary-800 text-sm font-extrabold px-4 h-10 cursor-pointer shadow-xs btn-modern">
+            <Download className="w-4 h-4 mr-2" /> Export Inventory CSV
           </Button>
         </div>
       </div>
@@ -530,8 +506,8 @@ export default function InventoryManagementPage() {
             <Coins className="w-4 h-4 text-zinc-500" />
           </div>
           <div className="mt-2.5">
-            <p className="text-xl font-bold font-mono tracking-tight text-white truncate">{formatCurrency(summaryMetrics.totalValue)}</p>
-            <div className="flex items-center gap-1 text-[9px] text-emerald-400 font-semibold mt-1">
+            <p className="text-xl font-bold font-mono tracking-tight text-gray-900 truncate">{formatCurrency(summaryMetrics.totalValue)}</p>
+            <div className="flex items-center gap-1 text-[9px] text-emerald-600 font-semibold mt-1">
               <TrendingUp className="w-3 h-3" /> Cost basis valuation
             </div>
           </div>
@@ -540,17 +516,17 @@ export default function InventoryManagementPage() {
         {/* Card 3: In Stock Products */}
         <div 
           onClick={() => setSelectedStockStatus("InStock")}
-          className={`bg-[#0c0c0e] border p-4.5 rounded-2xl flex flex-col justify-between min-h-[105px] cursor-pointer transition-all duration-200 select-none ${
-            selectedStockStatus === "InStock" ? "border-emerald-500 bg-emerald-950/10 shadow-[0_0_15px_rgba(16,185,129,0.15)]" : "border-zinc-850 hover:border-zinc-700"
+          className={`bg-bg-surface border p-4.5 rounded-2xl flex flex-col justify-between min-h-[105px] cursor-pointer transition-all duration-200 select-none shadow-xs ${
+            selectedStockStatus === "InStock" ? "border-emerald-500 bg-emerald-50/40" : "border-border-subtle hover:border-primary-300"
           }`}
         >
           <div className="flex justify-between items-start">
-            <span className="text-[10px] text-zinc-550 font-bold uppercase tracking-wider">In Stock</span>
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">In Stock</span>
+            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
           </div>
           <div className="mt-2.5">
-            <p className="text-2xl font-bold font-mono tracking-tight text-emerald-400">{summaryMetrics.inStock}</p>
-            <div className="flex items-center gap-1 text-[9px] text-emerald-500/80 mt-1">
+            <p className="text-2xl font-bold font-mono tracking-tight text-emerald-600">{summaryMetrics.inStock}</p>
+            <div className="flex items-center gap-1 text-[9px] text-emerald-600 font-semibold mt-1">
               {summaryMetrics.totalProducts > 0 
                 ? `${Math.round((summaryMetrics.inStock / summaryMetrics.totalProducts) * 100)}% of catalogue`
                 : "Healthy"
@@ -562,17 +538,17 @@ export default function InventoryManagementPage() {
         {/* Card 4: Low Stock Products */}
         <div 
           onClick={() => setSelectedStockStatus("LowStock")}
-          className={`bg-[#0c0c0e] border p-4.5 rounded-2xl flex flex-col justify-between min-h-[105px] cursor-pointer transition-all duration-200 select-none ${
-            selectedStockStatus === "LowStock" ? "border-amber-500 bg-amber-950/10 shadow-[0_0_15px_rgba(245,158,11,0.15)]" : "border-zinc-850 hover:border-zinc-700"
+          className={`bg-bg-surface border p-4.5 rounded-2xl flex flex-col justify-between min-h-[105px] cursor-pointer transition-all duration-200 select-none shadow-xs ${
+            selectedStockStatus === "LowStock" ? "border-amber-500 bg-amber-50/40" : "border-border-subtle hover:border-primary-300"
           }`}
         >
           <div className="flex justify-between items-start">
-            <span className="text-[10px] text-zinc-550 font-bold uppercase tracking-wider">Low Stock</span>
-            <AlertTriangle className="w-4 h-4 text-amber-400" />
+            <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">Low Stock</span>
+            <AlertTriangle className="w-4 h-4 text-amber-600" />
           </div>
           <div className="mt-2.5">
-            <p className="text-2xl font-bold font-mono tracking-tight text-amber-400">{summaryMetrics.lowStock}</p>
-            <div className="flex items-center gap-1 text-[9px] text-amber-450 font-semibold mt-1">
+            <p className="text-2xl font-bold font-mono tracking-tight text-amber-600">{summaryMetrics.lowStock}</p>
+            <div className="flex items-center gap-1 text-[9px] text-amber-600 font-semibold mt-1">
               Restock priority alert
             </div>
           </div>
@@ -581,17 +557,17 @@ export default function InventoryManagementPage() {
         {/* Card 5: Out of Stock Products */}
         <div 
           onClick={() => setSelectedStockStatus("OutOfStock")}
-          className={`bg-[#0c0c0e] border p-4.5 rounded-2xl flex flex-col justify-between min-h-[105px] cursor-pointer transition-all duration-200 select-none ${
-            selectedStockStatus === "OutOfStock" ? "border-rose-500 bg-rose-950/10 shadow-[0_0_15px_rgba(244,63,94,0.15)]" : "border-zinc-850 hover:border-zinc-700"
+          className={`bg-bg-surface border p-4.5 rounded-2xl flex flex-col justify-between min-h-[105px] cursor-pointer transition-all duration-200 select-none shadow-xs ${
+            selectedStockStatus === "OutOfStock" ? "border-rose-500 bg-rose-50/40" : "border-border-subtle hover:border-primary-300"
           }`}
         >
           <div className="flex justify-between items-start">
-            <span className="text-[10px] text-zinc-555 font-bold uppercase tracking-wider">Out of Stock</span>
-            <XCircle className="w-4 h-4 text-rose-500" />
+            <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">Out of Stock</span>
+            <XCircle className="w-4 h-4 text-rose-600" />
           </div>
           <div className="mt-2.5">
-            <p className="text-2xl font-bold font-mono tracking-tight text-rose-400">{summaryMetrics.outOfStock}</p>
-            <div className="flex items-center gap-1 text-[9px] text-rose-400/90 font-semibold mt-1">
+            <p className="text-2xl font-bold font-mono tracking-tight text-rose-600">{summaryMetrics.outOfStock}</p>
+            <div className="flex items-center gap-1 text-[9px] text-rose-600 font-semibold mt-1">
               Critical items flag
             </div>
           </div>
@@ -600,17 +576,17 @@ export default function InventoryManagementPage() {
         {/* Card 6: Reorder Required */}
         <div 
           onClick={() => setSelectedStockStatus("ReorderRequired")}
-          className={`bg-[#0c0c0e] border p-4.5 rounded-2xl flex flex-col justify-between min-h-[105px] cursor-pointer transition-all duration-200 select-none ${
-            selectedStockStatus === "ReorderRequired" ? "border-blue-500 bg-blue-950/10 shadow-[0_0_15px_rgba(59,130,246,0.15)]" : "border-zinc-850 hover:border-zinc-700"
+          className={`bg-bg-surface border p-4.5 rounded-2xl flex flex-col justify-between min-h-[105px] cursor-pointer transition-all duration-200 select-none shadow-xs ${
+            selectedStockStatus === "ReorderRequired" ? "border-primary-500 bg-primary-50/40" : "border-border-subtle hover:border-primary-300"
           }`}
         >
           <div className="flex justify-between items-start">
-            <span className="text-[10px] text-zinc-555 font-bold uppercase tracking-wider">Reorder Required</span>
-            <RefreshCw className="w-4 h-4 text-blue-400 animate-spin-slow" />
+            <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">Reorder Required</span>
+            <RefreshCw className="w-4 h-4 text-primary-600" />
           </div>
           <div className="mt-2.5">
-            <p className="text-2xl font-bold font-mono tracking-tight text-blue-400">{summaryMetrics.reorderRequired}</p>
-            <div className="flex items-center gap-1 text-[9px] text-blue-400/80 mt-1">
+            <p className="text-2xl font-bold font-mono tracking-tight text-primary-600">{summaryMetrics.reorderRequired}</p>
+            <div className="flex items-center gap-1 text-[9px] text-primary-600 font-semibold mt-1">
               Purchase suggestions
             </div>
           </div>
@@ -618,23 +594,23 @@ export default function InventoryManagementPage() {
       </div>
  
       {/* 3. FILTER BAR */}
-      <div className="bg-[#0c0c0e] border border-zinc-800 rounded-2xl p-4 sm:p-6 space-y-4 shadow-xl">
+      <div className="bg-bg-surface border border-border-subtle rounded-2xl p-4 sm:p-6 space-y-4 shadow-xs">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex flex-1 items-center gap-3 min-w-[280px] max-w-2xl">
-            <div className="flex items-center w-full bg-[#141416] border border-zinc-700 rounded-xl px-3.5 transition-all gap-2 h-11 focus-within:border-zinc-500 focus-within:ring-1 focus-within:ring-zinc-500">
-              <Search className="h-4 w-4 text-zinc-500 shrink-0" />
+            <div className="flex items-center w-full bg-white border border-border-subtle rounded-xl px-3.5 transition-all gap-2 h-11 focus-within:border-primary-400 focus-within:ring-1 focus-within:ring-primary-400 shadow-xs">
+              <Search className="h-4 w-4 text-zinc-400 shrink-0" />
               <Input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search inventory by item title or brand..."
-                className="flex-1 bg-transparent border-none text-zinc-350 placeholder-zinc-500 focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none focus:ring-0 text-xs h-full p-0 shadow-none"
+                className="flex-1 bg-transparent border-none text-gray-900 placeholder-zinc-400 focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none focus:ring-0 text-xs h-full p-0 shadow-none"
               />
               <VoiceSearchButton 
                 onResult={(text) => setSearchQuery(text)} 
                 className="shrink-0 h-8 w-8"
               />
             </div>
-            <Button onClick={handleRefreshAll} variant="outline" className="h-11 w-11 p-0 border-zinc-700 bg-zinc-900 shrink-0 rounded-xl hover:bg-zinc-800 cursor-pointer">
+            <Button onClick={handleRefreshAll} variant="outline" className="h-11 w-11 p-0 border-border-subtle bg-bg-surface shrink-0 rounded-xl hover:bg-primary-50 text-primary-600 cursor-pointer btn-modern">
               <RefreshCw className="w-4 h-4" />
             </Button>
           </div>
@@ -644,7 +620,7 @@ export default function InventoryManagementPage() {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="bg-[#141416] border border-zinc-750 border-zinc-800 rounded-xl h-11 px-3 text-xs font-semibold text-zinc-300 hover:text-white cursor-pointer select-none"
+              className="bg-white border border-border-subtle rounded-xl h-11 px-3 text-xs font-semibold text-gray-900 hover:border-primary-300 cursor-pointer select-none shadow-xs"
             >
               <option value="name-asc">Sort: A-Z Alphabetical</option>
               <option value="name-desc">Sort: Z-A Alphabetical</option>
@@ -659,7 +635,7 @@ export default function InventoryManagementPage() {
               <button
                 type="button"
                 onClick={() => setIsBrandDropdownOpen(!isBrandDropdownOpen)}
-                className="bg-[#141416] border border-zinc-750 border-zinc-800 rounded-xl h-11 px-4 text-xs font-semibold text-zinc-300 hover:text-white hover:border-zinc-550 transition-all flex items-center justify-between gap-2 cursor-pointer min-w-[150px]"
+                className="bg-white border border-border-subtle rounded-xl h-11 px-4 text-xs font-semibold text-gray-900 hover:border-primary-300 transition-all flex items-center justify-between gap-2 cursor-pointer min-w-[150px] shadow-xs"
               >
                 <span className="truncate">
                   {selectedBrands.length === 0 
@@ -669,7 +645,7 @@ export default function InventoryManagementPage() {
                       : `${selectedBrands.length} Brands`
                   }
                 </span>
-                <span className="text-[9px] text-zinc-500">▼</span>
+                <span className="text-[9px] text-zinc-400">▼</span>
               </button>
  
               {isBrandDropdownOpen && (
@@ -678,12 +654,12 @@ export default function InventoryManagementPage() {
                     className="fixed inset-0 z-40" 
                     onClick={() => setIsBrandDropdownOpen(false)} 
                   />
-                  <div className="absolute right-0 top-12 w-64 bg-zinc-950 border border-zinc-800 rounded-2xl p-3 shadow-2xl z-50 space-y-2 mt-1">
+                  <div className="absolute right-0 top-12 w-64 bg-white/95 backdrop-blur-2xl border border-border-subtle rounded-2xl p-3 shadow-xl z-50 space-y-2 mt-1">
                     <Input 
                       value={brandSearchText}
                       onChange={(e) => setBrandSearchText(e.target.value)}
                       placeholder="Search company/brand..."
-                      className="h-8 bg-zinc-900 border-zinc-800 text-xs rounded-lg placeholder-zinc-500"
+                      className="h-8 bg-white border-border-subtle text-xs text-gray-900 rounded-lg placeholder-zinc-400"
                     />
                     
                     <div className="max-h-48 overflow-y-auto space-y-1 custom-scrollbar py-1">
@@ -691,7 +667,7 @@ export default function InventoryManagementPage() {
                         <button
                           type="button"
                           onClick={() => setSelectedBrands([])}
-                          className="w-full text-left text-[10px] text-rose-455 hover:underline px-2 py-0.5"
+                          className="w-full text-left text-[10px] text-rose-600 hover:underline px-2 py-0.5 font-bold"
                         >
                           Clear Selection
                         </button>
@@ -704,7 +680,7 @@ export default function InventoryManagementPage() {
                           return (
                             <label 
                               key={brand._id}
-                              className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-zinc-900 cursor-pointer text-xs text-zinc-350 hover:text-white transition-colors select-none"
+                              className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-primary-50 cursor-pointer text-xs text-gray-900 transition-colors select-none font-semibold"
                             >
                               <input 
                                 type="checkbox"
@@ -716,9 +692,9 @@ export default function InventoryManagementPage() {
                                     setSelectedBrands(prev => [...prev, brand._id]);
                                   }
                                 }}
-                                className="rounded border-zinc-800 bg-zinc-900 text-blue-600 focus:ring-0 focus:ring-offset-0 w-3.5 h-3.5"
+                                className="rounded border-border-subtle bg-white text-primary-600 focus:ring-0 w-3.5 h-3.5 cursor-pointer"
                               />
-                              <span className="truncate capitalize text-zinc-300">{brand.name}</span>
+                              <span className="truncate capitalize text-gray-900">{brand.name}</span>
                             </label>
                           );
                         })

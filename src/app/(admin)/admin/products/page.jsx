@@ -15,6 +15,7 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Search,
   Bell,
   Percent,
@@ -692,37 +693,45 @@ export default function ProductManagementPage() {
 
   if (productsLoading || categoriesLoading || brandsLoading) {
     return (
-      <div className="fixed inset-0 bg-[#09090b] z-50 flex items-center justify-center">
+      <div className="flex h-[70vh] items-center justify-center">
         <LoadingSpinner size={240} label="Loading products inventory..." />
       </div>
     );
   }
 
   return (
-    <div className="w-full max-w-full min-h-screen bg-[#09090b] text-white p-4 sm:p-6 space-y-6 font-sans overflow-x-hidden">
+    <div className="w-full max-w-full min-h-screen text-gray-900 p-2 sm:p-4 space-y-6 font-sans overflow-x-hidden">
  
-      {/* 1. TOP NAVBAR / ROW METRICS */}
-      <div className="flex flex-wrap gap-3 justify-between items-center border-b border-zinc-800 pb-5">
+      {/* 1. UNIQUE HAZED PURPLE GRADIENT TOP CONTAINER UI */}
+      <div className="hazed-purple-banner p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-xl font-bold tracking-tight text-white">Products Catalog</h1>
-            <span className="text-xs bg-zinc-800 text-zinc-400 px-3 py-1 rounded-lg border border-zinc-700 font-medium capitalize">{viewMode} view</span>
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-3">
+              <Package className="h-7 w-7 text-accent shrink-0" /> Products Catalog
+            </h1>
+            <span className="text-xs bg-white/20 text-white px-3 py-1 rounded-lg border border-white/30 font-bold capitalize">{viewMode} view</span>
           </div>
-          <p className="mt-1 text-xs text-zinc-400">Manage product inventory, pricing, stock levels, and catalog items.</p>
+          <p className="mt-1 text-sm text-purple-100 font-semibold max-w-2xl">
+            Manage product inventory, pricing, stock levels, and catalog items for Adarsh Stationery.
+          </p>
         </div>
-        <div className="flex items-center gap-3">
-          <Button onClick={handleCsvExport} variant="outline" className="border-zinc-800 bg-zinc-900 text-zinc-300 rounded-xl px-4 h-9 text-xs font-semibold"><Download className="w-3.5 h-3.5 mr-2" /> Export</Button>
-          <Button onClick={openCreateModal} className="bg-white text-black font-semibold hover:bg-zinc-200 rounded-xl px-4 h-9 text-xs shadow-md"><Plus className="w-3.5 h-3.5 mr-1.5" /> Add New Product</Button>
+        <div className="flex items-center gap-3 shrink-0">
+          <Button onClick={handleCsvExport} variant="outline" className="border-white/40 bg-white/20 text-white hover:bg-white hover:text-primary-800 text-sm font-extrabold px-4 h-10 cursor-pointer shadow-xs btn-modern">
+            <Download className="w-4 h-4 mr-2" /> Export CSV
+          </Button>
+          <Button onClick={openCreateModal} className="bg-white text-primary-800 font-black hover:bg-primary-50 rounded-xl px-4 h-10 text-sm shadow-md cursor-pointer btn-modern">
+            <Plus className="w-4 h-4 mr-2 text-primary-600" /> Add New Product
+          </Button>
         </div>
       </div>
  
       {/* 2. STATS CARDS GRID ROW */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {metrics.map((metric, i) => (
-          <div key={i} className="bg-[#0c0c0e] border border-zinc-800/80 p-5 rounded-2xl shadow-sm flex flex-col justify-between min-h-[105px]">
+          <div key={i} className="bg-bg-surface border border-border-subtle p-5 rounded-2xl shadow-xs flex flex-col justify-between min-h-[105px]">
             <div>
               <p className="text-xs text-zinc-500 uppercase tracking-wider font-bold">{metric.title}</p>
-              <p className="text-2xl font-bold mt-2 font-mono tracking-tight text-white">{metric.value}</p>
+              <p className="text-2xl font-bold mt-2 font-mono tracking-tight text-gray-900">{metric.value}</p>
             </div>
             {metric.subtext && (
               <span className="text-[10px] text-zinc-500 mt-1.5 block italic">{metric.subtext}</span>
@@ -732,69 +741,66 @@ export default function ProductManagementPage() {
       </div>
  
       {/* 3. SEARCH & REFRESH WORKSPACE LAYER */}
-      <div className="bg-[#0c0c0e] border border-zinc-800 rounded-2xl p-4 sm:p-6 space-y-4 shadow-xl">
+      <div className="bg-bg-surface border border-border-subtle rounded-2xl p-4 sm:p-6 space-y-4 shadow-xs">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3 w-full">
-            <div className="flex items-center w-full bg-[#141416] border border-zinc-700 rounded-xl px-3.5 transition-all gap-2 h-11 focus-within:border-zinc-500 focus-within:ring-1 focus-within:ring-zinc-500">
-              <Search className="h-4 w-4 text-zinc-500 shrink-0" />
+            <div className="flex items-center w-full bg-bg-surface border border-border-subtle rounded-xl px-3.5 transition-all gap-2 h-11 focus-within:border-primary-400 focus-within:ring-1 focus-within:ring-primary-400">
+              <Search className="h-4 w-4 text-zinc-400 shrink-0" />
               <Input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search..."
-                className="flex-1 bg-transparent border-none text-zinc-300 placeholder-zinc-500 focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none focus:ring-0 text-xs h-full p-0 shadow-none"
+                className="flex-1 bg-transparent border-none text-gray-900 placeholder-zinc-400 focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none focus:ring-0 text-xs h-full p-0 shadow-none"
               />
               <VoiceSearchButton 
                 onResult={(text) => setSearchQuery(text)} 
-                className="shrink-0 h-8 w-8"
+                className="shrink-0 h-8 w-8 text-primary-600"
               />
             </div>
-            <Button onClick={handleRefreshAll} variant="outline" className="h-11 w-11 p-0 border-zinc-700 bg-zinc-900 shrink-0 rounded-xl hover:bg-zinc-800"><RefreshCw className="w-4 h-4" /></Button>
+            <Button onClick={handleRefreshAll} variant="outline" className="h-11 w-11 p-0 border-border-subtle bg-bg-surface text-gray-900 shrink-0 rounded-xl hover:bg-primary-50 btn-modern"><RefreshCw className="w-4 h-4 text-primary-600" /></Button>
           </div>
           
           <div className="flex flex-wrap items-center gap-3 shrink-0">
-            {/* 🏢 Brand/Company Dropdown Selector */}
+            {/* Brand Filter Dropdown Menu */}
             <div className="relative shrink-0 w-full sm:w-auto">
               <button
                 type="button"
                 onClick={() => setIsBrandDropdownOpen(!isBrandDropdownOpen)}
-                className="bg-[#141416] border border-zinc-700 rounded-xl h-11 px-4 text-xs font-semibold text-zinc-300 hover:text-white hover:border-zinc-550 transition-all flex items-center justify-between gap-2 cursor-pointer w-full sm:min-w-[170px]"
+                className="w-full sm:w-auto flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-bg-surface border border-border-subtle text-xs font-semibold text-gray-900 hover:bg-primary-50 transition-colors shadow-xs"
               >
-                <span className="truncate">
-                  {selectedBrands.length === 0 
-                    ? "All Brands/Companies" 
-                    : selectedBrands.length === 1 
-                      ? brands.find(b => b._id === selectedBrands[0])?.name || "1 Selected"
-                      : `${selectedBrands.length} Selected`
-                  }
-                </span>
-                <span className="text-[9px] text-zinc-500">▼</span>
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="text-zinc-500 font-normal">Brand:</span>
+                  <span className="truncate max-w-[100px] text-primary-700 font-bold">
+                    {selectedBrands.length === 0 ? "All Brands" : `${selectedBrands.length} Selected`}
+                  </span>
+                </div>
+                <ChevronDown className="h-3.5 w-3.5 text-zinc-400 shrink-0" />
               </button>
 
               {isBrandDropdownOpen && (
                 <>
-                  <div 
-                    className="fixed inset-0 z-40" 
-                    onClick={() => setIsBrandDropdownOpen(false)} 
-                  />
-                  <div className="absolute right-0 top-12.5 w-64 bg-zinc-950 border border-zinc-800 rounded-2xl p-3 shadow-2xl z-50 space-y-2 mt-1">
-                    <Input 
-                      value={brandSearchText}
-                      onChange={(e) => setBrandSearchText(e.target.value)}
-                      placeholder="Search company name..."
-                      className="h-8 bg-zinc-900 border-zinc-805 border-zinc-800 text-xs rounded-lg placeholder-zinc-650"
-                    />
-                    
-                    <div className="max-h-48 overflow-y-auto space-y-1 custom-scrollbar py-1">
+                  <div className="fixed inset-0 z-10" onClick={() => setIsBrandDropdownOpen(false)} />
+                  <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-white/95 backdrop-blur-2xl border border-border-subtle p-3 shadow-xl z-20 space-y-2 animate-in fade-in zoom-in-95 duration-150">
+                    <div className="flex items-center justify-between pb-2 border-b border-border-subtle">
+                      <span className="text-xs font-bold text-gray-900">Filter by Brand</span>
                       {selectedBrands.length > 0 && (
                         <button
                           type="button"
                           onClick={() => setSelectedBrands([])}
-                          className="w-full text-left text-[10px] text-rose-400 hover:underline px-2 py-0.5"
+                          className="text-[10px] text-rose-600 hover:underline font-semibold"
                         >
-                          Clear Selection
+                          Reset
                         </button>
                       )}
-
+                    </div>
+                    <Input 
+                      type="text"
+                      placeholder="Search company name..."
+                      value={brandSearchText}
+                      onChange={(e) => setBrandSearchText(e.target.value)}
+                      className="h-8 text-xs bg-white border-border-subtle text-gray-900 placeholder-zinc-400"
+                    />
+                    <div className="max-h-48 overflow-y-auto space-y-1 custom-scrollbar">
                       {brands
                         .filter(b => b.name.toLowerCase().includes(brandSearchText.toLowerCase()))
                         .map((brand) => {
@@ -802,7 +808,7 @@ export default function ProductManagementPage() {
                           return (
                             <label 
                               key={brand._id}
-                              className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-zinc-900 cursor-pointer text-xs text-zinc-350 hover:text-white transition-colors select-none"
+                              className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-primary-50 cursor-pointer text-xs text-gray-900 transition-colors select-none"
                             >
                               <input 
                                 type="checkbox"
@@ -814,16 +820,16 @@ export default function ProductManagementPage() {
                                     setSelectedBrands(prev => [...prev, brand._id]);
                                   }
                                 }}
-                                className="rounded border-zinc-800 bg-zinc-900 text-blue-600 focus:ring-0 focus:ring-offset-0 w-3.5 h-3.5"
+                                className="rounded border-border-subtle bg-white text-primary-600 focus:ring-0 w-3.5 h-3.5 cursor-pointer"
                               />
-                              <span className="truncate capitalize">{brand.name}</span>
+                              <span className="truncate capitalize font-semibold">{brand.name}</span>
                             </label>
                           );
                         })
                       }
 
                       {brands.filter(b => b.name.toLowerCase().includes(brandSearchText.toLowerCase())).length === 0 && (
-                        <p className="text-[11px] text-zinc-550 text-center py-2">No brands found.</p>
+                        <p className="text-[11px] text-zinc-500 text-center py-2">No brands found.</p>
                       )}
                     </div>
                   </div>
@@ -832,18 +838,18 @@ export default function ProductManagementPage() {
             </div>
 
             {/* View Mode Toggle Switcher */}
-            <div className="flex items-center gap-1 bg-[#141416] border border-zinc-800 p-1 rounded-xl shrink-0 self-stretch sm:self-auto justify-center">
+            <div className="flex items-center gap-1 bg-bg-surface border border-border-subtle p-1 rounded-xl shrink-0 self-stretch sm:self-auto justify-center shadow-xs">
               <button
                 type="button"
                 onClick={() => setViewMode("table")}
-                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === "table" ? "bg-zinc-800 text-white" : "text-zinc-500 hover:text-zinc-350"}`}
+                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${viewMode === "table" ? "bg-primary-600 text-white shadow-xs" : "text-zinc-600 hover:text-gray-900 hover:bg-primary-50/50"}`}
               >
                 Table
               </button>
               <button
                 type="button"
                 onClick={() => setViewMode("grid")}
-                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === "grid" ? "bg-zinc-800 text-white" : "text-zinc-500 hover:text-zinc-350"}`}
+                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${viewMode === "grid" ? "bg-primary-600 text-white shadow-xs" : "text-zinc-600 hover:text-gray-900 hover:bg-primary-50/50"}`}
               >
                 Grid
               </button>
@@ -853,12 +859,12 @@ export default function ProductManagementPage() {
 
         {/* ✨ Smart Did You Mean Ribbon Suggestion Box */}
         {spellingSuggestion && (
-          <div className="text-xs text-zinc-400 bg-blue-500/10 border border-blue-500/20 px-3 py-1.5 rounded-lg w-fit mx-auto">
+          <div className="text-xs text-primary-700 bg-primary-50 border border-primary-200 px-3 py-1.5 rounded-lg w-fit mx-auto font-medium">
             Did you mean:{" "}
             <button
               type="button"
               onClick={() => setSearchQuery(spellingSuggestion)}
-              className="text-blue-400 font-semibold hover:underline capitalize"
+              className="text-primary-700 font-extrabold hover:underline capitalize"
             >
               {spellingSuggestion}
             </button>
@@ -867,11 +873,15 @@ export default function ProductManagementPage() {
         )}
 
         {/* 🏷️ Horizontal Category-wise View filter */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none border-b border-zinc-800/60">
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none border-b border-border-subtle">
           <button
             type="button"
             onClick={() => setSelectedCategoryFilter("All")}
-            className={`px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all border ${selectedCategoryFilter === "All" ? "bg-white text-black border-white shadow-md scale-[1.02]" : "bg-zinc-900/50 text-zinc-400 border-zinc-805 border-zinc-800 hover:text-zinc-200"}`}
+            className={`px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all border cursor-pointer ${
+              selectedCategoryFilter === "All" 
+                ? "bg-primary-600 text-white border-primary-600 shadow-xs scale-[1.02]" 
+                : "bg-white/80 text-gray-900 border-border-subtle hover:bg-primary-50/70"
+            }`}
           >
             All Categories ({products.length})
           </button>
@@ -882,7 +892,11 @@ export default function ProductManagementPage() {
                 key={cat._id}
                 type="button"
                 onClick={() => setSelectedCategoryFilter(cat._id)}
-                className={`px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all border ${selectedCategoryFilter === cat._id ? "bg-white text-black border-white shadow-md scale-[1.02]" : "bg-zinc-900/50 text-zinc-400 border-zinc-805 border-zinc-800 hover:text-zinc-200"}`}
+                className={`px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all border cursor-pointer ${
+                  selectedCategoryFilter === cat._id 
+                    ? "bg-primary-600 text-white border-primary-600 shadow-xs scale-[1.02]" 
+                    : "bg-white/80 text-gray-900 border-border-subtle hover:bg-primary-50/70"
+                }`}
               >
                 <span className="capitalize">{cat.name}</span> ({count})
               </button>
@@ -892,27 +906,27 @@ export default function ProductManagementPage() {
  
         {/* 4. CORE INVENTORY DISPLAY (TABLE / GRID) */}
         {viewMode === "table" ? (
-          <div className="overflow-x-auto rounded-xl border border-zinc-800 bg-zinc-900/10">
-            <Table className="min-w-[1100px]">
-              <TableHeader className="bg-zinc-900/40">
-                <TableRow className="border-b border-zinc-800">
-                  <TableHead className="w-16 font-semibold text-zinc-400">Sr No.</TableHead>
-                  <TableHead className="font-semibold text-zinc-400">Product Name</TableHead>
-                  <TableHead className="font-semibold text-zinc-400">Category</TableHead>
-                  <TableHead className="font-semibold text-zinc-400">Brand</TableHead>
-                  <TableHead className="font-semibold text-zinc-400">Stock</TableHead>
-                  <TableHead className="font-semibold text-zinc-400">Cost Price</TableHead>
-                  <TableHead className="font-semibold text-zinc-400">Selling Price</TableHead>
-                  <TableHead className="font-semibold text-zinc-400">Profit</TableHead>
-                  <TableHead className="font-semibold text-zinc-400">Visibility</TableHead>
-                  <TableHead className="font-semibold text-zinc-400">Date Added</TableHead>
-                  <TableHead className="text-center w-32 font-semibold text-zinc-400">Actions</TableHead>
+          <div className="overflow-x-auto rounded-2xl border border-border-subtle bg-bg-surface shadow-xs">
+            <Table className="min-w-[1100px] text-xs">
+              <TableHeader className="bg-primary-50/90 border-b border-border-subtle">
+                <TableRow className="border-b border-border-subtle uppercase text-[11px]">
+                  <TableHead className="w-16 font-extrabold text-primary-800">Sr No.</TableHead>
+                  <TableHead className="font-extrabold text-primary-800">Product Name</TableHead>
+                  <TableHead className="font-extrabold text-primary-800">Category</TableHead>
+                  <TableHead className="font-extrabold text-primary-800">Brand</TableHead>
+                  <TableHead className="font-extrabold text-primary-800">Stock</TableHead>
+                  <TableHead className="font-extrabold text-primary-800">Cost Price</TableHead>
+                  <TableHead className="font-extrabold text-primary-800">Selling Price</TableHead>
+                  <TableHead className="font-extrabold text-primary-800">Profit</TableHead>
+                  <TableHead className="font-extrabold text-primary-800">Visibility</TableHead>
+                  <TableHead className="font-extrabold text-primary-800">Date Added</TableHead>
+                  <TableHead className="text-center w-32 font-extrabold text-primary-800">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {productsLoading ? (
                   <TableRow>
-                    <TableCell colSpan={11} className="text-center py-6 text-zinc-550 font-medium">
+                    <TableCell colSpan={11} className="text-center py-6 text-zinc-500 font-medium">
                       <LoadingSpinner size={140} label="Loading items..." className="mx-auto" />
                     </TableCell>
                   </TableRow>
@@ -920,10 +934,10 @@ export default function ProductManagementPage() {
                   <TableRow>
                     <TableCell colSpan={11} className="py-12 text-center text-zinc-500">
                       <div className="flex flex-col items-center justify-center space-y-4">
-                        <p className="text-sm font-semibold text-zinc-400">No products found matching criteria.</p>
+                        <p className="text-sm font-semibold text-gray-900">No products found matching criteria.</p>
                         <Button
                           onClick={openCreateModal}
-                          className="bg-white text-black font-semibold hover:bg-zinc-200 rounded-xl px-4 h-9 text-xs cursor-pointer shadow-md"
+                          className="bg-primary-600 text-white font-semibold hover:bg-primary-700 rounded-xl px-4 h-9 text-xs cursor-pointer shadow-xs btn-modern"
                         >
                           + Add New Product
                         </Button>
@@ -937,47 +951,26 @@ export default function ProductManagementPage() {
                     const profit = selling - cost;
                     const marginPercent = selling > 0 ? Number(((profit / selling) * 100).toFixed(0)) : 0;
 
-                    let colorClass = "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+                    let colorClass = "bg-emerald-500/10 text-emerald-600 border-emerald-500/20";
                     if (profit < 0) {
-                      colorClass = "bg-rose-500/10 text-rose-400 border-rose-500/20";
+                      colorClass = "bg-rose-500/10 text-rose-600 border-rose-500/20";
                     } else if (marginPercent <= 15) {
-                      colorClass = "bg-amber-500/10 text-amber-400 border-amber-500/20";
+                      colorClass = "bg-amber-500/10 text-amber-600 border-amber-500/20";
                     }
 
                     return (
-                      <TableRow key={p._id} className="border-b border-zinc-800/60 hover:bg-zinc-900/20 transition-colors">
-                        <TableCell className="font-mono text-zinc-500 py-2.5">{(currentPage - 1) * itemsPerPage + index + 1}</TableCell>
-                        <TableCell className="font-semibold capitalize py-2.5">
-                          <div className="flex items-center gap-3">
-                            {p.images?.[0] && (
-                              <img 
-                                src={p.images[0]} 
-                                className="w-10 h-10 object-contain rounded-lg bg-white border border-zinc-800 p-0.5 shadow-sm shrink-0" 
-                                alt={p.name} 
-                                referrerPolicy="no-referrer"
-                              />
-                            )}
-                            <span className="font-bold tracking-tight text-xs text-zinc-100 capitalize">{p.name}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-zinc-450 text-xs py-2.5">{p.category?.name || "Uncategorized"}</TableCell>
+                      <TableRow key={p._id} className="border-b border-border-subtle hover:bg-primary-50/40 transition-colors text-gray-900 bg-white/70">
+                        <TableCell className="font-mono text-zinc-600 py-2.5 font-bold">{(currentPage - 1) * itemsPerPage + index + 1}</TableCell>
+                        <TableCell className="font-extrabold text-gray-900 py-2.5">{p.name}</TableCell>
                         <TableCell className="py-2.5">
-                          {p.company?.logo ? (
-                            <img 
-                              src={p.company.logo} 
-                              className="w-10 h-10 object-contain rounded-lg bg-white border border-zinc-800 p-0.5 shadow-sm shrink-0" 
-                              alt={p.company?.name} 
-                              referrerPolicy="no-referrer"
-                            />
-                          ) : (
-                            <span className="text-[11px] font-mono text-zinc-500">{p.company?.name || "No Brand"}</span>
-                          )}
+                          <span className="bg-primary-50 text-primary-700 border border-primary-200 px-2 py-0.5 rounded text-[10px] font-bold">
+                            {p.category?.name || "Uncategorized"}
+                          </span>
                         </TableCell>
-                        <TableCell className="font-mono text-xs py-2.5">
-                          <span className="text-emerald-450 text-emerald-400 font-bold">{p.stock}</span> {p.stockUnit}
-                        </TableCell>
-                        <TableCell className="font-mono text-xs py-2.5 text-zinc-400">₹{cost}/-</TableCell>
-                        <TableCell className="font-mono text-xs py-2.5 text-zinc-200 font-semibold">₹{selling}/-</TableCell>
+                        <TableCell className="py-2.5 text-zinc-700 font-semibold">{p.company?.name || "—"}</TableCell>
+                        <TableCell className="py-2.5 font-mono font-bold text-emerald-600">{p.stock} {p.stockUnit}</TableCell>
+                        <TableCell className="font-mono text-xs py-2.5 text-zinc-600">₹{cost}/-</TableCell>
+                        <TableCell className="font-mono text-xs py-2.5 text-gray-900 font-extrabold">₹{selling}/-</TableCell>
                         <TableCell className="font-mono text-xs py-2.5">
                           <span className={`inline-flex flex-col px-2 py-0.5 rounded-lg border text-[11px] ${colorClass}`}>
                             <span className="font-bold">₹{profit}/-</span>
@@ -989,22 +982,22 @@ export default function ProductManagementPage() {
                             <Switch 
                               checked={p.isVisible !== false}
                               onCheckedChange={() => toggleVisibilityMutation.mutate(p._id)}
-                              className="data-[state=checked]:bg-emerald-600 scale-75"
+                              className="data-[state=checked]:bg-emerald-600 scale-75 cursor-pointer"
                             />
-                            <span className={`text-[9px] font-bold uppercase min-w-[50px] ${p.isVisible !== false ? "text-emerald-400" : "text-zinc-500"}`}>
+                            <span className={`text-[9px] font-bold uppercase min-w-[50px] ${p.isVisible !== false ? "text-emerald-600" : "text-zinc-500"}`}>
                               {p.isVisible !== false ? "Visible" : "Hidden"}
                             </span>
                           </div>
                         </TableCell>
-                        <TableCell className="font-mono text-[11px] text-zinc-450 py-2.5">
+                        <TableCell className="font-mono text-[11px] text-zinc-500 py-2.5">
                           {p.createdAt ? (
                             new Date(p.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
                           ) : "—"}
                         </TableCell>
                         <TableCell className="text-center py-2.5">
                           <div className="flex justify-center gap-3">
-                            <Button onClick={() => openEditModal(p)} variant="ghost" className="p-1 h-auto text-zinc-400 hover:text-white transition-colors"><Edit2 className="w-3.5 h-3.5" /></Button>
-                            <Button onClick={() => { setPendingDeleteId(p._id); setDeleteDialogOpen(true); }} variant="ghost" className="p-1 h-auto text-zinc-500 hover:text-rose-455 hover:text-rose-400 transition-colors"><Trash2 className="w-3.5 h-3.5" /></Button>
+                            <Button onClick={() => openEditModal(p)} variant="ghost" className="p-1 h-auto text-zinc-600 hover:text-gray-900 hover:bg-primary-50 rounded-lg cursor-pointer"><Edit2 className="w-3.5 h-3.5" /></Button>
+                            <Button onClick={() => { setPendingDeleteId(p._id); setDeleteDialogOpen(true); }} variant="ghost" className="p-1 h-auto text-rose-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg cursor-pointer"><Trash2 className="w-3.5 h-3.5" /></Button>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -1018,21 +1011,21 @@ export default function ProductManagementPage() {
           /* Grid View Cards Frame */
           <div className="space-y-6">
             {productsLoading ? (
-              <div className="text-center py-12 text-zinc-550 font-medium">
+              <div className="text-center py-12 text-zinc-500 font-medium">
                 <LoadingSpinner size={160} label="Loading items..." className="mx-auto" />
               </div>
             ) : paginatedProducts.length === 0 ? (
-              <div className="flex flex-col items-center justify-center text-center p-12 border border-dashed border-zinc-800 bg-[#0c0c0e]/30 rounded-2xl space-y-4 min-h-[300px]">
-                <div className="w-12 h-12 rounded-full bg-zinc-900 flex items-center justify-center border border-zinc-800 text-zinc-500">
+              <div className="flex flex-col items-center justify-center text-center p-12 border border-dashed border-border-subtle bg-bg-surface rounded-2xl space-y-4 min-h-[300px]">
+                <div className="w-12 h-12 rounded-full bg-primary-50 flex items-center justify-center border border-primary-200 text-primary-600">
                   <Package className="w-6 h-6" />
                 </div>
                 <div className="space-y-1">
-                  <h3 className="text-sm font-bold text-zinc-200">No products found matching criteria</h3>
+                  <h3 className="text-sm font-bold text-gray-900">No products found matching criteria</h3>
                   <p className="text-xs text-zinc-500 max-w-sm">No items match your search filters or catalog selection.</p>
                 </div>
                 <Button 
                   onClick={openCreateModal}
-                  className="bg-white text-black font-semibold hover:bg-zinc-200 rounded-xl px-4 h-9 text-xs cursor-pointer shadow-md"
+                  className="bg-primary-600 text-white font-semibold hover:bg-primary-700 rounded-xl px-4 h-9 text-xs cursor-pointer shadow-xs btn-modern"
                 >
                   + Add New Product
                 </Button>
@@ -1049,18 +1042,18 @@ export default function ProductManagementPage() {
                   const profitVal = sellVal - costVal;
                   const marginPct = sellVal > 0 ? Math.round((profitVal / sellVal) * 100) : 0;
 
-                  let profitColorClass = "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+                  let profitColorClass = "bg-emerald-500/10 text-emerald-600 border-emerald-500/20";
                   if (profitVal < 0) {
-                    profitColorClass = "bg-rose-500/10 text-rose-400 border-rose-500/20";
+                    profitColorClass = "bg-rose-500/10 text-rose-600 border-rose-500/20";
                   } else if (marginPct <= 15) {
-                    profitColorClass = "bg-amber-500/10 text-amber-400 border-amber-500/20";
+                    profitColorClass = "bg-amber-500/10 text-amber-600 border-amber-500/20";
                   }
 
                   return (
-                    <div key={p._id} className="bg-zinc-900/40 border border-zinc-800 rounded-2xl p-4 flex flex-col justify-between hover:border-zinc-700 hover:bg-zinc-900/60 transition-all group">
+                    <div key={p._id} className="bg-bg-surface border border-border-subtle rounded-2xl p-4 flex flex-col justify-between hover:border-primary-300 transition-all group shadow-xs text-gray-900">
                       <div className="space-y-3">
                         {/* Product Image Frame */}
-                        <div className="relative h-44 w-full bg-white rounded-xl border border-zinc-850 flex items-center justify-center p-3 overflow-hidden shadow-sm shrink-0">
+                        <div className="relative h-44 w-full bg-white rounded-xl border border-border-subtle flex items-center justify-center p-3 overflow-hidden shadow-xs shrink-0">
                           {p.images?.[0] ? (
                             <img 
                               src={p.images[0]} 
@@ -1075,7 +1068,7 @@ export default function ProductManagementPage() {
                             <img 
                               src={p.company.logo} 
                               alt="" 
-                              className="absolute top-2.5 left-2.5 h-8 object-contain max-w-[85px] bg-white p-1 rounded-lg border border-zinc-200 shadow-sm" 
+                              className="absolute top-2.5 left-2.5 h-8 object-contain max-w-[85px] bg-white p-1 rounded-lg border border-border-subtle shadow-xs" 
                               referrerPolicy="no-referrer"
                             />
                           )}
@@ -1083,27 +1076,27 @@ export default function ProductManagementPage() {
 
                         {/* Info Section */}
                         <div>
-                          <span className="text-[10px] bg-zinc-800/80 text-zinc-400 px-2 py-0.5 rounded-md font-semibold tracking-wide uppercase">
+                          <span className="text-[10px] bg-primary-50 text-primary-700 border border-primary-200 px-2 py-0.5 rounded-md font-bold tracking-wide uppercase">
                             {p.category?.name || "Uncategorized"}
                           </span>
-                          <h3 className="font-bold text-zinc-100 mt-1.5 text-base capitalize line-clamp-1">{p.name}</h3>
-                          <div className="flex items-center justify-between text-xs text-zinc-400 mt-2 font-mono">
-                            <span>Stock: <span className="text-emerald-400 font-bold">{p.stock}</span> {p.stockUnit}</span>
+                          <h3 className="font-extrabold text-gray-900 mt-1.5 text-sm capitalize line-clamp-1">{p.name}</h3>
+                          <div className="flex items-center justify-between text-xs text-zinc-600 mt-2 font-mono">
+                            <span>Stock: <span className="text-emerald-600 font-bold">{p.stock}</span> {p.stockUnit}</span>
                             <span className="text-zinc-500 text-[10px]">{dateStr}</span>
                           </div>
                         </div>
                       </div>
 
                       {/* Footer Controls & Pricing */}
-                      <div className="border-t border-zinc-800/80 pt-3 mt-4 space-y-3">
+                      <div className="border-t border-border-subtle pt-3 mt-4 space-y-3">
                         {/* Pricing & Profit Card */}
-                        <div className="bg-zinc-950/60 border border-zinc-800/80 p-2.5 rounded-xl space-y-1.5 font-mono">
-                          <div className="flex items-center justify-between text-zinc-400 text-xs">
-                            <span>Cost: ₹{costVal}</span>
-                            <span>Sell: <strong className="text-white">₹{sellVal}</strong></span>
+                        <div className="bg-white/80 border border-border-subtle p-2.5 rounded-xl space-y-1">
+                          <div className="flex items-center justify-between text-xs font-mono">
+                            <span className="text-zinc-500">Cost: ₹{costVal}</span>
+                            <span className="text-gray-900 font-extrabold text-sm">Sell: ₹{sellVal}</span>
                           </div>
-                          <div className="flex items-center justify-between border-t border-zinc-800/60 pt-1.5">
-                            <span className="text-[10px] text-zinc-500 font-sans uppercase font-bold">Profit</span>
+                          <div className="flex items-center justify-between pt-1 border-t border-border-subtle/60 text-[11px] font-mono">
+                            <span className="text-zinc-500 font-semibold">PROFIT</span>
                             <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${profitColorClass}`}>
                               ₹{profitVal} ({marginPct}%)
                             </span>

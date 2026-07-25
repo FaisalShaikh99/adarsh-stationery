@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTheme } from "next-themes";
-import { useAccentTheme } from "@/context/AccentThemeContext";
 import axios from "axios";
 import { toast } from "sonner";
 import { 
@@ -42,7 +41,6 @@ import {
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState("general");
   const { theme, setTheme } = useTheme();
-  const { accentTheme, setAccentTheme } = useAccentTheme();
   const [mounted, setMounted] = useState(false);
 
   // States
@@ -211,16 +209,18 @@ export default function SettingsPage() {
   ];
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto font-sans animate-in fade-in duration-300">
+    <div className="space-y-6 w-full max-w-full font-sans animate-in fade-in duration-300 overflow-x-hidden">
       
-      {/* Header */}
-      <div className="border-b border-zinc-800/80 pb-5">
-        <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-2.5">
-          <Store className="h-5 w-5 text-blue-400" /> Store Settings
-        </h1>
-        <p className="text-xs text-zinc-400 mt-1">
-          Manage your store details, security credentials, appearance themes, and operational preferences.
-        </p>
+      {/* 1. UNIQUE HAZED PURPLE GRADIENT TOP CONTAINER UI */}
+      <div className="hazed-purple-banner p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-3">
+            <Store className="h-7 w-7 text-accent shrink-0" /> Store Administrative Settings
+          </h1>
+          <p className="mt-1 text-sm text-purple-100 font-semibold max-w-2xl">
+            Configure store business details, security authentication, notification preferences, and team roles.
+          </p>
+        </div>
       </div>
 
       {/* Main Grid Layout */}
@@ -461,151 +461,23 @@ export default function SettingsPage() {
 
           {/* 3. APPEARANCE SECTION */}
           {activeTab === "appearance" && (
-            <div className="p-6 rounded-3xl bg-zinc-900/30 border border-zinc-800/60 space-y-6 shadow-xl">
-              <div className="border-b border-zinc-800/60 pb-4">
-                <h2 className="text-base font-bold text-white flex items-center gap-2">
-                  <Palette className="h-4 w-4 text-purple-400" /> Interface Appearance & Theme
+            <div className="p-6 rounded-3xl bg-white border border-border-subtle space-y-6 shadow-sm">
+              <div className="border-b border-border-subtle pb-4">
+                <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                  <Palette className="h-4 w-4 text-primary-600" /> Interface Appearance & Theme
                 </h2>
-                <p className="text-xs text-zinc-400 mt-1">
-                  Select your preferred color mode for the administrative dashboard workspace.
+                <p className="text-xs text-zinc-500 mt-1">
+                  This administrative workspace is optimized for long working hours using a clean, low-eye-strain Light SaaS theme.
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {/* Dark Theme Option */}
-                <button
-                  type="button"
-                  onClick={() => setTheme("dark")}
-                  className={`p-4 rounded-2xl border text-left transition-all cursor-pointer space-y-3 relative group ${
-                    (mounted && theme === "dark") || (!mounted)
-                      ? "bg-blue-600/15 border-blue-500 shadow-md shadow-blue-500/10"
-                      : "bg-zinc-950/60 border-zinc-800 hover:border-zinc-700"
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 text-blue-400">
-                      <Moon className="h-5 w-5" />
-                    </div>
-                    {mounted && theme === "dark" && (
-                      <span className="h-2 w-2 rounded-full bg-blue-500 ring-4 ring-blue-500/20" />
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="text-xs font-bold text-white">Dark Theme</h3>
-                    <p className="text-[11px] text-zinc-400 mt-0.5">High-contrast dark mode tailored for low-light environments.</p>
-                  </div>
-                </button>
-
-                {/* Light Theme Option */}
-                <button
-                  type="button"
-                  onClick={() => setTheme("light")}
-                  className={`p-4 rounded-2xl border text-left transition-all cursor-pointer space-y-3 relative group ${
-                    mounted && theme === "light"
-                      ? "bg-blue-600/15 border-blue-500 shadow-md shadow-blue-500/10"
-                      : "bg-zinc-950/60 border-zinc-800 hover:border-zinc-700"
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 text-amber-400">
-                      <Sun className="h-5 w-5" />
-                    </div>
-                    {mounted && theme === "light" && (
-                      <span className="h-2 w-2 rounded-full bg-blue-500 ring-4 ring-blue-500/20" />
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="text-xs font-bold text-white">Light Theme</h3>
-                    <p className="text-[11px] text-zinc-400 mt-0.5">Clean, bright mode ideal for well-lit daytime workspaces.</p>
-                  </div>
-                </button>
-
-                {/* System Default Option */}
-                <button
-                  type="button"
-                  onClick={() => setTheme("system")}
-                  className={`p-4 rounded-2xl border text-left transition-all cursor-pointer space-y-3 relative group ${
-                    mounted && theme === "system"
-                      ? "bg-blue-600/15 border-blue-500 shadow-md shadow-blue-500/10"
-                      : "bg-zinc-950/60 border-zinc-800 hover:border-zinc-700"
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 text-purple-400">
-                      <Monitor className="h-5 w-5" />
-                    </div>
-                    {mounted && theme === "system" && (
-                      <span className="h-2 w-2 rounded-full bg-blue-500 ring-4 ring-blue-500/20" />
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="text-xs font-bold text-white">System Sync</h3>
-                    <p className="text-[11px] text-zinc-400 mt-0.5">Automatically match your operating system theme settings.</p>
-                  </div>
-                </button>
-              </div>
-
-              {/* Accent Palette & Brand Tone Selection */}
-              <div className="border-t border-zinc-800/60 pt-6 space-y-4">
+              <div className="p-4 rounded-2xl bg-primary-50 border border-primary-100 flex items-center gap-3">
+                <Sun className="h-5 w-5 text-primary-600 shrink-0" />
                 <div>
-                  <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                    <Sparkles className="h-4 w-4 text-amber-400" /> Brand Accent Palette
-                  </h3>
-                  <p className="text-xs text-zinc-400 mt-1">
-                    Select your preferred accent theme to customize primary highlights, buttons, active states, and analytics gradients.
+                  <h3 className="text-xs font-bold text-gray-900">Light SaaS Theme Active</h3>
+                  <p className="text-[11px] text-zinc-600 mt-0.5">
+                    Light mode is active across all workspace tools for optimal legibility and contrast.
                   </p>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Indigo Ink Option */}
-                  <button
-                    type="button"
-                    onClick={() => setAccentTheme("indigo-ink")}
-                    className={`p-4 rounded-2xl border text-left transition-all cursor-pointer space-y-3 relative group ${
-                      accentTheme === "indigo-ink"
-                        ? "bg-indigo-600/15 border-indigo-500 shadow-md shadow-indigo-500/10"
-                        : "bg-zinc-950/60 border-zinc-800 hover:border-zinc-700"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-5 h-5 rounded-full bg-indigo-600 shadow-sm" />
-                        <div className="w-5 h-5 rounded-full bg-violet-600 shadow-sm" />
-                      </div>
-                      {accentTheme === "indigo-ink" && (
-                        <span className="h-2 w-2 rounded-full bg-indigo-500 ring-4 ring-indigo-500/20" />
-                      )}
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-bold text-white">Indigo Ink (Default)</h4>
-                      <p className="text-[11px] text-zinc-400 mt-0.5">Classic deep indigo and royal violet accent palette.</p>
-                    </div>
-                  </button>
-
-                  {/* Violet Dusk Option */}
-                  <button
-                    type="button"
-                    onClick={() => setAccentTheme("violet-dusk")}
-                    className={`p-4 rounded-2xl border text-left transition-all cursor-pointer space-y-3 relative group ${
-                      accentTheme === "violet-dusk"
-                        ? "bg-purple-600/15 border-purple-500 shadow-md shadow-purple-500/10"
-                        : "bg-zinc-950/60 border-zinc-800 hover:border-zinc-700"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-5 h-5 rounded-full bg-purple-600 shadow-sm" />
-                        <div className="w-5 h-5 rounded-full bg-fuchsia-500 shadow-sm" />
-                      </div>
-                      {accentTheme === "violet-dusk" && (
-                        <span className="h-2 w-2 rounded-full bg-purple-500 ring-4 ring-purple-500/20" />
-                      )}
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-bold text-white">Violet Dusk</h4>
-                      <p className="text-[11px] text-zinc-400 mt-0.5">Rich purple-to-fuchsia magenta twilight accent palette.</p>
-                    </div>
-                  </button>
                 </div>
               </div>
             </div>

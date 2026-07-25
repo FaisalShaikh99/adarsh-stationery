@@ -44,28 +44,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { customerContactSchema } from "@/schemas/customer.schema";
 
 const statusClasses = {
-  Active: "bg-emerald-500/10 text-emerald-300 border border-emerald-500/25",
-  Blocked: "bg-rose-500/10 text-rose-300 border border-rose-500/25",
-};
-
-const orderStatusClasses = {
-  Pending: "bg-amber-500/10 text-amber-300 border border-amber-500/25",
-  Confirmed: "bg-sky-500/10 text-sky-300 border border-sky-500/25",
-  Shipped: "bg-violet-500/10 text-violet-300 border border-violet-500/25",
-  Delivered: "bg-emerald-500/10 text-emerald-300 border border-emerald-500/25",
-  Cancelled: "bg-rose-500/10 text-rose-300 border border-rose-500/25",
-};
-
-const paymentStatusClasses = {
-  Paid: "bg-emerald-500/10 text-emerald-300 border border-emerald-500/25",
-  Pending: "bg-amber-500/10 text-amber-300 border border-amber-500/25",
-  Failed: "bg-rose-500/10 text-rose-300 border border-rose-500/25",
+  Active: "bg-emerald-500/10 text-emerald-700 border border-emerald-500/25 font-bold",
+  Blocked: "bg-rose-500/10 text-rose-700 border border-rose-500/25 font-bold",
 };
 
 const tagClasses = {
-  VIP: "bg-amber-500/10 text-amber-300 border border-amber-500/25",
-  New: "bg-emerald-500/10 text-emerald-300 border border-emerald-500/25",
-  "At Risk": "bg-rose-500/10 text-rose-300 border border-rose-500/25",
+  VIP: "bg-amber-500/10 text-amber-700 border border-amber-500/25 font-bold",
+  New: "bg-blue-500/10 text-blue-700 border border-blue-500/25 font-bold",
+  "At Risk": "bg-rose-500/10 text-rose-700 border border-rose-500/25 font-bold",
 };
 
 function formatCurrency(amount) {
@@ -87,122 +73,89 @@ function formatDate(dateString) {
 
 function CustomerDetailSkeleton() {
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-6 animate-pulse">
-      <div className="flex flex-wrap gap-3 justify-between items-center border-b border-zinc-800 pb-5">
-        <div className="space-y-2">
-          <div className="h-4 w-24 bg-zinc-800 rounded" />
-          <div className="h-8 w-48 bg-zinc-800 rounded" />
-        </div>
+    <div className="w-full max-w-full space-y-6 p-4 animate-pulse">
+      <div className="h-8 bg-primary-50 rounded-xl w-64"></div>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="h-24 bg-bg-surface border border-border-subtle rounded-2xl"></div>
+        ))}
       </div>
-
-      <div className="grid gap-6 md:grid-cols-3">
-        <div className="md:col-span-2 space-y-6">
-          <div className="h-48 bg-[#0c0c0e] border border-zinc-800 rounded-2xl p-6" />
-          <div className="h-32 bg-[#0c0c0e] border border-zinc-800 rounded-2xl p-6" />
-          <div className="h-64 bg-[#0c0c0e] border border-zinc-800 rounded-2xl p-6" />
-        </div>
-        <div className="space-y-6">
-          <div className="h-64 bg-[#0c0c0e] border border-zinc-800 rounded-2xl p-6" />
-        </div>
-      </div>
+      <div className="h-64 bg-bg-surface border border-border-subtle rounded-2xl"></div>
     </div>
   );
 }
 
 export default function CustomerDetailPage() {
-  const { id } = useParams();
+  const params = useParams();
   const router = useRouter();
+  const id = params?.id;
   const queryClient = useQueryClient();
-  const [blockDialogOpen, setBlockDialogOpen] = useState(false);
-  const [isEditingContact, setIsEditingContact] = useState(false);
 
-  // Queries
+  const [isEditingContact, setIsEditingContact] = useState(false);
+  const [blockDialogOpen, setBlockDialogOpen] = useState(false);
+
   const { data: customer, isLoading, error } = useQuery({
-    queryKey: ["customer", id],
+    queryKey: ["customer-detail", id],
     queryFn: async () => {
+      if (!id) return null;
       const res = await axios.get(`/api/admin/customers/${id}`);
       return res.data?.data;
     },
     enabled: !!id,
   });
 
-  const { 
-    data: insightData, 
-    isLoading: isInsightLoading, 
-    isError: isInsightError, 
-    refetch: refetchInsight 
-  } = useQuery({
+  const { data: insightData, isLoading: isInsightLoading } = useQuery({
     queryKey: ["customer-insight", id],
     queryFn: async () => {
+      if (!id) return null;
       const res = await axios.get(`/api/admin/customers/${id}/insight`);
       return res.data?.data;
     },
-    enabled: !!id && customer?.orderCount > 0,
-    retry: 1,
+    enabled: !!id,
+    staleTime: 5 * 60 * 1000,
   });
 
-  const { register, handleSubmit: handleFormSubmit, reset, formState: { errors } } = useForm({
+  const {
+    register: registerContact,
+    handleSubmit: handleSubmitContact,
+    formState: { errors: contactErrors },
+    reset: resetContactForm,
+  } = useForm({
     resolver: zodResolver(customerContactSchema),
-    mode: "onBlur",
-    values: customer ? {
-      email: customer.email || "",
-      phone: customer.phone || "",
-    } : {
-      email: "",
-      phone: "",
-    }
   });
 
   const updateContactMutation = useMutation({
-    mutationFn: (data) => axios.patch(`/api/admin/customers/${id}/contact`, data),
-    onSuccess: (response) => {
-      toast.success(response.data?.message || "Customer contact details updated.");
+    mutationFn: (data) => axios.patch(`/api/admin/customers/${id}`, data),
+    onSuccess: (res) => {
+      toast.success("Contact details updated successfully!");
       setIsEditingContact(false);
-      queryClient.invalidateQueries({ queryKey: ["customer", id] });
-      queryClient.invalidateQueries({ queryKey: ["customers"] });
+      queryClient.invalidateQueries({ queryKey: ["customer-detail", id] });
     },
-    onError: (error) => {
-      toast.error(error.response?.data?.message || "Unable to update customer contact details.");
+    onError: (err) => {
+      toast.error(err.response?.data?.message || "Failed to update contact info.");
     },
   });
 
-  const onSubmitContact = (data) => {
-    updateContactMutation.mutate(data);
-  };
-
-  // Mutations
   const toggleStatusMutation = useMutation({
-    mutationFn: () => axios.patch(`/api/admin/customers/${id}/status`),
-    onSuccess: (response) => {
-      toast.success(response.data?.message || "Customer status updated.");
-      queryClient.invalidateQueries({ queryKey: ["customer", id] });
+    mutationFn: () => axios.patch(`/api/admin/customers/${id}/toggle-status`),
+    onSuccess: (res) => {
+      toast.success(res.data?.message || "Customer status toggled!");
+      queryClient.invalidateQueries({ queryKey: ["customer-detail", id] });
       queryClient.invalidateQueries({ queryKey: ["customers"] });
     },
-    onError: (error) => toast.error(error.response?.data?.message || "Unable to update customer status."),
-  });
-
-  const insightMutation = useMutation({
-    mutationFn: async () => {
-      const res = await axios.get(`/api/admin/customers/${id}/insight?regenerate=true`);
-      return res.data?.data;
-    },
-    onSuccess: (data) => {
-      toast.success("AI Buyer Insight regenerated successfully.");
-      queryClient.setQueryData(["customer-insight", id], data);
-    },
-    onError: (error) => toast.error(error.response?.data?.message || "Failed to generate AI buyer insight."),
+    onError: (err) => toast.error(err.response?.data?.message || "Unable to update status."),
   });
 
   if (isLoading) return <CustomerDetailSkeleton />;
 
   if (error || !customer) {
     return (
-      <div className="mx-auto w-full max-w-7xl py-12 text-center space-y-4">
-        <h1 className="text-xl font-bold text-white">Customer Profile Not Found</h1>
-        <p className="text-zinc-400 text-sm">We couldn't retrieve details for the requested Customer ID.</p>
+      <div className="w-full max-w-full py-12 text-center space-y-4 text-gray-900">
+        <h1 className="text-xl font-bold">Customer Profile Not Found</h1>
+        <p className="text-zinc-500 text-sm">We couldn't retrieve details for the requested Customer ID.</p>
         <Link href="/admin/customers" passHref>
-          <Button variant="outline" className="border-zinc-800 bg-zinc-900 text-zinc-300 rounded-xl px-4 py-2 text-xs font-semibold">
-            <ArrowLeft className="w-4 h-4 mr-2" /> Back to Customers
+          <Button variant="outline" className="border-border-subtle bg-bg-surface text-gray-900 rounded-xl px-4 py-2 text-xs font-semibold btn-modern">
+            <ArrowLeft className="w-4 h-4 mr-2 text-primary-600" /> Back to Customers
           </Button>
         </Link>
       </div>
@@ -211,356 +164,208 @@ export default function CustomerDetailPage() {
 
   const orders = customer.orders || [];
 
-  const handleToggleStatusClick = () => {
-    // If Active, require block confirmation
-    if (customer.status === "Active") {
-      setBlockDialogOpen(true);
-    } else {
-      toggleStatusMutation.mutate();
-    }
-  };
-
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-6">
+    <div className="w-full max-w-full space-y-6 text-gray-900 font-sans p-2 sm:p-4 overflow-x-hidden">
       
       {/* 1. HEADER SECTION */}
-      <div className="flex flex-wrap gap-4 justify-between items-start border-b border-zinc-800 pb-5">
+      <div className="flex flex-wrap gap-4 justify-between items-start border-b border-border-subtle pb-5">
         <div className="space-y-2">
-          <Link href="/admin/customers" className="flex items-center gap-1.5 text-zinc-500 hover:text-white transition-colors text-xs font-semibold uppercase tracking-wider mb-2">
+          <Link href="/admin/customers" className="flex items-center gap-1.5 text-zinc-500 hover:text-primary-600 transition-colors text-xs font-bold uppercase tracking-wider mb-2">
             <ArrowLeft className="w-3.5 h-3.5" /> Back to Customers
           </Link>
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-xl font-bold tracking-tight text-white">{customer.name}</h1>
-            <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${statusClasses[customer.status] || "bg-zinc-800 text-zinc-400 border-zinc-700"}`}>
+            <h1 className="text-xl font-extrabold tracking-tight text-gray-900">{customer.name}</h1>
+            <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${statusClasses[customer.status] || "bg-zinc-100 text-zinc-700 border-zinc-200"}`}>
               {customer.status}
             </span>
           </div>
-          <p className="text-xs text-zinc-400 flex items-center gap-1.5 pt-0.5 font-mono">
+          <p className="text-xs text-zinc-500 flex items-center gap-1.5 pt-0.5 font-mono">
             ID: {customer._id}
           </p>
         </div>
 
-        {/* Status switch toggle on header */}
-        <div className="flex items-center gap-3 bg-[#0c0c0e] border border-zinc-800 px-4 py-2 rounded-xl">
-          <span className="text-xs text-zinc-450 font-semibold uppercase tracking-wider">Status:</span>
-          <Switch
-            checked={customer.status === "Active"}
-            onCheckedChange={handleToggleStatusClick}
-            disabled={toggleStatusMutation.isPending}
-            className="data-[state=checked]:bg-emerald-600 scale-90"
-            aria-label="Toggle customer status"
-          />
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 bg-bg-surface border border-border-subtle px-3 py-1.5 rounded-xl shadow-xs">
+            <Switch
+              checked={customer.status === "Active"}
+              onCheckedChange={() => {
+                if (customer.status === "Active") setBlockDialogOpen(true);
+                else toggleStatusMutation.mutate();
+              }}
+              className="data-[state=checked]:bg-emerald-600 scale-75 cursor-pointer"
+            />
+            <span className="text-xs font-bold text-gray-900">
+              {customer.status === "Active" ? "Account Active" : "Account Blocked"}
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* 2. DETAIL CARDS LAYOUT */}
-      <div className="grid gap-6 md:grid-cols-3">
-        
-        {/* LEFT COLUMN: Personal Info, AI Insight, & Orders table */}
-        <div className="md:col-span-2 space-y-6">
-          
-          {/* Customer profile & Location details */}
-          <div className="bg-[#0c0c0e] border border-zinc-800/80 p-5 rounded-2xl shadow-sm space-y-4">
-            <h2 className="text-sm font-bold text-white flex items-center gap-2 uppercase tracking-wider text-zinc-400">
-              <User className="w-4 h-4 text-zinc-500" /> Customer Information
-            </h2>
-            <div className="grid gap-4 sm:grid-cols-2 text-xs border-t border-zinc-800/60 pt-4">
-              {isEditingContact ? (
-                <form onSubmit={handleFormSubmit(onSubmitContact)} className="sm:col-span-2 grid gap-4 sm:grid-cols-2 w-full">
-                  <div className="space-y-1.5">
-                    <label htmlFor="contact-email" className="text-zinc-500 font-bold uppercase tracking-wider block">Contact Email</label>
-                    <div className="flex items-center gap-2 bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-1.5 transition-all focus-within:border-zinc-500 focus-within:ring-1 focus-within:ring-zinc-500">
-                      <Mail className="w-4 h-4 text-zinc-500 shrink-0" />
-                      <input
-                        id="contact-email"
-                        type="text"
-                        {...register("email")}
-                        className="bg-transparent border-none text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-sm w-full p-0"
-                        placeholder="email@example.com"
-                      />
-                    </div>
-                    {errors.email && <p className="text-xs text-rose-500 mt-1">{errors.email.message}</p>}
-                  </div>
-                  <div className="space-y-1.5">
-                    <label htmlFor="contact-phone" className="text-zinc-500 font-bold uppercase tracking-wider block">Phone Number</label>
-                    <div className="flex items-center gap-2 bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-1.5 transition-all focus-within:border-zinc-500 focus-within:ring-1 focus-within:ring-zinc-500">
-                      <Phone className="w-4 h-4 text-zinc-500 shrink-0" />
-                      <input
-                        id="contact-phone"
-                        type="text"
-                        {...register("phone")}
-                        className="bg-transparent border-none text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-sm w-full font-mono p-0"
-                        placeholder="10 digit phone number"
-                      />
-                    </div>
-                    {errors.phone && <p className="text-xs text-rose-500 mt-1">{errors.phone.message}</p>}
-                  </div>
-                  <div className="sm:col-span-2 flex items-center gap-2 justify-end">
-                    <Button
-                      type="button"
-                      onClick={() => {
-                        setIsEditingContact(false);
-                        reset();
-                      }}
-                      variant="outline"
-                      className="border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded-xl px-3 py-1.5 text-xs font-semibold h-8"
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      type="submit"
-                      disabled={updateContactMutation.isPending}
-                      className="bg-white text-black font-semibold hover:bg-zinc-250 rounded-xl px-3 py-1.5 text-xs h-8 flex items-center gap-1"
-                    >
-                      {updateContactMutation.isPending && (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      )}
-                      Save
-                    </Button>
-                  </div>
-                </form>
-              ) : (
-                <>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className="text-zinc-500 font-bold uppercase tracking-wider">Contact Email</p>
-                      <button
-                        type="button"
-                        onClick={() => setIsEditingContact(true)}
-                        className="text-zinc-400 hover:text-white transition-colors p-1"
-                        title="Edit contact info"
-                      >
-                        <Pencil className="w-3 h-3" />
-                      </button>
-                    </div>
-                    <p className="mt-1 font-semibold text-zinc-200 text-sm flex items-center gap-1.5">
-                      <Mail className="w-3.5 h-3.5 text-zinc-500" /> {customer.email || "—"}
-                    </p>
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className="text-zinc-500 font-bold uppercase tracking-wider">Phone Number</p>
-                      <button
-                        type="button"
-                        onClick={() => setIsEditingContact(true)}
-                        className="text-zinc-400 hover:text-white transition-colors p-1"
-                        title="Edit contact info"
-                      >
-                        <Pencil className="w-3 h-3" />
-                      </button>
-                    </div>
-                    <p className="mt-1 font-semibold text-zinc-200 text-sm flex items-center gap-1.5 font-mono">
-                      <Phone className="w-3.5 h-3.5 text-zinc-500" /> {customer.phone}
-                    </p>
-                  </div>
-                </>
-              )}
+      {/* 2. KPI METRICS CARDS */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-bg-surface border border-border-subtle p-5 rounded-2xl shadow-xs space-y-1">
+          <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold block">Lifetime Spent</span>
+          <p className="text-2xl font-extrabold font-mono text-emerald-600">{formatCurrency(customer.totalSpent)}</p>
+          <p className="text-[11px] text-zinc-500">Gross revenue generated</p>
+        </div>
 
-              <div className="sm:col-span-2">
-                <p className="text-zinc-500 font-bold uppercase tracking-wider">Latest Address Registered</p>
-                <div className="mt-1 text-zinc-200 flex items-start gap-1.5 leading-relaxed text-sm">
-                  <MapPin className="w-4 h-4 text-zinc-500 mt-0.5 shrink-0" />
-                  <div>
-                    {customer.addressLine1 ? (
-                      <>
-                        <p>{customer.addressLine1}</p>
-                        {customer.addressLine2 && <p>{customer.addressLine2}</p>}
-                        <p>{customer.city}, {customer.state} - {customer.pincode}</p>
-                      </>
-                    ) : (
-                      <p className="text-zinc-500 italic">No address registered yet.</p>
-                    )}
-                  </div>
+        <div className="bg-bg-surface border border-border-subtle p-5 rounded-2xl shadow-xs space-y-1">
+          <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold block">Total Orders</span>
+          <p className="text-2xl font-extrabold font-mono text-primary-600">{customer.orderCount || 0}</p>
+          <p className="text-[11px] text-zinc-500">Completed order checkouts</p>
+        </div>
+
+        <div className="bg-bg-surface border border-border-subtle p-5 rounded-2xl shadow-xs space-y-1">
+          <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold block">Average Order Value</span>
+          <p className="text-2xl font-extrabold font-mono text-gray-900">{formatCurrency(customer.avgOrderValue)}</p>
+          <p className="text-[11px] text-zinc-500">Revenue per transaction</p>
+        </div>
+
+        <div className="bg-bg-surface border border-border-subtle p-5 rounded-2xl shadow-xs space-y-1">
+          <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold block">Customer Since</span>
+          <p className="text-lg font-bold font-mono text-gray-900 mt-1">{formatDate(customer.createdAt)}</p>
+          <p className="text-[11px] text-zinc-500">Registration timestamp</p>
+        </div>
+      </div>
+
+      {/* 3. MAIN DETAILS CONTENT */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* LEFT COLUMN: CONTACT & ADDRESS DETAILS */}
+        <div className="space-y-6">
+          <div className="bg-bg-surface border border-border-subtle rounded-2xl p-5 space-y-4 shadow-xs">
+            <div className="flex items-center justify-between border-b border-border-subtle pb-3">
+              <h3 className="text-xs font-extrabold text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
+                <User className="w-4 h-4 text-primary-600" /> Contact Details
+              </h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsEditingContact(!isEditingContact)}
+                className="h-7 px-2 text-[11px] text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-lg cursor-pointer"
+              >
+                <Pencil className="w-3 h-3 mr-1" /> Edit
+              </Button>
+            </div>
+
+            {!isEditingContact ? (
+              <div className="space-y-3 text-xs">
+                <div>
+                  <span className="text-zinc-500 text-[11px]">Email Address</span>
+                  <p className="font-mono text-gray-900 font-semibold mt-0.5">{customer.email || "No email provided"}</p>
+                </div>
+                <div>
+                  <span className="text-zinc-500 text-[11px]">Phone Number</span>
+                  <p className="font-mono text-gray-900 font-semibold mt-0.5">{customer.phone || "No phone registered"}</p>
                 </div>
               </div>
-            </div>
-          </div>
-
-          {/* AI Insight Card */}
-          <div className="bg-[#0c0c0e] border border-zinc-800/80 p-5 rounded-2xl shadow-sm space-y-4 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/5 rounded-full blur-2xl pointer-events-none" />
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-bold text-white flex items-center gap-2 uppercase tracking-wider text-zinc-400">
-                <Sparkles className="w-4 h-4 text-purple-400 animate-pulse" /> AI Buyer Insight
-              </h2>
-              {customer.orderCount > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  disabled={isInsightLoading || insightMutation.isPending}
-                  onClick={() => insightMutation.mutate()}
-                  className="h-8 rounded-xl border border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800 text-[10px] text-zinc-400 hover:text-white px-2.5 flex items-center gap-1.5 transition-all cursor-pointer"
-                >
-                  {(isInsightLoading || insightMutation.isPending) ? (
-                    <Loader2 className="h-3 w-3 animate-spin text-purple-450" />
-                  ) : (
-                    <RefreshCw className="h-3 w-3" />
-                  )}
-                  Regenerate
-                </Button>
-              )}
-            </div>
-            <div className="border-t border-zinc-800/60 pt-4">
-              {isInsightLoading ? (
-                <div className="flex items-center justify-center py-6 text-zinc-500 text-xs gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin text-purple-400" />
-                  Analyzing order history metrics...
+            ) : (
+              <form 
+                onSubmit={handleSubmitContact((data) => updateContactMutation.mutate(data))}
+                className="space-y-3 pt-1"
+              >
+                <div>
+                  <label className="text-[10px] text-zinc-500 uppercase font-bold">Name</label>
+                  <input 
+                    {...registerContact("name")}
+                    defaultValue={customer.name}
+                    className="w-full bg-white border border-border-subtle rounded-xl p-2 text-xs text-gray-900 mt-1"
+                  />
+                  {contactErrors.name && <p className="text-[10px] text-rose-500 mt-0.5">{contactErrors.name.message}</p>}
                 </div>
-              ) : isInsightError ? (
-                <div className="flex flex-col items-center justify-center py-4 text-center space-y-2">
-                  <p className="text-xs text-rose-450 font-semibold">Couldn't generate insight, try again.</p>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => refetchInsight()}
-                    className="h-8 rounded-xl border border-zinc-800 bg-zinc-900/50 hover:bg-zinc-850 text-[10px] text-zinc-400 hover:text-white px-3 flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <RefreshCw className="h-3 w-3" /> Retry
+                <div>
+                  <label className="text-[10px] text-zinc-500 uppercase font-bold">Email</label>
+                  <input 
+                    {...registerContact("email")}
+                    defaultValue={customer.email}
+                    className="w-full bg-white border border-border-subtle rounded-xl p-2 text-xs text-gray-900 mt-1"
+                  />
+                  {contactErrors.email && <p className="text-[10px] text-rose-500 mt-0.5">{contactErrors.email.message}</p>}
+                </div>
+                <div>
+                  <label className="text-[10px] text-zinc-500 uppercase font-bold">Phone</label>
+                  <input 
+                    {...registerContact("phone")}
+                    defaultValue={customer.phone}
+                    className="w-full bg-white border border-border-subtle rounded-xl p-2 text-xs text-gray-900 mt-1"
+                  />
+                  {contactErrors.phone && <p className="text-[10px] text-rose-500 mt-0.5">{contactErrors.phone.message}</p>}
+                </div>
+                <div className="flex gap-2 pt-2">
+                  <Button type="submit" disabled={updateContactMutation.isPending} size="sm" className="bg-primary-600 text-white font-bold text-xs rounded-xl flex-1 btn-modern cursor-pointer">
+                    Save Changes
+                  </Button>
+                  <Button type="button" onClick={() => setIsEditingContact(false)} variant="outline" size="sm" className="border-border-subtle text-gray-900 text-xs rounded-xl cursor-pointer">
+                    Cancel
                   </Button>
                 </div>
-              ) : customer.orderCount === 0 ? (
-                <p className="text-xs text-zinc-550 italic">No order history yet.</p>
-              ) : (
-                <p className="text-xs leading-relaxed text-zinc-300 italic border-l-2 border-purple-500/35 pl-3.5 bg-purple-500/[0.02] py-2 rounded-r-lg">
-                  "{insightData?.insight}"
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Order history table */}
-          <div className="bg-[#0c0c0e] border border-zinc-800/80 p-5 rounded-2xl shadow-sm space-y-4">
-            <h2 className="text-sm font-bold text-white uppercase tracking-wider text-zinc-400">Order History</h2>
-            <div className="overflow-x-auto rounded-xl border border-zinc-800 bg-zinc-900/10">
-              <Table className="min-w-[800px]">
-                <TableHeader className="bg-zinc-900/40">
-                  <TableRow className="border-b border-zinc-800 hover:bg-transparent">
-                    <TableHead className="font-semibold text-zinc-400">Order Number</TableHead>
-                    <TableHead className="font-semibold text-zinc-400">Date</TableHead>
-                    <TableHead className="font-semibold text-zinc-400">Items Count</TableHead>
-                    <TableHead className="font-semibold text-zinc-400">Amount</TableHead>
-                    <TableHead className="font-semibold text-zinc-400">Payment</TableHead>
-                    <TableHead className="font-semibold text-zinc-400">Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {orders.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="h-32 text-center text-sm text-zinc-500">
-                        No orders recorded for this customer yet.
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    orders.map((order) => (
-                      <TableRow 
-                        key={order._id} 
-                        onClick={() => router.push(`/admin/orders/${order._id}`)}
-                        className="border-b border-zinc-800/60 hover:bg-zinc-900/20 transition-colors cursor-pointer"
-                      >
-                        <TableCell className="py-4 font-bold text-xs sm:text-sm text-zinc-100 font-mono">
-                          {order.orderNumber}
-                        </TableCell>
-                        <TableCell className="py-4 text-xs text-zinc-400">
-                          {formatDate(order.createdAt)}
-                        </TableCell>
-                        <TableCell className="py-4 text-zinc-300 font-mono text-xs sm:text-sm">
-                          {order.items?.reduce((sum, item) => sum + item.quantity, 0) || 0}
-                        </TableCell>
-                        <TableCell className="py-4 text-zinc-100 font-mono text-xs sm:text-sm">
-                          {formatCurrency(order.totalAmount)}
-                        </TableCell>
-                        <TableCell className="py-4 text-xs">
-                          <span className={`px-2 py-0.5 rounded-full border text-[10px] font-bold ${paymentStatusClasses[order.paymentStatus] || "bg-zinc-800 text-zinc-450 border-zinc-700"}`}>
-                            {order.paymentStatus}
-                          </span>
-                        </TableCell>
-                        <TableCell className="py-4 text-xs">
-                          <span className={`px-2 py-0.5 rounded-full border text-[10px] font-bold ${orderStatusClasses[order.status] || "bg-zinc-850 text-zinc-450 border-zinc-700"}`}>
-                            {order.status}
-                          </span>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+              </form>
+            )}
           </div>
         </div>
 
-        {/* RIGHT COLUMN: Customer Spend Stats & Tags */}
-        <div className="space-y-6">
-          
-          {/* Spend stats card */}
-          <div className="bg-[#0c0c0e] border border-zinc-800/80 p-5 rounded-2xl shadow-sm space-y-4">
-            <h2 className="text-sm font-bold text-white flex items-center gap-2 uppercase tracking-wider text-zinc-400">
-              <TrendingUp className="w-4 h-4 text-zinc-500" /> Account Metrics
-            </h2>
-            <div className="border-t border-zinc-800/60 pt-4 space-y-4 text-xs">
-              <div className="flex justify-between py-1.5 border-b border-zinc-900 font-mono">
-                <span className="text-zinc-500 font-sans">Total Spent</span>
-                <span className="font-bold text-emerald-400 text-sm">{formatCurrency(customer.totalSpent)}</span>
-              </div>
-              <div className="flex justify-between py-1.5 border-b border-zinc-900 font-mono">
-                <span className="text-zinc-500 font-sans">Orders Placed</span>
-                <span className="font-bold text-zinc-200 text-sm">{customer.orderCount}</span>
-              </div>
-              <div className="flex justify-between py-1.5 border-b border-zinc-900 font-mono">
-                <span className="text-zinc-500 font-sans">First Order</span>
-                <span className="font-semibold text-zinc-350">{formatDate(customer.firstOrderDate)}</span>
-              </div>
-              <div className="flex justify-between py-1.5 font-mono">
-                <span className="text-zinc-500 font-sans">Last Activity</span>
-                <span className="font-semibold text-zinc-350">{formatDate(customer.lastOrderDate)}</span>
-              </div>
-            </div>
-          </div>
+        {/* RIGHT COLUMN: ORDERS HISTORY */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="bg-bg-surface border border-border-subtle rounded-2xl p-5 space-y-4 shadow-xs">
+            <h3 className="text-xs font-extrabold text-gray-900 uppercase tracking-wider flex items-center gap-1.5 border-b border-border-subtle pb-3">
+              <ShoppingBag className="w-4 h-4 text-primary-600" /> Order History ({orders.length})
+            </h3>
 
-          {/* Segment/Tag Assignment */}
-          <div className="bg-[#0c0c0e] border border-zinc-800/80 p-5 rounded-2xl shadow-sm space-y-4">
-            <h2 className="text-sm font-bold text-white flex items-center gap-2 uppercase tracking-wider text-zinc-400">
-              <Tag className="w-4 h-4 text-zinc-500" /> Segments & Tags
-            </h2>
-            <div className="border-t border-zinc-800/60 pt-4">
-              <div className="flex flex-wrap gap-2">
-                {customer.tags && customer.tags.length > 0 ? (
-                  customer.tags.map((item) => (
-                    <span key={item} className={`px-2.5 py-1 rounded-full text-xs font-bold border ${tagClasses[item] || "bg-zinc-850 text-zinc-450 border-zinc-700"}`}>
-                      {item}
-                    </span>
-                  ))
-                ) : (
-                  <p className="text-xs text-zinc-500 italic">No segment tags assigned to this customer.</p>
-                )}
+            {orders.length === 0 ? (
+              <p className="text-xs text-zinc-500 py-6 text-center">No order records found for this buyer profile.</p>
+            ) : (
+              <div className="overflow-x-auto rounded-xl border border-border-subtle bg-white">
+                <Table className="min-w-[500px] text-xs">
+                  <TableHeader className="bg-primary-50/90 border-b border-border-subtle">
+                    <TableRow className="uppercase text-[10px]">
+                      <TableHead className="font-bold text-primary-800">Order ID</TableHead>
+                      <TableHead className="font-bold text-primary-800">Date</TableHead>
+                      <TableHead className="font-bold text-primary-800">Status</TableHead>
+                      <TableHead className="text-right font-bold text-primary-800">Amount</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {orders.map((o) => (
+                      <TableRow key={o._id} className="border-b border-border-subtle text-gray-900">
+                        <TableCell className="font-mono font-bold text-primary-700 py-3">
+                          <Link href={`/admin/orders/${o._id}`} className="hover:underline flex items-center gap-1">
+                            {o.orderNumber} <Eye className="w-3 h-3 text-zinc-400" />
+                          </Link>
+                        </TableCell>
+                        <TableCell className="font-mono text-zinc-600 py-3">{formatDate(o.createdAt)}</TableCell>
+                        <TableCell className="py-3">
+                          <span className="bg-primary-50 text-primary-700 border border-primary-200 px-2 py-0.5 rounded text-[10px] font-bold">
+                            {o.status}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-right font-mono font-extrabold text-emerald-600 py-3">{formatCurrency(o.totalAmount)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
-            </div>
+            )}
           </div>
         </div>
 
       </div>
 
-      {/* 3. CONFIRM BLOCK CUSTOMER ALERT DIALOG */}
       <AlertDialog open={blockDialogOpen} onOpenChange={setBlockDialogOpen}>
-        <AlertDialogContent className="bg-zinc-900 border border-zinc-800 text-white rounded-2xl">
+        <AlertDialogContent className="bg-white/95 backdrop-blur-2xl border border-border-subtle text-gray-900 rounded-2xl shadow-xl">
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 text-rose-400">
-              <ShieldAlert className="h-5 w-5" />
-              Block Customer Account?
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-zinc-400 text-xs leading-relaxed">
-              Are you absolutely sure you want to block this customer profile ("{customer.name}")? This action will set their status to Blocked in the directories.
+            <AlertDialogTitle className="text-gray-900 font-bold">Block Customer Profile</AlertDialogTitle>
+            <AlertDialogDescription className="text-zinc-600">
+              Are you sure you want to block <strong className="text-gray-900">{customer.name}</strong>? Blocked customers will be restricted from placing new orders.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="bg-zinc-850 hover:bg-zinc-800 text-zinc-300 border-zinc-700/60 rounded-xl text-xs">
-              Cancel
-            </AlertDialogCancel>
+            <AlertDialogCancel className="bg-bg-surface text-gray-900 border-border-subtle hover:bg-primary-50 rounded-xl cursor-pointer">Cancel</AlertDialogCancel>
             <AlertDialogAction 
               onClick={() => {
-                toggleStatusMutation.mutate();
                 setBlockDialogOpen(false);
+                toggleStatusMutation.mutate();
               }}
-              className="bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-xs"
+              className="bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl cursor-pointer"
             >
               Confirm Block
             </AlertDialogAction>

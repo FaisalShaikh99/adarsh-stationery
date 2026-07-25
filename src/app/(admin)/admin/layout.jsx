@@ -7,7 +7,6 @@ import AdminHeader from "@/components/ui/AdminHeader";
 import CommandPaletteModal from "@/components/admin/CommandPaletteModal";
 
 export default function AdminLayout({ children }) {
-  const [isCollapsed, setIsCollapsed] = useState(true);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const pathname = usePathname();
 
@@ -15,40 +14,30 @@ export default function AdminLayout({ children }) {
 
   if (isLoginPage) {
     return (
-      <div className="min-h-screen bg-zinc-950 text-white">
+      <div className="min-h-screen text-gray-900">
         <main>{children}</main>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white flex flex-col">
+    <div className="min-h-screen text-gray-900 flex flex-col">
       
-      {/* Two-Level Admin Sidebar Component */}
+      {/* 🌟 Purple & Light Yellow SaaS Admin Sidebar */}
       <AdminSidebar 
-        isCollapsed={isCollapsed} 
-        setIsCollapsed={setIsCollapsed}
         isMobileOpen={isMobileOpen}
         setIsMobileOpen={setIsMobileOpen}
       />
 
-      {/* Main Content & Sticky Header Container */}
-      <div 
-        className={`flex-1 flex flex-col min-h-screen bg-gradient-to-b from-zinc-950 via-zinc-950 to-zinc-900/60 transition-all duration-300 ease-in-out ${
-          isCollapsed 
-            ? "lg:pl-[68px]" 
-            : "lg:pl-[308px]"
-        }`}
-      >
-        {/* Sticky Header */}
+      {/* Main Content & Header Container (Offset by w-64 on desktop) */}
+      <div className="flex-1 flex flex-col min-h-screen transition-all duration-300 ease-in-out lg:pl-64">
+        {/* Sticky Glass Header */}
         <AdminHeader 
           onToggleMobileDrawer={() => setIsMobileOpen(!isMobileOpen)}
-          isCollapsed={isCollapsed}
-          setIsCollapsed={setIsCollapsed}
         />
 
-        {/* Page Content Body */}
-        <main className="flex-1 p-4 md:p-6 max-w-[1400px] w-full mx-auto">
+        {/* Page Content Body Container */}
+        <main className="flex-1 p-3 sm:p-5 md:p-6 w-full max-w-full">
           {children}
         </main>
       </div>

@@ -73,21 +73,26 @@ export default function OrdersPage() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-4 font-sans pb-12">
-      {/* 1. TOP NAVBAR */}
-      <div className="flex flex-wrap gap-3 justify-between items-center border-b border-zinc-800 pb-3">
+    <div className="w-full max-w-full space-y-6 font-sans pb-12 text-gray-900 overflow-x-hidden">
+      {/* 1. UNIQUE HAZED PURPLE GRADIENT TOP CONTAINER UI */}
+      <div className="hazed-purple-banner p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold tracking-tight text-white">Orders & Invoices</h1>
-          <p className="mt-0.5 text-xs text-zinc-400">Track payments, fulfillment, and customer orders.</p>
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-3">
+            <ShoppingBag className="h-7 w-7 text-accent shrink-0" /> Orders & Invoices Feed
+          </h1>
+          <p className="mt-1 text-sm text-purple-100 font-semibold max-w-2xl">
+            Track real-time payment states, logistics fulfillment, and customer order dispatches.
+          </p>
         </div>
         <Button 
           onClick={() => refetch()} 
           disabled={isFetching} 
           variant="outline" 
-          className="h-8 w-8 p-0 border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-white shrink-0 rounded-xl hover:bg-zinc-800 cursor-pointer"
+          className="rounded-xl border-white/40 bg-white/20 text-white hover:bg-white hover:text-primary-800 text-sm font-extrabold px-4 h-10 cursor-pointer shadow-xs btn-modern shrink-0"
           title="Refresh orders"
         >
-          <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`} />
+          <RefreshCw className={`mr-2 h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
+          <span>Refresh Feed</span>
         </Button>
       </div>
 
@@ -99,46 +104,46 @@ export default function OrdersPage() {
           ["Items sold", stats.totalItemsSold],
           ["Awaiting fulfillment", (stats.statusCounts?.Pending || 0) + (stats.statusCounts?.Confirmed || 0)],
         ].map(([label, value]) => (
-          <div key={label} className="bg-[#0c0c0e]/80 border border-zinc-800/80 p-4 rounded-2xl shadow-sm flex flex-col justify-between">
+          <div key={label} className="bg-bg-surface border border-border-subtle p-4 rounded-2xl shadow-xs flex flex-col justify-between">
             <div>
               <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold">{label}</p>
-              <p className="text-xl font-bold mt-1 font-mono tracking-tight text-white">{value}</p>
+              <p className="text-xl font-bold mt-1 font-mono tracking-tight text-gray-900">{value}</p>
             </div>
           </div>
         ))}
       </div>
 
       {/* 3. SEARCH & FILTERS CONTAINER */}
-      <div className="bg-[#0c0c0e]/80 border border-zinc-800 rounded-2xl p-4 space-y-3 shadow-xl">
+      <div className="bg-bg-surface border border-border-subtle rounded-2xl p-4 space-y-3 shadow-xs">
         <div className="flex flex-col gap-3 lg:flex-row items-center justify-between">
-          <div className="flex items-center w-full bg-[#141416] border border-zinc-700 rounded-xl px-3 transition-all gap-2 h-9 focus-within:border-zinc-500">
-            <Search className="h-3.5 w-3.5 text-zinc-500 shrink-0" />
+          <div className="flex items-center w-full bg-bg-surface border border-border-subtle rounded-xl px-3 transition-all gap-2 h-9 focus-within:border-primary-400">
+            <Search className="h-3.5 w-3.5 text-zinc-400 shrink-0" />
             <Input 
               value={search} 
               onChange={resetPage(setSearch)} 
               placeholder="Search order number or customer..." 
-              className="flex-1 bg-transparent border-none text-zinc-300 placeholder-zinc-500 focus-visible:ring-0 text-xs h-full p-0 shadow-none"
+              className="flex-1 bg-transparent border-none text-gray-900 placeholder-zinc-400 focus-visible:ring-0 text-xs h-full p-0 shadow-none"
             />
           </div>
           <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto shrink-0">
             <select 
               value={status} 
               onChange={resetPage(setStatus)} 
-              className="h-9 bg-[#141416] border border-zinc-700 rounded-xl px-3 text-xs font-semibold text-zinc-300 hover:text-white hover:border-zinc-500 transition-all outline-none cursor-pointer w-full sm:w-auto sm:min-w-[170px]"
+              className="h-9 bg-bg-surface border border-border-subtle rounded-xl px-3 text-xs font-semibold text-gray-900 hover:border-primary-400 transition-all outline-none cursor-pointer w-full sm:w-auto sm:min-w-[170px]"
             >
-              <option value="" className="bg-zinc-950 text-zinc-400">All order statuses</option>
+              <option value="" className="bg-white text-zinc-600">All order statuses</option>
               {statuses.map((item) => (
-                <option key={item} value={item} className="bg-zinc-950 text-zinc-200">{item}</option>
+                <option key={item} value={item} className="bg-white text-gray-900">{item}</option>
               ))}
             </select>
             <select 
               value={paymentStatus} 
               onChange={resetPage(setPaymentStatus)} 
-              className="h-9 bg-[#141416] border border-zinc-700 rounded-xl px-3 text-xs font-semibold text-zinc-300 hover:text-white hover:border-zinc-500 transition-all outline-none cursor-pointer w-full sm:w-auto sm:min-w-[170px]"
+              className="h-9 bg-bg-surface border border-border-subtle rounded-xl px-3 text-xs font-semibold text-gray-900 hover:border-primary-400 transition-all outline-none cursor-pointer w-full sm:w-auto sm:min-w-[170px]"
             >
-              <option value="" className="bg-zinc-950 text-zinc-400">All payment statuses</option>
+              <option value="" className="bg-white text-zinc-600">All payment statuses</option>
               {paymentStatuses.map((item) => (
-                <option key={item} value={item} className="bg-zinc-950 text-zinc-200">{item}</option>
+                <option key={item} value={item} className="bg-white text-gray-900">{item}</option>
               ))}
             </select>
           </div>
@@ -146,12 +151,12 @@ export default function OrdersPage() {
 
         {/* 4. ORDERS WORKSPACE CARDS */}
         {isLoading ? (
-          <div className="flex h-40 items-center justify-center bg-[#0c0c0e]/30 border border-zinc-800 rounded-2xl">
-            <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
+          <div className="flex h-40 items-center justify-center bg-bg-surface border border-border-subtle rounded-2xl">
+            <Loader2 className="h-6 w-6 animate-spin text-primary-600" />
           </div>
         ) : orders.length === 0 ? (
-          <div className="flex flex-col items-center justify-center text-center p-10 border border-dashed border-zinc-800 bg-[#0c0c0e]/30 rounded-2xl space-y-1.5 min-h-[220px]">
-            <p className="font-semibold text-zinc-400 text-xs">No orders match these filters.</p>
+          <div className="flex flex-col items-center justify-center text-center p-10 border border-dashed border-border-subtle bg-bg-surface rounded-2xl space-y-1.5 min-h-[220px]">
+            <p className="font-semibold text-zinc-600 text-xs">No orders match these filters.</p>
             <p className="text-[11px] text-zinc-500">Try clearing active search queries or status filters.</p>
           </div>
         ) : (
@@ -161,51 +166,45 @@ export default function OrdersPage() {
               return (
                 <div 
                   key={order._id}
-                  className="bg-[#0c0c0e]/80 border border-zinc-800 rounded-2xl p-4 hover:border-zinc-700/80 transition-all duration-200 shadow-sm flex flex-col justify-between space-y-3"
+                  className="bg-bg-surface border border-border-subtle rounded-2xl p-4 hover:border-primary-300 transition-all duration-200 shadow-xs flex flex-col justify-between space-y-3"
                 >
                   {/* Header Row */}
-                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800/60 pb-2.5">
+                  {/* Top Bar: Order ID & Status Dropdown */}
+                  <div className="flex items-center justify-between border-b border-border-subtle pb-2.5">
                     <div className="flex items-center gap-2">
-                      <span className="text-[9px] bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded text-zinc-400 font-mono font-semibold uppercase tracking-wider">
-                        Parcel
-                      </span>
-                      <button 
-                        onClick={() => setSelectedOrderId(order._id)}
-                        className="text-xs font-bold text-white hover:text-blue-400 transition-colors hover:underline cursor-pointer"
-                      >
-                        {order.orderNumber}
-                      </button>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-primary-700 bg-primary-50 px-2 py-0.5 rounded border border-primary-200">Parcel</span>
+                      <span className="font-extrabold text-gray-900 text-xs font-mono">{order.orderNumber}</span>
                     </div>
-                    
+
                     <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold border uppercase tracking-wider ${paymentStatusClasses[order.paymentStatus] || "bg-zinc-800 text-zinc-400 border-zinc-700"}`}>
+                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold border uppercase tracking-wider ${paymentStatusClasses[order.paymentStatus] || "bg-zinc-100 text-zinc-700 border-zinc-200"}`}>
                         {order.paymentStatus}
                       </span>
                       <select 
                         value={order.status} 
                         disabled={statusMutation.isPending || ["Delivered", "Cancelled"].includes(order.status)} 
                         onChange={(event) => statusMutation.mutate({ id: order._id, nextStatus: event.target.value })} 
-                        className={`border px-2 py-0.5 text-[11px] font-semibold rounded-lg outline-none cursor-pointer disabled:cursor-not-allowed transition-all ${statusClasses[order.status] || "border-zinc-700 text-zinc-300"}`}
+                        className={`border px-2 py-0.5 text-[11px] font-bold rounded-lg outline-none cursor-pointer disabled:cursor-not-allowed transition-all ${statusClasses[order.status] || "border-border-subtle text-gray-900"}`}
                       >
-                        <option value={order.status} className="bg-zinc-950 text-zinc-200">{order.status}</option>
+                        <option value={order.status} className="bg-white text-gray-900">{order.status}</option>
                         {statuses.filter((item) => item !== order.status).map((item) => (
-                          <option key={item} value={item} className="bg-zinc-950 text-zinc-200">{item}</option>
+                          <option key={item} value={item} className="bg-white text-gray-900">{item}</option>
                         ))}
                       </select>
                     </div>
                   </div>
 
                   {/* Content Details */}
-                  <div className="space-y-2 text-xs text-zinc-300 flex-1">
+                  <div className="space-y-2 text-xs flex-1">
                     <div className="flex items-center justify-between text-xs">
                       <div>
                         <p className="text-[9px] text-zinc-500 uppercase tracking-wider font-bold">Recipient Customer</p>
-                        <p className="font-bold text-zinc-200 text-xs capitalize">{order.customer?.name || "Customer unavailable"}</p>
-                        <p className="font-mono text-[10px] text-zinc-400">{order.customer?.email || ""}</p>
+                        <p className="font-extrabold text-gray-900 text-xs capitalize">{order.customer?.name || "Customer unavailable"}</p>
+                        <p className="font-mono text-[10px] text-zinc-500">{order.customer?.email || ""}</p>
                       </div>
                       <div className="text-right">
                         <p className="text-[9px] text-zinc-500 uppercase tracking-wider font-bold">Placed On</p>
-                        <p className="font-mono text-[10px] text-zinc-400">
+                        <p className="font-mono text-[10px] text-zinc-500">
                           {new Date(order.createdAt).toLocaleDateString("en-IN", { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })}
                         </p>
                       </div>
@@ -215,8 +214,8 @@ export default function OrdersPage() {
                       <p className="text-[9px] text-zinc-500 uppercase tracking-wider font-bold">Items to Pack ({totalQty})</p>
                       <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto custom-scrollbar">
                         {order.items?.map((item, idx) => (
-                          <div key={idx} className="flex items-center gap-1.5 bg-zinc-900/60 border border-zinc-800 rounded-xl p-1.5 max-w-[190px] shrink-0">
-                            <div className="relative w-7 h-7 rounded-lg bg-white border border-zinc-800 p-0.5 shrink-0 flex items-center justify-center overflow-hidden">
+                          <div key={idx} className="flex items-center gap-1.5 bg-white/80 border border-border-subtle rounded-xl p-1.5 max-w-[190px] shrink-0 shadow-2xs">
+                            <div className="relative w-7 h-7 rounded-lg bg-white border border-border-subtle p-0.5 shrink-0 flex items-center justify-center overflow-hidden">
                               {item.product?.images?.[0] ? (
                                 <img 
                                   src={item.product.images[0]} 
@@ -225,12 +224,12 @@ export default function OrdersPage() {
                                   referrerPolicy="no-referrer"
                                 />
                               ) : (
-                                <span className="text-[8px] text-zinc-500 font-mono">No img</span>
+                                <span className="text-[8px] text-zinc-400 font-mono">No img</span>
                               )}
                             </div>
                             <div className="min-w-0 flex-1">
-                              <p className="font-bold text-zinc-200 truncate capitalize text-[10px]">{item.product?.name || "Product Info"}</p>
-                              <p className="text-[9px] text-zinc-400 font-mono">Qty: {item.quantity}</p>
+                              <p className="font-bold text-gray-900 truncate capitalize text-[10px]">{item.product?.name || "Product Info"}</p>
+                              <p className="text-[9px] text-zinc-600 font-mono">Qty: {item.quantity}</p>
                             </div>
                           </div>
                         ))}
@@ -239,17 +238,17 @@ export default function OrdersPage() {
                   </div>
 
                   {/* Footer Row */}
-                  <div className="flex items-center justify-between border-t border-zinc-900/80 pt-2.5 text-xs">
-                    <div className="font-mono font-bold text-zinc-300">
-                      Amount: <span className="text-emerald-400 text-xs sm:text-sm font-extrabold">{formatCurrency(order.totalAmount)}</span>
+                  <div className="flex items-center justify-between border-t border-border-subtle pt-2.5 text-xs">
+                    <div className="font-mono font-bold text-zinc-600">
+                      Amount: <span className="text-emerald-600 text-xs sm:text-sm font-extrabold">{formatCurrency(order.totalAmount)}</span>
                     </div>
                     
                     <Button
                       onClick={() => setSelectedOrderId(order._id)}
                       variant="outline"
-                      className="border-zinc-800 bg-zinc-950 text-zinc-300 hover:text-white rounded-xl text-xs font-semibold h-7 px-3 cursor-pointer"
+                      className="border-border-subtle bg-bg-surface text-gray-900 hover:text-primary-700 hover:bg-primary-50 rounded-xl text-xs font-semibold h-7 px-3 cursor-pointer btn-modern"
                     >
-                      <Eye className="w-3.5 h-3.5 mr-1 text-blue-400" /> View Details
+                      <Eye className="w-3.5 h-3.5 mr-1 text-primary-600" /> View Details
                     </Button>
                   </div>
                 </div>

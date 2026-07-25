@@ -23,17 +23,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { jsPDF } from "jspdf";
 
 const statusClasses = {
-  Pending: "bg-amber-500/10 text-amber-300 border border-amber-500/25",
-  Confirmed: "bg-sky-500/10 text-sky-300 border border-sky-500/25",
-  Shipped: "bg-violet-500/10 text-violet-300 border border-violet-500/25",
-  Delivered: "bg-emerald-500/10 text-emerald-300 border border-emerald-500/25",
-  Cancelled: "bg-rose-500/10 text-rose-300 border border-rose-500/25",
+  Pending: "bg-amber-500/10 text-amber-700 border border-amber-500/25 font-bold",
+  Confirmed: "bg-sky-500/10 text-sky-700 border border-sky-500/25 font-bold",
+  Shipped: "bg-purple-500/10 text-purple-700 border border-purple-500/25 font-bold",
+  Delivered: "bg-emerald-500/10 text-emerald-700 border border-emerald-500/25 font-bold",
+  Cancelled: "bg-rose-500/10 text-rose-700 border border-rose-500/25 font-bold",
 };
 
 const paymentStatusClasses = {
-  Paid: "bg-emerald-500/10 text-emerald-300 border border-emerald-500/25",
-  Pending: "bg-amber-500/10 text-amber-300 border border-amber-500/25",
-  Failed: "bg-rose-500/10 text-rose-300 border border-rose-500/25",
+  Paid: "bg-emerald-500/10 text-emerald-700 border border-emerald-500/25 font-bold",
+  Pending: "bg-amber-500/10 text-amber-700 border border-amber-500/25 font-bold",
+  Failed: "bg-rose-500/10 text-rose-700 border border-rose-500/25 font-bold",
 };
 
 const allowedTransitions = {
@@ -78,72 +78,67 @@ export default function OrderDetailDrawer({ orderId, isOpen, onClose }) {
   const statusMutation = useMutation({
     mutationFn: ({ id, nextStatus }) => axios.patch(`/api/admin/orders/${id}/status`, { status: nextStatus }),
     onSuccess: (response) => {
-      toast.success(response.data?.message || "Order status updated.");
-      setSelectedNextStatus("");
       queryClient.invalidateQueries({ queryKey: ["order", orderId] });
       queryClient.invalidateQueries({ queryKey: ["orders"] });
-      queryClient.invalidateQueries({ queryKey: ["order-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboardData"] });
+      toast.success(response.data?.message || "Order status updated!");
+      setSelectedNextStatus("");
     },
-    onError: (error) => toast.error(error.response?.data?.message || "Unable to update order status."),
+    onError: (err) => {
+      toast.error(err.response?.data?.message || "Failed to update order status");
+    },
   });
 
-  if (!isOpen || !orderId) return null;
-
-  const allowedTargets = order ? (allowedTransitions[order.status] || []) : [];
-  const isFinished = allowedTargets.length === 0;
+  if (!isOpen) return null;
 
   const handleDownloadInvoice = () => {
     if (!order) return;
     const doc = new jsPDF();
 
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(22);
-    doc.text("Adarsh Stationery", 14, 20);
+    doc.setFontSize(20);
+    doc.text("ADARSH STATIONERY MART", 14, 20);
 
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.text("Official Tax Invoice", 14, 26);
+    doc.text(`Invoice Date: ${new Date().toLocaleDateString("en-IN")}`, 14, 31);
+
+    doc.line(14, 35, 196, 35);
+
+    doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    doc.text("Premium Stationery & Office Supplies", 14, 26);
-    doc.line(14, 29, 196, 29);
+    doc.text(`Order Ref: ${order.orderNumber}`, 14, 43);
+    doc.text(`Payment Method: ${order.paymentMethod || "COD"}`, 14, 48);
 
     doc.setFont("helvetica", "bold");
-    doc.text("INVOICE", 14, 38);
+    doc.text("Customer & Shipping Address:", 120, 43);
     doc.setFont("helvetica", "normal");
-    doc.text(`Invoice No: INV-${order.orderNumber.split("-").pop()}`, 14, 44);
-    doc.text(`Order ID: ${order.orderNumber}`, 14, 50);
-    doc.text(`Date Placed: ${formatDate(order.createdAt)}`, 14, 56);
+    doc.text(`${order.customer?.name || "Customer"}`, 120, 48);
+    doc.text(`${order.shippingAddress?.street || ""}`, 120, 53);
+    doc.text(`${order.shippingAddress?.city || ""}, ${order.shippingAddress?.state || ""} - ${order.shippingAddress?.postalCode || ""}`, 120, 58);
 
+    let y = 70;
     doc.setFont("helvetica", "bold");
-    doc.text("Shipping To:", 110, 38);
-    doc.setFont("helvetica", "normal");
-    doc.text(order.shippingAddress.name, 110, 44);
-    doc.text(`Phone: ${order.shippingAddress.phone}`, 110, 50);
-    doc.text(order.shippingAddress.addressLine1, 110, 56);
-    if (order.shippingAddress.addressLine2) {
-      doc.text(order.shippingAddress.addressLine2, 110, 62);
-    }
-    const cityStateZip = `${order.shippingAddress.city}, ${order.shippingAddress.state} - ${order.shippingAddress.pincode}`;
-    doc.text(cityStateZip, 110, order.shippingAddress.addressLine2 ? 68 : 62);
-
-    let y = order.shippingAddress.addressLine2 ? 80 : 74;
-    doc.line(14, y - 6, 196, y - 6);
-
-    doc.setFont("helvetica", "bold");
-    doc.text("Item Description", 14, y);
-    doc.text("Qty", 120, y, { align: "center" });
-    doc.text("Price", 150, y, { align: "right" });
-    doc.text("Subtotal", 190, y, { align: "right" });
-
+    doc.text("Item", 14, y);
+    doc.text("Qty", 120, y);
+    doc.text("Price", 150, y);
+    doc.text("Total", 180, y);
     doc.line(14, y + 2, 196, y + 2);
-    doc.setFont("helvetica", "normal");
 
     y += 8;
+    doc.setFont("helvetica", "normal");
     order.items?.forEach((item) => {
-      const cleanName = item.productName.length > 55 ? `${item.productName.substring(0, 52)}...` : item.productName;
-      doc.text(cleanName, 14, y);
-      doc.text(String(item.quantity), 120, y, { align: "center" });
-      doc.text(`INR ${item.pricePerUnit.toFixed(2)}`, 150, y, { align: "right" });
-      doc.text(`INR ${item.subtotal.toFixed(2)}`, 190, y, { align: "right" });
-      y += 8;
+      const title = item.product?.name || "Product Item";
+      const qty = item.quantity || 1;
+      const price = item.price || 0;
+      const total = qty * price;
+
+      doc.text(title.slice(0, 45), 14, y);
+      doc.text(`${qty}`, 120, y);
+      doc.text(`INR ${price}`, 150, y);
+      doc.text(`INR ${total}`, 180, y);
+      y += 6;
 
       if (y > 270) {
         doc.addPage();
@@ -169,28 +164,28 @@ export default function OrderDetailDrawer({ orderId, isOpen, onClose }) {
     <div className="fixed inset-0 z-50 flex justify-end">
       {/* Backdrop */}
       <div 
-        className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-200" 
+        className="fixed inset-0 bg-black/30 backdrop-blur-xs transition-opacity animate-in fade-in duration-200" 
         onClick={onClose} 
       />
 
-      {/* Drawer Container (45% viewport width on desktop with 700px max-width cap, full-width on mobile) */}
-      <div className="relative w-full lg:w-[45%] max-w-[700px] bg-[#0c0c0e] border-l border-zinc-800 h-full flex flex-col shadow-2xl z-10 animate-in slide-in-from-right duration-300">
+      {/* Drawer Container */}
+      <div className="relative w-full lg:w-[45%] max-w-[700px] bg-white/95 backdrop-blur-2xl border-l border-border-subtle h-full flex flex-col shadow-2xl z-10 animate-in slide-in-from-right duration-300 text-gray-900">
         
         {/* FIXED DRAWER HEADER */}
-        <div className="flex items-center justify-between border-b border-zinc-800/80 p-5 shrink-0 bg-[#0c0c0e] sticky top-0 z-20">
+        <div className="flex items-center justify-between border-b border-border-subtle p-5 shrink-0 bg-white/95 sticky top-0 z-20">
           <div className="flex items-center gap-3 min-w-0 pr-2">
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-base font-bold text-white tracking-tight">{order?.orderNumber || "Loading Order..."}</h3>
+                <h3 className="text-base font-extrabold text-gray-900 tracking-tight">{order?.orderNumber || "Loading Order..."}</h3>
                 {order && (
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${statusClasses[order.status] || "bg-zinc-800 text-zinc-400 border-zinc-700"}`}>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] ${statusClasses[order.status] || "bg-zinc-100 text-zinc-700 border-zinc-200"}`}>
                     {order.status}
                   </span>
                 )}
               </div>
               {order && (
-                <p className="text-[11px] text-zinc-400 flex items-center gap-1 mt-0.5">
-                  <Calendar className="w-3 h-3 text-zinc-500" /> Placed on {formatDate(order.createdAt)}
+                <p className="text-[11px] text-zinc-500 flex items-center gap-1 mt-0.5">
+                  <Calendar className="w-3 h-3 text-zinc-400" /> Placed on {formatDate(order.createdAt)}
                 </p>
               )}
             </div>
@@ -202,13 +197,13 @@ export default function OrderDetailDrawer({ orderId, isOpen, onClose }) {
                 <Button 
                   onClick={handleDownloadInvoice} 
                   variant="outline" 
-                  className="border-zinc-800 bg-zinc-900 text-zinc-300 rounded-xl px-3 h-8 text-xs font-semibold hover:bg-zinc-800 hover:text-white transition-all shadow-sm shrink-0 flex items-center gap-1.5 cursor-pointer"
+                  className="border-border-subtle bg-bg-surface text-gray-900 rounded-xl px-3 h-8 text-xs font-semibold hover:bg-primary-50 transition-all shadow-xs shrink-0 flex items-center gap-1.5 cursor-pointer btn-modern"
                 >
-                  <Download className="w-3.5 h-3.5" /> Invoice
+                  <Download className="w-3.5 h-3.5 text-primary-600" /> Invoice
                 </Button>
                 <Link
                   href={`/admin/orders/${order._id}`}
-                  className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer"
+                  className="p-1.5 text-zinc-500 hover:text-gray-900 hover:bg-primary-50 rounded-lg transition-colors cursor-pointer"
                   title="Open standalone page"
                 >
                   <ExternalLink className="w-4 h-4" />
@@ -217,222 +212,144 @@ export default function OrderDetailDrawer({ orderId, isOpen, onClose }) {
             )}
             <button 
               onClick={onClose} 
-              className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
+              className="p-1.5 rounded-lg text-zinc-500 hover:text-gray-900 hover:bg-primary-50 transition-colors cursor-pointer"
             >
-              <X className="w-4 h-4" />
+              <X className="w-5 h-5" />
             </button>
           </div>
         </div>
 
-        {/* SCROLLABLE DRAWER BODY */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-4 custom-scrollbar">
+        {/* SCROLLABLE DRAWER CONTENT */}
+        <div className="flex-1 overflow-y-auto p-5 space-y-6 custom-scrollbar">
           {isLoading ? (
-            <div className="py-20 text-center space-y-3">
-              <Loader2 className="w-8 h-8 text-blue-500 animate-spin mx-auto" />
-              <p className="text-xs text-zinc-400 font-medium">Fetching order breakdown...</p>
+            <div className="flex h-64 items-center justify-center">
+              <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
             </div>
           ) : error || !order ? (
-            <div className="py-12 text-center space-y-3 text-rose-400 text-xs">
-              <p>Failed to load order details.</p>
+            <div className="p-8 text-center text-rose-600 font-semibold text-xs">
+              Failed to load order record.
             </div>
           ) : (
             <>
-              {/* Customer & Shipping Card */}
-              <div className="bg-[#121215] border border-zinc-800/80 p-4 rounded-2xl space-y-3">
-                <h4 className="text-xs font-bold text-zinc-300 flex items-center gap-2 uppercase tracking-wider">
-                  <User className="w-3.5 h-3.5 text-blue-400" /> Customer & Shipping Details
-                </h4>
-                <div className="grid gap-3 sm:grid-cols-2 text-xs border-t border-zinc-800/60 pt-3">
+              {/* STATUS TRANSITION PANEL */}
+              <div className="bg-bg-surface border border-border-subtle rounded-2xl p-4 space-y-3 shadow-xs">
+                <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider block">Update Order Status</span>
+                {allowedTransitions[order.status]?.length > 0 ? (
+                  <div className="flex flex-wrap gap-2 items-center">
+                    {allowedTransitions[order.status].map((next) => (
+                      <Button
+                        key={next}
+                        onClick={() => statusMutation.mutate({ id: order._id, nextStatus: next })}
+                        disabled={statusMutation.isPending}
+                        className="bg-primary-600 text-white hover:bg-primary-700 rounded-xl px-3 h-8 text-xs font-bold shadow-xs cursor-pointer btn-modern"
+                      >
+                        Mark as {next}
+                      </Button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-zinc-500 font-medium">Order status is terminal ({order.status}).</p>
+                )}
+              </div>
+
+              {/* CUSTOMER INFORMATION CARD */}
+              <div className="bg-bg-surface border border-border-subtle rounded-2xl p-4 space-y-3 shadow-xs">
+                <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                  <User className="w-3.5 h-3.5 text-primary-600" /> Customer Information
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                   <div>
-                    <p className="text-zinc-500 font-bold uppercase tracking-wider text-[10px]">Customer Name</p>
-                    <p className="mt-0.5 font-bold text-zinc-100 text-xs capitalize">{order.shippingAddress?.name}</p>
-                    <p className="text-zinc-400 mt-0.5 font-mono text-[11px]">{order.customer?.email || ""}</p>
+                    <span className="text-zinc-500 text-[11px]">Full Name</span>
+                    <p className="font-bold text-gray-900 capitalize mt-0.5">{order.customer?.name || "Customer unavailable"}</p>
                   </div>
                   <div>
-                    <p className="text-zinc-500 font-bold uppercase tracking-wider text-[10px]">Phone Number</p>
-                    <p className="mt-0.5 font-semibold text-zinc-200 text-xs flex items-center gap-1 font-mono">
-                      <Phone className="w-3 h-3 text-zinc-500" /> {order.shippingAddress?.phone}
-                    </p>
+                    <span className="text-zinc-500 text-[11px]">Email Address</span>
+                    <p className="font-mono text-zinc-700 mt-0.5">{order.customer?.email || "—"}</p>
                   </div>
-                  <div className="sm:col-span-2">
-                    <p className="text-zinc-500 font-bold uppercase tracking-wider text-[10px]">Shipping Address</p>
-                    <div className="mt-0.5 text-zinc-300 flex items-start gap-1.5 leading-snug text-xs">
-                      <MapPin className="w-3.5 h-3.5 text-zinc-500 mt-0.5 shrink-0" />
-                      <div>
-                        <p>{order.shippingAddress?.addressLine1}</p>
-                        {order.shippingAddress?.addressLine2 && <p>{order.shippingAddress?.addressLine2}</p>}
-                        <p>{order.shippingAddress?.city}, {order.shippingAddress?.state} - {order.shippingAddress?.pincode}</p>
-                      </div>
-                    </div>
+                  <div>
+                    <span className="text-zinc-500 text-[11px]">Phone Number</span>
+                    <p className="font-mono text-zinc-700 mt-0.5">{order.customer?.phone || "—"}</p>
                   </div>
                 </div>
               </div>
 
-              {/* Payment Info Card */}
-              <div className="bg-[#121215] border border-zinc-800/80 p-4 rounded-2xl space-y-3">
-                <h4 className="text-xs font-bold text-zinc-300 flex items-center gap-2 uppercase tracking-wider">
-                  <CreditCard className="w-3.5 h-3.5 text-emerald-400" /> Payment Information
-                </h4>
-                <div className="grid gap-3 sm:grid-cols-2 text-xs border-t border-zinc-800/60 pt-3">
-                  <div>
-                    <p className="text-zinc-500 font-bold uppercase tracking-wider text-[10px]">Payment Status</p>
-                    <div className="mt-1">
-                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${paymentStatusClasses[order.paymentStatus] || "bg-zinc-800 text-zinc-400 border-zinc-700"}`}>
-                        {order.paymentStatus}
-                      </span>
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-zinc-500 font-bold uppercase tracking-wider text-[10px]">Payment ID</p>
-                    <p className="mt-1 font-mono text-zinc-300 text-xs">{order.paymentId || "—"}</p>
-                  </div>
+              {/* SHIPPING ADDRESS CARD */}
+              <div className="bg-bg-surface border border-border-subtle rounded-2xl p-4 space-y-3 shadow-xs">
+                <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-primary-600" /> Shipping Address
+                </span>
+                <div className="text-xs space-y-1 text-zinc-700 leading-relaxed">
+                  <p className="font-bold text-gray-900">{order.shippingAddress?.fullName || order.customer?.name}</p>
+                  <p>{order.shippingAddress?.street}</p>
+                  <p>{order.shippingAddress?.city}, {order.shippingAddress?.state} - {order.shippingAddress?.postalCode}</p>
+                  {order.shippingAddress?.phoneNumber && <p className="font-mono text-[11px] text-zinc-600">Phone: {order.shippingAddress.phoneNumber}</p>}
                 </div>
               </div>
 
-              {/* Order Items Table & Profit Breakdown */}
-              <div className="bg-[#121215] border border-zinc-800/80 p-4 rounded-2xl space-y-3">
-                <h4 className="text-xs font-bold text-zinc-300 uppercase tracking-wider">Order Items & Profit Breakdown</h4>
-                <div className="overflow-x-auto rounded-xl border border-zinc-800 bg-zinc-950/40">
-                  <Table className="min-w-[500px] text-xs">
-                    <TableHeader className="bg-zinc-900/60">
-                      <TableRow className="border-b border-zinc-800 hover:bg-transparent">
-                        <TableHead className="font-semibold text-zinc-400 text-xs">Product</TableHead>
-                        <TableHead className="font-semibold text-zinc-400 text-center w-14 text-xs">Qty</TableHead>
-                        <TableHead className="font-semibold text-zinc-400 text-right w-20 text-xs">Cost Price</TableHead>
-                        <TableHead className="font-semibold text-zinc-400 text-right w-20 text-xs">Sell Price</TableHead>
-                        <TableHead className="font-semibold text-zinc-400 text-right w-24 text-xs">Profit/Item</TableHead>
-                        <TableHead className="font-semibold text-zinc-400 text-right w-24 text-xs">Subtotal</TableHead>
+              {/* ORDERED ITEMS TABLE */}
+              <div className="bg-bg-surface border border-border-subtle rounded-2xl p-4 space-y-3 shadow-xs">
+                <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider block">Ordered Items</span>
+                <div className="overflow-x-auto rounded-xl border border-border-subtle bg-white">
+                  <Table className="min-w-[450px] text-xs">
+                    <TableHeader className="bg-primary-50/90 border-b border-border-subtle">
+                      <TableRow className="uppercase text-[10px]">
+                        <TableHead className="font-bold text-primary-800">Product</TableHead>
+                        <TableHead className="text-center font-bold text-primary-800">Qty</TableHead>
+                        <TableHead className="text-right font-bold text-primary-800">Price</TableHead>
+                        <TableHead className="text-right font-bold text-primary-800">Total</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {(() => {
-                        let totalOrderProfit = 0;
-
-                        return (
-                          <>
-                            {order.items?.map((item, idx) => {
-                              const costPrice = item.costPricePerUnit !== undefined ? item.costPricePerUnit : 0;
-                              const sellingPrice = item.pricePerUnit || 0;
-                              const profitPerItem = sellingPrice - costPrice;
-                              const itemTotalProfit = profitPerItem * item.quantity;
-                              totalOrderProfit += itemTotalProfit;
-
-                              return (
-                                <TableRow key={idx} className="border-b border-zinc-800/60 hover:bg-zinc-900/20 transition-colors">
-                                  <TableCell className="py-2.5">
-                                    <div className="flex items-center gap-2.5">
-                                      {item.product?.images?.[0] ? (
-                                        <img 
-                                          src={item.product.images[0]} 
-                                          className="w-8 h-8 object-contain rounded-lg bg-white border border-zinc-800 p-0.5 shrink-0" 
-                                          alt={item.productName} 
-                                          referrerPolicy="no-referrer"
-                                        />
-                                      ) : (
-                                        <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-500 text-[8px] font-mono shrink-0">No Img</div>
-                                      )}
-                                      <span className="font-bold text-zinc-100 capitalize text-xs">{item.productName}</span>
-                                    </div>
-                                  </TableCell>
-                                  <TableCell className="text-center font-mono py-2.5 text-zinc-300 text-xs">{item.quantity}</TableCell>
-                                  <TableCell className="text-right font-mono py-2.5 text-zinc-400 text-xs">₹{costPrice}</TableCell>
-                                  <TableCell className="text-right font-mono py-2.5 text-zinc-300 text-xs">₹{sellingPrice}</TableCell>
-                                  <TableCell className="text-right font-mono py-2.5 text-xs">
-                                    <span className={`px-1.5 py-0.5 rounded font-bold ${profitPerItem >= 0 ? "text-emerald-400 bg-emerald-500/10 border border-emerald-500/20" : "text-rose-400 bg-rose-500/10 border border-rose-500/20"}`}>
-                                      ₹{profitPerItem}
-                                    </span>
-                                  </TableCell>
-                                  <TableCell className="text-right font-mono py-2.5 text-zinc-100 font-semibold text-xs">₹{item.subtotal}</TableCell>
-                                </TableRow>
-                              );
-                            })}
-                            <TableRow className="bg-zinc-900/60 border-t border-zinc-800">
-                              <TableCell colSpan={5} className="py-2.5 text-zinc-400 text-xs font-semibold">Total Order Profit</TableCell>
-                              <TableCell className="text-right font-mono py-2.5 text-xs text-emerald-400 font-bold">{formatCurrency(totalOrderProfit)}</TableCell>
-                            </TableRow>
-                            <TableRow className="bg-zinc-900/90 font-bold border-t border-zinc-700">
-                              <TableCell colSpan={5} className="py-3 text-zinc-100 text-xs">Grand Total Amount</TableCell>
-                              <TableCell className="text-right font-mono py-3 text-sm text-emerald-400">{formatCurrency(order.totalAmount)}</TableCell>
-                            </TableRow>
-                          </>
-                        );
-                      })()}
+                      {order.items?.map((item, idx) => (
+                        <TableRow key={idx} className="border-b border-border-subtle text-gray-900">
+                          <TableCell className="py-2.5">
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 rounded-lg bg-white border border-border-subtle p-0.5 shrink-0 flex items-center justify-center overflow-hidden">
+                                {item.product?.images?.[0] ? (
+                                  <img src={item.product.images[0]} alt="" className="w-full h-full object-contain" />
+                                ) : (
+                                  <span className="text-[8px] text-zinc-400">No img</span>
+                                )}
+                              </div>
+                              <span className="font-bold text-xs truncate max-w-[180px]">{item.product?.name || "Product"}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-center font-mono font-bold py-2.5">{item.quantity}</TableCell>
+                          <TableCell className="text-right font-mono py-2.5 text-zinc-600">₹{item.price}</TableCell>
+                          <TableCell className="text-right font-mono font-bold py-2.5 text-gray-900">₹{item.quantity * item.price}</TableCell>
+                        </TableRow>
+                      ))}
                     </TableBody>
                   </Table>
                 </div>
               </div>
 
-              {/* Status Update Control Card */}
-              <div className="bg-[#121215] border border-zinc-800/80 p-4 rounded-2xl space-y-3">
-                <h4 className="text-xs font-bold text-zinc-300 uppercase tracking-wider">Update Order Status</h4>
-                <div className="border-t border-zinc-800/60 pt-3">
-                  {isFinished ? (
-                    <p className="text-xs text-zinc-500 italic">This order is in a final state ({order.status}) and cannot be transitioned further.</p>
-                  ) : (
-                    <div className="flex gap-2 items-center">
-                      <select 
-                        value={selectedNextStatus} 
-                        onChange={(e) => setSelectedNextStatus(e.target.value)}
-                        className="flex-1 h-9 bg-[#1a1a1e] border border-zinc-700 rounded-xl px-3 text-xs font-semibold text-zinc-300 hover:text-white hover:border-zinc-500 transition-all outline-none cursor-pointer"
-                      >
-                        <option value="" className="bg-zinc-950 text-zinc-400">Choose next status...</option>
-                        {allowedTargets.map(tgt => (
-                          <option key={tgt} value={tgt} className="bg-zinc-950 text-zinc-200">{tgt}</option>
-                        ))}
-                      </select>
-                      <Button 
-                        onClick={() => {
-                          if (!selectedNextStatus) return toast.error("Please select a status first.");
-                          statusMutation.mutate({ id: order._id, nextStatus: selectedNextStatus });
-                        }}
-                        disabled={statusMutation.isPending || !selectedNextStatus}
-                        className="bg-white text-black hover:bg-zinc-200 font-semibold rounded-xl text-xs px-4 h-9 cursor-pointer"
-                      >
-                        {statusMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Update"}
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Status History Timeline Card */}
-              <div className="bg-[#121215] border border-zinc-800/80 p-4 rounded-2xl space-y-3">
-                <h4 className="text-xs font-bold text-zinc-300 flex items-center gap-2 uppercase tracking-wider">
-                  <Clock className="w-3.5 h-3.5 text-purple-400" /> Status Timeline
-                </h4>
-                <div className="border-t border-zinc-800/60 pt-4">
-                  {order.statusHistory && order.statusHistory.length > 0 ? (
-                    <div className="relative border-l border-zinc-800 pl-5 space-y-4 ml-2">
-                      {[...order.statusHistory]
-                        .sort((a, b) => new Date(b.changedAt) - new Date(a.changedAt))
-                        .map((historyItem, idx) => (
-                          <div key={idx} className="relative">
-                            <span className={`absolute -left-[27px] top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full border bg-zinc-950 ${statusClasses[historyItem.status] || "border-zinc-700 bg-zinc-800"}`}>
-                              <span className="h-1 w-1 rounded-full bg-current" />
-                            </span>
-                            <div>
-                              <p className="text-xs font-bold text-zinc-100">{historyItem.status}</p>
-                              <p className="text-[10px] text-zinc-500 font-mono mt-0.5">
-                                {new Date(historyItem.changedAt).toLocaleString("en-IN", {
-                                  day: "2-digit",
-                                  month: "short",
-                                  year: "numeric",
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })}
-                              </p>
-                            </div>
-                          </div>
-                        ))}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-zinc-500 italic">No timeline entries available.</p>
-                  )}
+              {/* PAYMENT & FINANCIAL SUMMARY */}
+              <div className="bg-bg-surface border border-border-subtle rounded-2xl p-4 space-y-3 shadow-xs">
+                <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                  <CreditCard className="w-3.5 h-3.5 text-primary-600" /> Payment & Financial Summary
+                </span>
+                <div className="space-y-2 text-xs font-mono border-t border-border-subtle pt-3">
+                  <div className="flex justify-between text-zinc-600">
+                    <span>Payment Method</span>
+                    <span className="font-bold text-gray-900">{order.paymentMethod || "COD"}</span>
+                  </div>
+                  <div className="flex justify-between text-zinc-600">
+                    <span>Payment Status</span>
+                    <span className={`px-2 py-0.5 rounded text-[10px] ${paymentStatusClasses[order.paymentStatus] || "bg-zinc-100 text-zinc-700"}`}>
+                      {order.paymentStatus}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-base font-bold text-gray-900 pt-2 border-t border-border-subtle">
+                    <span>Total Amount Paid</span>
+                    <span className="text-emerald-600 font-extrabold">{formatCurrency(order.totalAmount)}</span>
+                  </div>
                 </div>
               </div>
             </>
           )}
         </div>
+
       </div>
     </div>
   );

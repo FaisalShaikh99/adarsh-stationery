@@ -126,86 +126,90 @@ export default function BrandManagementPage() {
 
   if (brandsLoading || categoriesLoading || allBrandsLoading) {
     return (
-      <div className="fixed inset-0 bg-[#09090b] z-50 flex items-center justify-center">
+      <div className="flex h-[70vh] items-center justify-center">
         <LoadingSpinner size={240} label="Loading brands catalog..." />
       </div>
     );
   }
 
   return (
-    <div className="w-full min-h-screen bg-[#09090b] text-white p-6 space-y-6 font-sans">
+    <div className="w-full max-w-full min-h-screen text-gray-900 p-2 sm:p-4 space-y-6 font-sans overflow-x-hidden">
       
-      {/* 1. TOP NAVBAR ELEMENT CONTROLS */}
-      <div className="flex justify-between items-center border-b border-zinc-800 pb-5">
+      {/* 1. UNIQUE HAZED PURPLE GRADIENT TOP CONTAINER UI */}
+      <div className="hazed-purple-banner p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-xl font-bold tracking-tight text-white">Brands & Manufacturers</h1>
-            <span className="text-xs bg-zinc-800 text-zinc-400 px-3 py-1 rounded-lg border border-zinc-700 font-medium">Registry Node</span>
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-3">
+              <Tag className="h-7 w-7 text-accent shrink-0" /> Brands & Manufacturers
+            </h1>
+            <span className="text-xs bg-white/20 text-white px-3 py-1 rounded-lg border border-white/30 font-bold">Registry Node</span>
           </div>
-          <p className="mt-1 text-xs text-zinc-400">Manage stationery brand profiles, manufacturers, and company lines.</p>
+          <p className="mt-1 text-sm text-purple-100 font-semibold max-w-2xl">
+            Manage stationery brand profiles, manufacturers, supplier lines, and product associations.
+          </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 shrink-0">
           <Button 
             onClick={() => { setEditingBrand(null); setIsModalOpen(true); }} 
-            className="bg-white text-black font-semibold hover:bg-zinc-200 rounded-xl px-4 h-9 text-xs shadow-md"
+            className="bg-white text-primary-800 font-black hover:bg-primary-50 rounded-xl px-4 h-10 text-sm shadow-md cursor-pointer btn-modern"
           >
-            <Plus className="w-4 h-4 mr-1 stroke-3"/> Add New Brand
+            <Plus className="w-4 h-4 mr-2 text-primary-600"/> Add New Brand
           </Button>
         </div>
       </div>
 
       {/* 2. STATS CARDS ROW */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-[#0c0c0e] border border-zinc-800/80 p-5 rounded-2xl shadow-sm flex flex-col justify-between min-h-[105px]">
+        <div className="bg-bg-surface border border-border-subtle p-5 rounded-2xl shadow-xs flex flex-col justify-between min-h-[105px]">
           <div>
             <p className="text-xs text-zinc-500 uppercase tracking-wider font-bold">Total Brands</p>
-            <p className="text-2xl font-bold mt-2 font-mono tracking-tight text-white">{String(totalBrands).padStart(2, "0")}</p>
+            <p className="text-2xl font-bold mt-2 font-mono tracking-tight text-gray-900">{String(totalBrands).padStart(2, "0")}</p>
           </div>
-          <span className="text-[10px] text-zinc-550 mt-1.5 block italic">Registered manufacturer profiles</span>
+          <span className="text-[10px] text-zinc-500 mt-1.5 block italic">Registered manufacturer profiles</span>
         </div>
-        <div className="bg-[#0c0c0e] border border-zinc-800/80 p-5 rounded-2xl shadow-sm flex flex-col justify-between min-h-[105px]">
+        <div className="bg-bg-surface border border-border-subtle p-5 rounded-2xl shadow-xs flex flex-col justify-between min-h-[105px]">
           <div>
             <p className="text-xs text-zinc-500 uppercase tracking-wider font-bold">Total Products</p>
-            <p className="text-2xl font-bold mt-2 font-mono tracking-tight text-white">{String(totalProducts).padStart(2, "0")}</p>
+            <p className="text-2xl font-bold mt-2 font-mono tracking-tight text-gray-900">{String(totalProducts).padStart(2, "0")}</p>
           </div>
-          <span className="text-[10px] text-zinc-550 mt-1.5 block italic">Active catalog items linked</span>
+          <span className="text-[10px] text-zinc-500 mt-1.5 block italic">Active catalog items linked</span>
         </div>
-        <div className="bg-[#0c0c0e] border border-zinc-800/80 p-5 rounded-2xl shadow-sm flex flex-col justify-between min-h-[105px]">
+        <div className="bg-bg-surface border border-border-subtle p-5 rounded-2xl shadow-xs flex flex-col justify-between min-h-[105px]">
           <div>
             <p className="text-xs text-zinc-500 uppercase tracking-wider font-bold">Total Categories</p>
-            <p className="text-2xl font-bold mt-2 font-mono tracking-tight text-white">{String(totalCategories).padStart(2, "0")}</p>
+            <p className="text-2xl font-bold mt-2 font-mono tracking-tight text-gray-900">{String(totalCategories).padStart(2, "0")}</p>
           </div>
-          <span className="text-[10px] text-zinc-550 mt-1.5 block italic">Operative category mappings</span>
+          <span className="text-[10px] text-zinc-500 mt-1.5 block italic">Operative category mappings</span>
         </div>
-        <div className="bg-[#0c0c0e] border border-zinc-800/80 p-5 rounded-2xl shadow-sm flex flex-col justify-between min-h-[105px]">
+        <div className="bg-bg-surface border border-border-subtle p-5 rounded-2xl shadow-xs flex flex-col justify-between min-h-[105px]">
           <div>
             <p className="text-xs text-zinc-500 uppercase tracking-wider font-bold">Avg. Products / Brand</p>
-            <p className="text-2xl font-bold mt-2 font-mono tracking-tight text-white">{avgProducts}</p>
+            <p className="text-2xl font-bold mt-2 font-mono tracking-tight text-gray-900">{avgProducts}</p>
           </div>
-          <span className="text-[10px] text-zinc-555 text-zinc-500 mt-1.5 block italic">Density per brand registry</span>
+          <span className="text-[10px] text-zinc-500 mt-1.5 block italic">Density per brand registry</span>
         </div>
       </div>
 
       {/* 🔍 3. SEARCH ARCHITECTURE & FILTER BAR */}
-      <div className="bg-[#0c0c0e] border border-zinc-800 rounded-2xl p-6 space-y-4 shadow-xl">
+      <div className="bg-bg-surface border border-border-subtle rounded-2xl p-4 sm:p-6 space-y-4 shadow-xs">
         
         {/* Controls Row */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3 w-full">
-            <div className="flex items-center w-full bg-[#141416] border border-zinc-700 rounded-xl px-3.5 transition-all gap-2 h-10 focus-within:border-zinc-500 focus-within:ring-1 focus-within:ring-zinc-500">
-              <Search className="h-4 w-4 text-zinc-500 shrink-0" />
+            <div className="flex items-center w-full bg-bg-surface border border-border-subtle rounded-xl px-3.5 transition-all gap-2 h-10 focus-within:border-primary-400 focus-within:ring-1 focus-within:ring-primary-400">
+              <Search className="h-4 w-4 text-zinc-400 shrink-0" />
               <Input 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search..."
-                className="flex-1 bg-transparent border-none text-zinc-300 placeholder-zinc-500 focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none focus:ring-0 text-xs h-full p-0 shadow-none"
+                className="flex-1 bg-transparent border-none text-xs text-gray-900 placeholder-zinc-400 focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none focus:ring-0 text-xs h-full p-0 shadow-none"
               />
               <VoiceSearchButton 
                 onResult={(text) => setSearchQuery(text)} 
-                className="shrink-0 h-8 w-8"
+                className="shrink-0 h-8 w-8 text-primary-600"
               />
             </div>
-            <Button onClick={handleRefreshAll} variant="outline" className="h-10 w-10 p-0 border-zinc-700 bg-[#141416] shrink-0 rounded-xl hover:bg-zinc-850"><RefreshCw className="w-4 h-4" /></Button>
+            <Button onClick={handleRefreshAll} variant="outline" className="h-10 w-10 p-0 border-border-subtle bg-bg-surface shrink-0 rounded-xl hover:bg-primary-50 btn-modern"><RefreshCw className="w-4 h-4 text-primary-600" /></Button>
           </div>
 
           <div className="flex flex-wrap items-center gap-3 shrink-0">

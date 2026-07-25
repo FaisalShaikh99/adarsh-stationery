@@ -374,55 +374,59 @@ export default function PaymentsPage() {
   ];
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-6 pb-12 font-sans">
+    <div className="w-full max-w-full space-y-6 font-sans pb-12 text-gray-900 overflow-x-hidden">
       
       {/* HEADER SECTION */}
-      <div className="flex flex-wrap gap-3 justify-between items-center border-b border-zinc-800 pb-5">
+      {/* 1. UNIQUE HAZED PURPLE GRADIENT TOP CONTAINER UI */}
+      <div className="hazed-purple-banner p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-emerald-400" /> Payments & Financials
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-3">
+            <CreditCard className="h-7 w-7 text-accent shrink-0" /> Payments & Financial Accounting
           </h1>
-          <p className="mt-1 text-xs text-zinc-400">Decoupled transaction accounting module and bookkeeping dashboard.</p>
+          <p className="mt-1 text-sm text-purple-100 font-semibold max-w-2xl">
+            Real-time transaction reconciliation, P&L cash flow, expense tracking, and settlements.
+          </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3 shrink-0">
           {activeTab === "expenses" && (
             <Button 
               onClick={handleOpenCreateExpense}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white h-9 rounded-xl text-xs font-semibold px-4 flex items-center gap-1.5 cursor-pointer shadow-md"
+              className="bg-white text-emerald-800 font-black hover:bg-emerald-50 h-10 rounded-xl text-sm px-4 flex items-center gap-2 cursor-pointer shadow-md btn-modern"
             >
-              <Plus className="w-4 h-4" /> Add Expense
+              <Plus className="w-4 h-4 text-emerald-600" /> Add Expense
             </Button>
           )}
           {activeTab === "refunds" && (
             <Button 
               onClick={() => setShowRefundModal(true)}
-              className="bg-purple-600 text-white hover:bg-purple-700 h-9 rounded-xl text-xs font-semibold px-4 flex items-center gap-1.5 cursor-pointer"
+              className="bg-white text-primary-800 font-black hover:bg-primary-50 h-10 rounded-xl text-sm px-4 flex items-center gap-2 cursor-pointer shadow-md btn-modern"
             >
-              <Plus className="w-4 h-4" /> Record Refund
+              <Plus className="w-4 h-4 text-primary-600" /> Record Refund
             </Button>
           )}
           {activeTab === "settlements" && (
             <Button 
               onClick={() => setShowSettlementModal(true)}
-              className="bg-blue-600 text-white hover:bg-blue-700 h-9 rounded-xl text-xs font-semibold px-4 flex items-center gap-1.5 cursor-pointer"
+              className="bg-white text-primary-800 font-black hover:bg-primary-50 h-10 rounded-xl text-sm px-4 flex items-center gap-2 cursor-pointer shadow-md btn-modern"
             >
-              <Plus className="w-4 h-4" /> Record Settlement
+              <Plus className="w-4 h-4 text-primary-600" /> Record Settlement
             </Button>
           )}
           <Button 
             onClick={handleRefresh} 
             disabled={isPaymentsFetching} 
             variant="outline" 
-            className="h-9 w-9 p-0 border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-white shrink-0 rounded-xl hover:bg-zinc-800 cursor-pointer"
+            className="rounded-xl border-white/40 bg-white/20 text-white hover:bg-white hover:text-primary-800 text-sm font-extrabold px-4 h-10 cursor-pointer shadow-xs btn-modern shrink-0"
             title="Sync Ledger"
           >
-            <RefreshCw className={`h-4 w-4 ${isPaymentsFetching ? "animate-spin" : ""}`} />
+            <RefreshCw className={`mr-2 h-4 w-4 ${isPaymentsFetching ? "animate-spin" : ""}`} />
+            <span>Sync Ledger</span>
           </Button>
         </div>
       </div>
 
       {/* TOP TAB NAVIGATION */}
-      <div className="flex flex-wrap gap-1 border-b border-zinc-800 pb-1 scrollbar-none overflow-x-auto">
+      <div className="flex flex-wrap gap-1 border-b border-border-subtle pb-1 scrollbar-none overflow-x-auto">
         {tabItems.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -430,9 +434,13 @@ export default function PaymentsPage() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`h-9 px-4 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${isActive ? "bg-zinc-800 text-white border border-zinc-700 shadow-sm" : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/50"}`}
+              className={`h-9 px-4 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
+                isActive 
+                  ? "bg-primary-100 text-primary-700 border border-primary-200 shadow-xs" 
+                  : "text-zinc-600 hover:text-gray-900 hover:bg-primary-50/70"
+              }`}
             >
-              <Icon className="w-3.5 h-3.5" />
+              <Icon className={`w-3.5 h-3.5 ${isActive ? "text-primary-600" : "text-zinc-500"}`} />
               {tab.name}
             </button>
           );
@@ -446,21 +454,21 @@ export default function PaymentsPage() {
         <div className="space-y-6">
           {/* TOP SUMMARY KPIS (REVENUE, EXPENSES, NET PROFIT) */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-[#0c0c0e] border border-zinc-800/80 p-5 rounded-2xl shadow-sm space-y-1">
+            <div className="bg-bg-surface border border-border-subtle p-5 rounded-2xl shadow-xs space-y-1">
               <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold block">Current Month Revenue</span>
-              <p className="text-2xl font-extrabold font-mono text-emerald-400">{formatCurrency(monthTotalRevenue)}</p>
+              <p className="text-2xl font-extrabold font-mono text-emerald-600">{formatCurrency(monthTotalRevenue)}</p>
               <p className="text-[11px] text-zinc-500">Gross sales from paid orders</p>
             </div>
 
-            <div className="bg-[#0c0c0e] border border-zinc-800/80 p-5 rounded-2xl shadow-sm space-y-1">
+            <div className="bg-bg-surface border border-border-subtle p-5 rounded-2xl shadow-xs space-y-1">
               <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold block">Current Month Expenses</span>
-              <p className="text-2xl font-extrabold font-mono text-rose-400">{formatCurrency(monthTotalExpenses)}</p>
+              <p className="text-2xl font-extrabold font-mono text-rose-600">{formatCurrency(monthTotalExpenses)}</p>
               <p className="text-[11px] text-zinc-500">Operating costs & prorated recurring bills</p>
             </div>
 
-            <div className="bg-[#0c0c0e] border border-zinc-800/80 p-5 rounded-2xl shadow-sm space-y-1">
+            <div className="bg-bg-surface border border-border-subtle p-5 rounded-2xl shadow-xs space-y-1">
               <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold block">Current Month Net Profit</span>
-              <p className={`text-2xl font-extrabold font-mono ${monthNetProfit >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+              <p className={`text-2xl font-extrabold font-mono ${monthNetProfit >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
                 {formatCurrency(monthNetProfit)}
               </p>
               <p className="text-[11px] text-zinc-500">Revenue minus operating expenses</p>
@@ -470,14 +478,14 @@ export default function PaymentsPage() {
           {/* STATS CARDS GRID */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             {[
-              { label: "Total Paid", value: stats.totalPaid, color: "text-emerald-400", icon: CheckCircle2 },
-              { label: "Total Pending", value: stats.totalPending, color: "text-amber-400", icon: AlertCircle },
-              { label: "Total Failed", value: stats.totalFailed, color: "text-rose-400", icon: XCircle },
-              { label: "Paid Amount", value: formatCurrency(stats.totalPaidAmount), color: "text-emerald-400", icon: CheckCircle2 },
-              { label: "Pending Amount", value: formatCurrency(stats.totalPendingAmount), color: "text-amber-400", icon: AlertCircle },
-              { label: "Failed Amount", value: formatCurrency(stats.totalFailedAmount), color: "text-rose-400", icon: XCircle },
+              { label: "Total Paid", value: stats.totalPaid, color: "text-emerald-600", icon: CheckCircle2 },
+              { label: "Total Pending", value: stats.totalPending, color: "text-amber-600", icon: AlertCircle },
+              { label: "Total Failed", value: stats.totalFailed, color: "text-rose-600", icon: XCircle },
+              { label: "Paid Amount", value: formatCurrency(stats.totalPaidAmount), color: "text-emerald-600", icon: CheckCircle2 },
+              { label: "Pending Amount", value: formatCurrency(stats.totalPendingAmount), color: "text-amber-600", icon: AlertCircle },
+              { label: "Failed Amount", value: formatCurrency(stats.totalFailedAmount), color: "text-rose-600", icon: XCircle },
             ].map((item) => (
-              <div key={item.label} className="bg-[#0c0c0e] border border-zinc-800/80 p-4 rounded-2xl shadow-sm flex flex-col justify-between min-h-[95px]">
+              <div key={item.label} className="bg-bg-surface border border-border-subtle p-4 rounded-2xl shadow-xs flex flex-col justify-between min-h-[95px]">
                 <div>
                   <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold">{item.label}</p>
                   <p className={`text-lg font-bold mt-2 font-mono tracking-tight ${item.color}`}>{item.value}</p>
@@ -487,19 +495,19 @@ export default function PaymentsPage() {
           </div>
 
           {/* REAL REVENUE VS EXPENSES RECHARTS TREND */}
-          <div className="bg-[#0c0c0e] border border-zinc-800 rounded-2xl p-6 space-y-4 shadow-xl">
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800 pb-4">
+          <div className="bg-bg-surface border border-border-subtle rounded-2xl p-6 space-y-4 shadow-xs">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border-subtle pb-4">
               <div>
-                <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-emerald-400" /> 30-Day Revenue vs Expenses Trend
+                <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-emerald-600" /> 30-Day Revenue vs Expenses Trend
                 </h3>
-                <p className="text-xs text-zinc-400 mt-0.5">Live comparison of checkout revenue against recorded business expenses.</p>
+                <p className="text-xs text-zinc-500 mt-0.5">Live comparison of checkout revenue against recorded business expenses.</p>
               </div>
               <div className="flex items-center gap-4 text-xs font-bold font-mono">
-                <span className="flex items-center gap-1.5 text-emerald-400">
+                <span className="flex items-center gap-1.5 text-emerald-600">
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Revenue
                 </span>
-                <span className="flex items-center gap-1.5 text-rose-400">
+                <span className="flex items-center gap-1.5 text-rose-600">
                   <span className="w-2.5 h-2.5 rounded-full bg-rose-500" /> Expense
                 </span>
               </div>

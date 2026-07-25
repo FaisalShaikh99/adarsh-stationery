@@ -40,12 +40,12 @@ import {
   XAxis,
   YAxis,
   Tooltip,
-  Legend,
 } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
+// Fixed status badge colors (Untouched and independent of primary brand scale)
 const STATUS_COLORS = {
   Confirmed: "#3b82f6",
   Processing: "#8b5cf6",
@@ -55,11 +55,8 @@ const STATUS_COLORS = {
   Returned: "#f59e0b",
 };
 
-const CATEGORY_COLORS = ["#10b981", "#3b82f6", "#8b5cf6", "#f59e0b", "#ec4899", "#06b6d4", "#f43f5e"];
-
-function formatCurrency(val) {
-  return `₹${Number(val || 0).toLocaleString("en-IN")}`;
-}
+// Purple Brand Palette for Category Bar Chart
+const CATEGORY_COLORS = ["#5B2C8F", "#6B3FA0", "#8A5FC0", "#4A056D", "#B995DE", "#D4B8ED", "#E8C547"];
 
 export default function DashboardPage() {
   const [lowStockThreshold, setLowStockThreshold] = useState(10);
@@ -70,7 +67,7 @@ export default function DashboardPage() {
   const [breakdownModalPeriod, setBreakdownModalPeriod] = useState(null);
 
   // Main Dashboard Aggregation Query
-  const { data, isLoading, isError, error, refetch } = useQuery({
+  const { data, isLoading, isError, error, refetch, isRefetching } = useQuery({
     queryKey: ["adminDashboard", lowStockThreshold],
     queryFn: async () => {
       const res = await axios.get("/api/admin/dashboard", {
@@ -166,22 +163,22 @@ export default function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-[70vh] flex-col items-center justify-center space-y-4">
-        <RefreshCw className="h-8 w-8 text-emerald-400 animate-spin" />
-        <p className="text-zinc-400 text-sm font-medium">Loading executive analytics dashboard...</p>
+      <div className="flex h-[70vh] flex-col items-center justify-center space-y-4 px-4">
+        <RefreshCw className="h-8 w-8 text-primary-600 animate-spin" />
+        <p className="text-zinc-600 text-sm font-medium text-center">Loading executive analytics dashboard...</p>
       </div>
     );
   }
 
   if (isError) {
     return (
-      <div className="flex h-[60vh] flex-col items-center justify-center space-y-4 text-center">
+      <div className="flex h-[60vh] flex-col items-center justify-center space-y-4 text-center px-4">
         <AlertTriangle className="h-10 w-10 text-rose-500" />
-        <h2 className="text-lg font-bold text-white">Failed to load dashboard statistics</h2>
-        <p className="text-xs text-zinc-400 max-w-md">{error?.message || "Internal server error occurred."}</p>
+        <h2 className="text-lg font-bold text-gray-900">Failed to load dashboard statistics</h2>
+        <p className="text-xs text-zinc-500 max-w-md">{error?.message || "Internal server error occurred."}</p>
         <button
           onClick={() => refetch()}
-          className="mt-2 px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-semibold transition-all cursor-pointer"
+          className="mt-2 px-4 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-xs font-semibold transition-all cursor-pointer shadow-xs"
         >
           Retry Connection
         </button>
@@ -205,49 +202,63 @@ export default function DashboardPage() {
   const seasonalReminder = dashboard.seasonalReminder || null;
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-6 pb-12 font-sans">
+    <div className="w-full space-y-5 sm:space-y-7 pb-12 font-sans text-gray-900 min-h-screen px-1 sm:px-2 md:px-3 overflow-x-hidden">
       
-      {/* 1. Header Row */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-800 pb-5">
+      {/* 1. UNIQUE HAZED PURPLE GRADIENT TOP CONTAINER UI */}
+      <div className="hazed-purple-banner p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-emerald-400" /> Executive Analytics & Command Center
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-3">
+            <Sparkles className="h-7 w-7 text-accent shrink-0 animate-pulse" /> Executive Command Center
           </h1>
-          <p className="text-xs text-zinc-400 mt-1">
-            Real-time business performance metrics, profit/loss analysis, and inventory intelligence.
+          <p className="text-sm text-purple-100 font-semibold mt-1 max-w-2xl leading-relaxed">
+            Real-time sales performance, profit/loss reconciliation, and inventory analytics for Adarsh Stationery.
           </p>
         </div>
-        <button
-          onClick={() => refetch()}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 text-xs font-medium transition-colors cursor-pointer"
-        >
-          <RefreshCw className="h-3.5 w-3.5 text-blue-400" />
-          <span>Refresh Analytics</span>
-        </button>
+        <div className="flex items-center gap-3 shrink-0">
+          <Button
+            onClick={() => refetch()}
+            variant="outline"
+            size="sm"
+            disabled={isRefetching}
+            className="rounded-xl border-white/40 bg-white/20 text-white hover:bg-white hover:text-primary-800 text-sm font-extrabold px-4 h-10 cursor-pointer shadow-xs btn-modern"
+          >
+            <RefreshCw className={`mr-2 h-4 w-4 ${isRefetching ? "animate-spin" : ""}`} />
+            <span>Refresh</span>
+          </Button>
+          <Link href="/admin/products">
+            <Button
+              size="sm"
+              className="bg-white text-primary-800 hover:bg-primary-50 font-black rounded-xl text-sm px-4 h-10 shadow-md cursor-pointer btn-modern"
+            >
+              <Package className="mr-2 h-4 w-4 text-primary-600" />
+              <span>Catalog Matrix</span>
+            </Button>
+          </Link>
+        </div>
       </div>
 
-      {/* 2. Seasonal Reminder Banner */}
+      {/* 2. Seasonal Advisory Banner */}
       {seasonalReminder && !isReminderDismissed && (
-        <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 via-indigo-500/10 to-blue-500/10 border border-amber-500/30 flex items-start justify-between gap-4 relative overflow-hidden shadow-lg">
-          <div className="flex items-start gap-3">
-            <div className="p-2 rounded-xl bg-amber-500/20 border border-amber-500/30 text-amber-400 shrink-0 mt-0.5">
-              <Sparkles className="h-5 w-5" />
+        <div className="p-3.5 sm:p-4 rounded-2xl bg-bg-surface border border-accent/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-start gap-3 min-w-0">
+            <div className="p-2 rounded-xl bg-accent/20 text-accent shrink-0 mt-0.5">
+              <Sparkles className="h-4 w-4 sm:h-5 sm:w-5" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-amber-400">Seasonal Advisory</span>
-                <span className="text-[10px] text-zinc-400 bg-zinc-900/60 px-2 py-0.5 rounded-md border border-zinc-800">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-accent">Seasonal Advisory</span>
+                <span className="text-[10px] text-zinc-600 bg-primary-50 px-2 py-0.5 rounded-md border border-primary-100 font-mono">
                   {seasonalReminder.title}
                 </span>
               </div>
-              <p className="text-xs text-zinc-200 mt-1 leading-relaxed">
+              <p className="text-xs text-gray-900 mt-1 leading-relaxed break-words">
                 {seasonalReminder.message}
               </p>
             </div>
           </div>
           <button
             onClick={() => setIsReminderDismissed(true)}
-            className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-900/60 transition-colors cursor-pointer shrink-0"
+            className="self-end sm:self-center p-1.5 rounded-lg text-zinc-400 hover:text-gray-900 hover:bg-primary-50 transition-colors cursor-pointer shrink-0"
             title="Dismiss advisory"
           >
             <X className="h-4 w-4" />
@@ -255,116 +266,116 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* 2. Top Summary KPI Cards (5 Grid) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      {/* 3. Top Summary KPI Cards (Responsive Grid: 1 col on mobile, 2 sm, 3 md, 5 xl) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
         {/* KPI 1: Total Revenue */}
-        <div className="p-4 rounded-2xl bg-bg-surface border border-border-default space-y-2 relative overflow-hidden group hover:border-border-hover transition-colors">
+        <div className="p-4 rounded-2xl bg-bg-surface border border-border-subtle space-y-2 relative overflow-hidden transition-all hover:border-primary-300">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">Total Revenue</span>
-            <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">Total Revenue</span>
+            <div className="p-2 rounded-xl bg-badge-1-bg text-badge-1-icon">
               <IndianRupee className="h-4 w-4" />
             </div>
           </div>
           <div>
-            <h3 className="text-xl font-extrabold text-text-primary tracking-tight">
+            <h3 className="text-xl sm:text-2xl font-extrabold text-gray-900 tracking-tight">
               ₹{kpis.totalRevenue.toLocaleString("en-IN")}
             </h3>
-            <p className="text-[10px] text-emerald-400 font-medium mt-0.5">Paid Orders Net</p>
+            <p className="text-[10px] text-emerald-600 font-bold mt-0.5">Paid Orders Net</p>
           </div>
         </div>
 
         {/* KPI 2: Total Orders */}
-        <Link href="/admin/orders" className="p-4 rounded-2xl bg-bg-surface border border-border-default space-y-2 relative overflow-hidden group hover:border-border-hover transition-colors block">
+        <Link href="/admin/orders" className="p-4 rounded-2xl bg-bg-surface border border-border-subtle space-y-2 relative overflow-hidden transition-all hover:border-primary-300 block">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">Total Orders</span>
-            <div className="p-2 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">Total Orders</span>
+            <div className="p-2 rounded-xl bg-badge-2-bg text-badge-2-icon">
               <ShoppingBag className="h-4 w-4" />
             </div>
           </div>
           <div>
-            <h3 className="text-xl font-extrabold text-text-primary tracking-tight">
+            <h3 className="text-xl sm:text-2xl font-extrabold text-gray-900 tracking-tight">
               {kpis.totalOrders}
             </h3>
-            <p className="text-[10px] text-blue-400 font-medium mt-0.5">Lifetime Orders</p>
+            <p className="text-[10px] text-primary-600 font-bold mt-0.5">Lifetime Orders</p>
           </div>
         </Link>
 
         {/* KPI 3: Total Customers */}
-        <Link href="/admin/customers" className="p-4 rounded-2xl bg-bg-surface border border-border-default space-y-2 relative overflow-hidden group hover:border-border-hover transition-colors block">
+        <Link href="/admin/customers" className="p-4 rounded-2xl bg-bg-surface border border-border-subtle space-y-2 relative overflow-hidden transition-all hover:border-primary-300 block">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">Customers</span>
-            <div className="p-2 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">Customers</span>
+            <div className="p-2 rounded-xl bg-badge-3-bg text-badge-3-icon">
               <Users className="h-4 w-4" />
             </div>
           </div>
           <div>
-            <h3 className="text-xl font-extrabold text-text-primary tracking-tight">
+            <h3 className="text-xl sm:text-2xl font-extrabold text-gray-900 tracking-tight">
               {kpis.totalCustomers}
             </h3>
-            <p className="text-[10px] text-purple-400 font-medium mt-0.5">Registered Profiles</p>
+            <p className="text-[10px] text-primary-600 font-bold mt-0.5">Registered Profiles</p>
           </div>
         </Link>
 
         {/* KPI 4: Total Products */}
-        <Link href="/admin/products" className="p-4 rounded-2xl bg-bg-surface border border-border-default space-y-2 relative overflow-hidden group hover:border-border-hover transition-colors block">
+        <Link href="/admin/products" className="p-4 rounded-2xl bg-bg-surface border border-border-subtle space-y-2 relative overflow-hidden transition-all hover:border-primary-300 block">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">Catalog Products</span>
-            <div className="p-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">Catalog Products</span>
+            <div className="p-2 rounded-xl bg-badge-1-bg text-badge-1-icon">
               <Package className="h-4 w-4" />
             </div>
           </div>
           <div>
-            <h3 className="text-xl font-extrabold text-text-primary tracking-tight">
+            <h3 className="text-xl sm:text-2xl font-extrabold text-gray-900 tracking-tight">
               {kpis.totalProducts}
             </h3>
-            <p className="text-[10px] text-indigo-400 font-medium mt-0.5">Active SKUs</p>
+            <p className="text-[10px] text-primary-600 font-bold mt-0.5">Active SKUs</p>
           </div>
         </Link>
 
         {/* KPI 5: Pending Fulfillment */}
-        <Link href="/admin/orders" className="p-4 rounded-2xl bg-bg-surface border border-border-default space-y-2 relative overflow-hidden group hover:border-border-hover transition-colors block">
+        <Link href="/admin/orders" className="p-4 rounded-2xl bg-bg-surface border border-border-subtle space-y-2 relative overflow-hidden transition-all hover:border-accent/60 block">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">Pending Action</span>
-            <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">Pending Action</span>
+            <div className="p-2 rounded-xl bg-accent/20 border border-accent/40 text-accent font-bold">
               <Clock className="h-4 w-4" />
             </div>
           </div>
           <div>
-            <h3 className="text-xl font-extrabold text-text-primary tracking-tight">
+            <h3 className="text-xl sm:text-2xl font-extrabold text-gray-900 tracking-tight">
               {kpis.pendingFulfillment}
             </h3>
-            <p className="text-[10px] text-amber-400 font-medium mt-0.5">Confirmed Orders</p>
+            <p className="text-[10px] text-accent font-extrabold mt-0.5">Confirmed Orders</p>
           </div>
         </Link>
       </div>
 
-      {/* 4. Profit / Loss Summary Card & Revenue Trend Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* 4. Profit / Loss Summary Card & Revenue Trend Row (Stacked on mobile/tablet, 3 cols on lg) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         
         {/* Profit / Loss Card (1 col) */}
-        <div className="p-6 rounded-3xl bg-bg-surface border border-border-default space-y-5 flex flex-col justify-between shadow-xl">
-          <div className="border-b border-zinc-800/60 pb-3">
-            <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <DollarSign className="h-4 w-4 text-emerald-400" /> Profit & Loss Analysis
+        <div className="p-4 sm:p-6 rounded-2xl bg-bg-surface border border-border-subtle space-y-4 flex flex-col justify-between">
+          <div className="border-b border-border-subtle pb-3">
+            <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
+              <DollarSign className="h-4 w-4 text-primary-600 shrink-0" /> Profit & Loss Analysis
             </h2>
-            <p className="text-xs text-zinc-400 mt-0.5">
+            <p className="text-xs text-zinc-500 mt-0.5">
               Gross and Net profit (after operating expenses). Click to view breakdown.
             </p>
           </div>
 
           {/* Missing Cost Price Data Warning Notice */}
           {profitLoss?.dataCompletenessWarning && !isWarningDismissed && (
-            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-start justify-between gap-2 text-xs">
+            <div className="p-3 rounded-xl bg-accent/15 border border-accent/40 flex items-start justify-between gap-2 text-xs">
               <div className="flex items-start gap-2">
-                <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
-                <span className="text-amber-300 text-[11px] leading-snug">
-                  Some older orders are missing cost price data and are excluded from this calculation — profit may be understated.
+                <AlertTriangle className="h-4 w-4 text-accent shrink-0 mt-0.5" />
+                <span className="text-gray-900 text-[11px] leading-snug">
+                  Some older orders missing cost price data are excluded — profit may be understated.
                 </span>
               </div>
               <button
                 type="button"
                 onClick={() => setIsWarningDismissed(true)}
-                className="text-amber-400 hover:text-white shrink-0 p-0.5 cursor-pointer"
+                className="text-zinc-600 hover:text-gray-900 shrink-0 p-0.5 cursor-pointer"
                 title="Dismiss warning"
               >
                 <X className="h-3.5 w-3.5" />
@@ -372,34 +383,34 @@ export default function DashboardPage() {
             </div>
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             {/* This Week */}
             <div 
               onClick={() => setBreakdownModalPeriod("week")}
-              className="p-4 rounded-2xl bg-zinc-950/60 border border-zinc-800/60 hover:border-emerald-500/50 hover:bg-zinc-900/80 space-y-3 cursor-pointer transition-all group relative"
+              className="p-3.5 sm:p-4 rounded-xl bg-bg-page border border-border-subtle hover:border-primary-400 space-y-2.5 cursor-pointer transition-all group relative"
               title="Click to view detailed itemized profit & expense breakdown"
             >
               <div className="flex items-center justify-between">
-                <div className="flex flex-col">
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400 group-hover:text-emerald-400 transition-colors">This Week</span>
+                <div className="flex flex-col min-w-0">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-600 group-hover:text-primary-600 transition-colors">This Week</span>
                   {profitLoss.thisWeek.dateRangeStr && (
-                    <span className="text-[9px] text-zinc-500 font-mono mt-0.5">({profitLoss.thisWeek.dateRangeStr})</span>
+                    <span className="text-[9px] text-zinc-500 font-mono mt-0.5 truncate">({profitLoss.thisWeek.dateRangeStr})</span>
                   )}
                 </div>
-                <Maximize2 className="h-3.5 w-3.5 text-zinc-600 group-hover:text-emerald-400 transition-colors" />
+                <Maximize2 className="h-3.5 w-3.5 text-zinc-400 group-hover:text-primary-600 transition-colors shrink-0" />
               </div>
 
               {/* Gross Profit */}
               <div>
                 <span className="text-[10px] text-zinc-500 uppercase tracking-wider block font-bold">Gross Profit</span>
                 <div className="flex items-center gap-2">
-                  <h4 className="text-lg font-extrabold text-white">
+                  <h4 className="text-base sm:text-lg font-extrabold text-gray-900">
                     ₹{profitLoss.thisWeek.profit.toLocaleString("en-IN")}
                   </h4>
                   <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold border ${
                     profitLoss.thisWeek.percentageChange >= 0
-                      ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                      : "bg-rose-500/10 text-rose-400 border-rose-500/20"
+                      ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                      : "bg-rose-500/10 text-rose-600 border-rose-500/20"
                   }`}>
                     {profitLoss.thisWeek.percentageChange >= 0 ? (
                       <TrendingUp className="h-3 w-3 mr-0.5" />
@@ -412,44 +423,41 @@ export default function DashboardPage() {
               </div>
 
               {/* Net Profit (after expenses) */}
-              <div className="border-t border-zinc-800/60 pt-2 space-y-1">
-                <span className="text-[10px] text-emerald-400 uppercase tracking-wider block font-bold">Net Profit (after expenses)</span>
-                <h4 className={`text-base font-bold font-mono ${profitLoss.thisWeek.netProfit >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+              <div className="border-t border-border-subtle pt-2 space-y-0.5">
+                <span className="text-[10px] text-emerald-600 uppercase tracking-wider block font-bold">Net Profit (after exp)</span>
+                <h4 className={`text-sm sm:text-base font-bold font-mono ${profitLoss.thisWeek.netProfit >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
                   ₹{profitLoss.thisWeek.netProfit.toLocaleString("en-IN")}
                 </h4>
-                <p className="text-[9px] text-zinc-500 font-mono">
-                  ₹{profitLoss.thisWeek.profit.toLocaleString("en-IN")} gross − ₹{profitLoss.thisWeek.totalExpenses.toLocaleString("en-IN")} exp
-                </p>
               </div>
             </div>
 
             {/* This Month */}
             <div 
               onClick={() => setBreakdownModalPeriod("month")}
-              className="p-4 rounded-2xl bg-zinc-950/60 border border-zinc-800/60 hover:border-emerald-500/50 hover:bg-zinc-900/80 space-y-3 cursor-pointer transition-all group relative"
+              className="p-3.5 sm:p-4 rounded-xl bg-bg-page border border-border-subtle hover:border-primary-400 space-y-2.5 cursor-pointer transition-all group relative"
               title="Click to view detailed itemized profit & expense breakdown"
             >
               <div className="flex items-center justify-between">
-                <div className="flex flex-col">
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400 group-hover:text-emerald-400 transition-colors">This Month</span>
+                <div className="flex flex-col min-w-0">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-600 group-hover:text-primary-600 transition-colors">This Month</span>
                   {profitLoss.thisMonth.dateRangeStr && (
-                    <span className="text-[9px] text-zinc-500 font-mono mt-0.5">({profitLoss.thisMonth.dateRangeStr})</span>
+                    <span className="text-[9px] text-zinc-500 font-mono mt-0.5 truncate">({profitLoss.thisMonth.dateRangeStr})</span>
                   )}
                 </div>
-                <Maximize2 className="h-3.5 w-3.5 text-zinc-600 group-hover:text-emerald-400 transition-colors" />
+                <Maximize2 className="h-3.5 w-3.5 text-zinc-400 group-hover:text-primary-600 transition-colors shrink-0" />
               </div>
 
               {/* Gross Profit */}
               <div>
                 <span className="text-[10px] text-zinc-500 uppercase tracking-wider block font-bold">Gross Profit</span>
                 <div className="flex items-center gap-2">
-                  <h4 className="text-lg font-extrabold text-white">
+                  <h4 className="text-base sm:text-lg font-extrabold text-gray-900">
                     ₹{profitLoss.thisMonth.profit.toLocaleString("en-IN")}
                   </h4>
                   <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold border ${
                     profitLoss.thisMonth.percentageChange >= 0
-                      ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                      : "bg-rose-500/10 text-rose-400 border-rose-500/20"
+                      ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                      : "bg-rose-500/10 text-rose-600 border-rose-500/20"
                   }`}>
                     {profitLoss.thisMonth.percentageChange >= 0 ? (
                       <TrendingUp className="h-3 w-3 mr-0.5" />
@@ -462,62 +470,57 @@ export default function DashboardPage() {
               </div>
 
               {/* Net Profit (after expenses) */}
-              <div className="border-t border-zinc-800/60 pt-2 space-y-1">
-                <span className="text-[10px] text-emerald-400 uppercase tracking-wider block font-bold">Net Profit (after expenses)</span>
-                <h4 className={`text-base font-bold font-mono ${profitLoss.thisMonth.netProfit >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+              <div className="border-t border-border-subtle pt-2 space-y-0.5">
+                <span className="text-[10px] text-emerald-600 uppercase tracking-wider block font-bold">Net Profit (after exp)</span>
+                <h4 className={`text-sm sm:text-base font-bold font-mono ${profitLoss.thisMonth.netProfit >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
                   ₹{profitLoss.thisMonth.netProfit.toLocaleString("en-IN")}
                 </h4>
-                <p className="text-[9px] text-zinc-500 font-mono">
-                  ₹{profitLoss.thisMonth.profit.toLocaleString("en-IN")} gross − ₹{profitLoss.thisMonth.totalExpenses.toLocaleString("en-IN")} exp
-                </p>
               </div>
             </div>
           </div>
 
-          <div className="p-3 rounded-xl bg-zinc-950/40 border border-zinc-800/40 text-[11px] text-zinc-400 leading-relaxed flex items-center justify-between">
-            <div>
-              <span className="text-zinc-300 font-semibold">Margin Insight:</span> Click cards above for full itemized product & expense breakdown.
-            </div>
+          <div className="p-3 rounded-xl bg-primary-50 border border-primary-100 text-[11px] text-zinc-600 leading-relaxed">
+            <span className="text-gray-900 font-semibold">Margin Insight:</span> Click cards above for full itemized product & expense breakdown.
           </div>
         </div>
 
-        {/* Revenue Trend Chart (2 cols) */}
-        <div className="lg:col-span-2 p-6 rounded-3xl bg-zinc-900/30 border border-zinc-800/60 space-y-4 shadow-xl">
-          <div className="flex items-center justify-between border-b border-zinc-800/60 pb-3">
+        {/* Revenue Trend Chart (2 cols on lg, full width on mobile/tablet) */}
+        <div className="lg:col-span-2 p-4 sm:p-6 rounded-2xl bg-bg-surface border border-border-subtle space-y-4">
+          <div className="flex items-center justify-between border-b border-border-subtle pb-3">
             <div>
-              <h2 className="text-base font-bold text-white flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-blue-400" /> Revenue Trend (Last 30 Days)
+              <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-primary-600 shrink-0" /> Revenue Trend (Last 30 Days)
               </h2>
-              <p className="text-xs text-zinc-400 mt-0.5">Daily aggregate revenue from completed/paid transactions.</p>
+              <p className="text-xs text-zinc-500 mt-0.5">Daily aggregate revenue from completed transactions.</p>
             </div>
           </div>
 
-          <div className="h-64 w-full pt-2">
+          <div className="h-56 sm:h-64 w-full pt-2">
             {revenueTrend.some(r => r.revenue > 0) ? (
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={revenueTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <defs>
                     <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4} />
-                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                      <stop offset="5%" stopColor="#6B3FA0" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#6B3FA0" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <XAxis dataKey="date" stroke="#71717a" fontSize={11} tickLine={false} />
-                  <YAxis stroke="#71717a" fontSize={11} tickLine={false} tickFormatter={(v) => `₹${v}`} />
+                  <XAxis dataKey="date" stroke="#8A5FC0" fontSize={10} tickLine={false} minTickGap={15} />
+                  <YAxis stroke="#8A5FC0" fontSize={10} tickLine={false} tickFormatter={(v) => `₹${v}`} />
                   <Tooltip
                     content={({ active, payload, label }) => {
                       if (active && payload && payload.length) {
                         return (
-                          <div className="bg-[#121216] border border-zinc-800 p-2.5 rounded-xl shadow-2xl text-xs font-mono">
-                            <p className="font-bold text-white mb-1">{label}</p>
-                            <p className="text-blue-400 font-semibold">Revenue: ₹{payload[0].value.toLocaleString("en-IN")}</p>
+                          <div className="bg-bg-surface border border-border-subtle p-2.5 rounded-xl shadow-lg text-xs font-mono">
+                            <p className="font-bold text-gray-900 mb-1">{label}</p>
+                            <p className="text-primary-600 font-semibold">Revenue: ₹{payload[0].value.toLocaleString("en-IN")}</p>
                           </div>
                         );
                       }
                       return null;
                     }}
                   />
-                  <Area type="monotone" dataKey="revenue" stroke="#3b82f6" strokeWidth={2.5} fillOpacity={1} fill="url(#colorRevenue)" />
+                  <Area type="monotone" dataKey="revenue" stroke="#6B3FA0" strokeWidth={2} fillOpacity={1} fill="url(#colorRevenue)" />
                 </AreaChart>
               </ResponsiveContainer>
             ) : (
@@ -531,33 +534,33 @@ export default function DashboardPage() {
       </div>
 
       {/* 5. Category Purchase Trend & Order Status Breakdown */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Category Purchase Trend (2 cols) */}
-        <div className="lg:col-span-2 p-6 rounded-3xl bg-zinc-900/30 border border-zinc-800/60 space-y-4 shadow-xl">
-          <div className="flex items-center justify-between border-b border-zinc-800/60 pb-3">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+        {/* Category Purchase Trend (2 cols on lg) */}
+        <div className="lg:col-span-2 p-4 sm:p-6 rounded-2xl bg-bg-surface border border-border-subtle space-y-4">
+          <div className="flex items-center justify-between border-b border-border-subtle pb-3">
             <div>
-              <h2 className="text-base font-bold text-white flex items-center gap-2">
-                <BarChart3 className="h-4 w-4 text-purple-400" /> Category-wise Purchase Trend (30 Days)
+              <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                <BarChart3 className="h-4 w-4 text-primary-600 shrink-0" /> Category-wise Purchase Trend (30 Days)
               </h2>
-              <p className="text-xs text-zinc-400 mt-0.5">Top product categories by volume of units sold.</p>
+              <p className="text-xs text-zinc-500 mt-0.5">Top product categories by volume of units sold.</p>
             </div>
           </div>
 
-          <div className="h-64 w-full pt-2">
+          <div className="h-56 sm:h-64 w-full pt-2">
             {categoryPurchaseTrend.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={categoryPurchaseTrend} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-                  <XAxis dataKey="categoryName" stroke="#71717a" fontSize={11} tickLine={false} />
-                  <YAxis stroke="#71717a" fontSize={11} tickLine={false} />
+                  <XAxis dataKey="categoryName" stroke="#8A5FC0" fontSize={10} tickLine={false} minTickGap={10} />
+                  <YAxis stroke="#8A5FC0" fontSize={10} tickLine={false} />
                   <Tooltip
                     content={({ active, payload }) => {
                       if (active && payload && payload.length) {
                         const data = payload[0].payload;
                         return (
-                          <div className="bg-[#121216] border border-zinc-800 p-2.5 rounded-xl shadow-2xl text-xs">
-                            <p className="font-bold text-white">{data.categoryName}</p>
-                            <p className="text-purple-400 font-semibold">{data.totalQuantitySold} units sold</p>
-                            <p className="text-zinc-400 text-[11px]">Revenue: ₹{data.totalRevenue?.toLocaleString("en-IN")}</p>
+                          <div className="bg-bg-surface border border-border-subtle p-2.5 rounded-xl shadow-lg text-xs">
+                            <p className="font-bold text-gray-900">{data.categoryName}</p>
+                            <p className="text-primary-600 font-semibold">{data.totalQuantitySold} units sold</p>
+                            <p className="text-zinc-500 text-[11px]">Revenue: ₹{data.totalRevenue?.toLocaleString("en-IN")}</p>
                           </div>
                         );
                       }
@@ -580,15 +583,15 @@ export default function DashboardPage() {
         </div>
 
         {/* Order Status Breakdown Pie Chart (1 col) */}
-        <div className="p-6 rounded-3xl bg-zinc-900/30 border border-zinc-800/60 space-y-4 shadow-xl">
-          <div className="border-b border-zinc-800/60 pb-3">
-            <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <PieIcon className="h-4 w-4 text-indigo-400" /> Order Status Distribution
+        <div className="p-4 sm:p-6 rounded-2xl bg-bg-surface border border-border-subtle space-y-4">
+          <div className="border-b border-border-subtle pb-3">
+            <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
+              <PieIcon className="h-4 w-4 text-primary-600 shrink-0" /> Order Status Distribution
             </h2>
-            <p className="text-xs text-zinc-400 mt-0.5">Breakdown of orders across fulfillment states.</p>
+            <p className="text-xs text-zinc-500 mt-0.5">Breakdown of orders across fulfillment states.</p>
           </div>
 
-          <div className="h-48 w-full">
+          <div className="h-44 sm:h-48 w-full">
             {orderStatusBreakdown.some(s => s.count > 0) ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -596,23 +599,23 @@ export default function DashboardPage() {
                     data={orderStatusBreakdown}
                     cx="50%"
                     cy="50%"
-                    innerRadius={45}
-                    outerRadius={70}
+                    innerRadius={40}
+                    outerRadius={65}
                     paddingAngle={3}
                     dataKey="count"
                     nameKey="status"
                   >
                     {orderStatusBreakdown.map((entry) => (
-                      <Cell key={entry.status} fill={STATUS_COLORS[entry.status] || "#71717a"} />
+                      <Cell key={entry.status} fill={STATUS_COLORS[entry.status] || "#8A5FC0"} />
                     ))}
                   </Pie>
                   <Tooltip
                     content={({ active, payload }) => {
                       if (active && payload && payload.length) {
                         return (
-                          <div className="bg-[#121216] border border-zinc-800 p-2 rounded-xl shadow-xl text-xs">
-                            <span className="font-bold text-white">{payload[0].name}: </span>
-                            <span className="text-emerald-400 font-bold">{payload[0].value} orders</span>
+                          <div className="bg-bg-surface border border-border-subtle p-2 rounded-xl shadow-lg text-xs">
+                            <span className="font-bold text-gray-900">{payload[0].name}: </span>
+                            <span className="text-primary-600 font-bold">{payload[0].value} orders</span>
                           </div>
                         );
                       }
@@ -628,15 +631,15 @@ export default function DashboardPage() {
             )}
           </div>
 
-          {/* Status Badges Legend */}
+          {/* Status Badges Legend (Preserving Fixed Status Colors) */}
           <div className="grid grid-cols-2 gap-1.5 pt-1 text-[11px]">
             {orderStatusBreakdown.map((item) => (
-              <div key={item.status} className="flex items-center justify-between p-1.5 rounded-lg bg-zinc-950/40 border border-zinc-800/40">
-                <span className="flex items-center gap-1.5 text-zinc-300 font-medium">
-                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: STATUS_COLORS[item.status] || "#71717a" }} />
-                  {item.status}
+              <div key={item.status} className="flex items-center justify-between p-1.5 rounded-lg bg-bg-page border border-border-subtle">
+                <span className="flex items-center gap-1.5 text-gray-900 font-medium truncate pr-1">
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: STATUS_COLORS[item.status] || "#8A5FC0" }} />
+                  <span className="truncate">{item.status}</span>
                 </span>
-                <span className="font-mono font-bold text-zinc-400">{item.count}</span>
+                <span className="font-mono font-bold text-zinc-600 shrink-0">{item.count}</span>
               </div>
             ))}
           </div>
@@ -644,19 +647,19 @@ export default function DashboardPage() {
       </div>
 
       {/* 6. Best-Selling Products & Low Stock Alerts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         
         {/* Best-Selling Products Card */}
-        <div className="p-6 rounded-3xl bg-zinc-900/30 border border-zinc-800/60 space-y-4 shadow-xl">
-          <div className="flex items-center justify-between border-b border-zinc-800/60 pb-3">
+        <div className="p-4 sm:p-6 rounded-2xl bg-bg-surface border border-border-subtle space-y-4">
+          <div className="flex items-center justify-between border-b border-border-subtle pb-3">
             <div>
-              <h2 className="text-base font-bold text-white flex items-center gap-2">
-                <Tag className="h-4 w-4 text-emerald-400" /> Best-Selling Products
+              <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                <Tag className="h-4 w-4 text-emerald-600 shrink-0" /> Best-Selling Products
               </h2>
-              <p className="text-xs text-zinc-400 mt-0.5">Top products ranked by units sold in paid orders.</p>
+              <p className="text-xs text-zinc-500 mt-0.5">Top products ranked by units sold.</p>
             </div>
-            <Link href="/admin/products" className="text-xs text-blue-400 hover:text-blue-300 font-medium flex items-center gap-1">
-              View Catalog <ArrowRight className="h-3 w-3" />
+            <Link href="/admin/products" className="text-xs text-primary-600 hover:text-primary-700 font-semibold flex items-center gap-1 shrink-0">
+              Catalog <ArrowRight className="h-3 w-3" />
             </Link>
           </div>
 
@@ -666,27 +669,27 @@ export default function DashboardPage() {
                 <Link
                   key={prod.id}
                   href="/admin/products"
-                  className="flex items-center justify-between p-3 rounded-2xl bg-zinc-950/60 border border-zinc-800/60 hover:border-zinc-700 transition-colors group"
+                  className="flex items-center justify-between p-3 rounded-xl bg-bg-page border border-border-subtle hover:border-primary-300 transition-colors group"
                 >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 overflow-hidden shrink-0 flex items-center justify-center">
+                  <div className="flex items-center gap-3 min-w-0 pr-2">
+                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-bg-surface border border-border-subtle overflow-hidden shrink-0 flex items-center justify-center">
                       {prod.thumbnail ? (
                         <img src={prod.thumbnail} alt={prod.name} className="w-full h-full object-cover" />
                       ) : (
-                        <Package className="w-5 h-5 text-zinc-600" />
+                        <Package className="w-4 h-4 sm:w-5 sm:h-5 text-zinc-400" />
                       )}
                     </div>
                     <div className="min-w-0">
-                      <h4 className="text-xs font-bold text-white truncate group-hover:text-emerald-400 transition-colors">
+                      <h4 className="text-xs font-bold text-gray-900 truncate group-hover:text-primary-600 transition-colors">
                         {prod.name}
                       </h4>
-                      <p className="text-[10px] text-zinc-400 font-mono">
-                        ₹{prod.revenue.toLocaleString("en-IN")} total revenue
+                      <p className="text-[10px] text-zinc-500 font-mono">
+                        ₹{prod.revenue.toLocaleString("en-IN")} revenue
                       </p>
                     </div>
                   </div>
 
-                  <span className="px-2.5 py-1 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-bold shrink-0">
+                  <span className="px-2.5 py-1 rounded-xl bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 text-xs font-bold shrink-0">
                     {prod.quantitySold} sold
                   </span>
                 </Link>
@@ -698,16 +701,16 @@ export default function DashboardPage() {
         </div>
 
         {/* Low Stock Inventory Alerts Card */}
-        <div className="p-6 rounded-3xl bg-zinc-900/30 border border-zinc-800/60 space-y-4 shadow-xl">
-          <div className="flex items-center justify-between border-b border-zinc-800/60 pb-3">
+        <div className="p-4 sm:p-6 rounded-2xl bg-bg-surface border border-border-subtle space-y-4">
+          <div className="flex items-center justify-between border-b border-border-subtle pb-3">
             <div>
-              <h2 className="text-base font-bold text-white flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-rose-400" /> Low Stock Inventory Alerts
+              <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-rose-500 shrink-0" /> Low Stock Inventory Alerts
               </h2>
-              <p className="text-xs text-zinc-400 mt-0.5">Products running below safety stock levels.</p>
+              <p className="text-xs text-zinc-500 mt-0.5">Products running below safety stock levels.</p>
             </div>
-            <Link href="/admin/inventory" className="text-xs text-blue-400 hover:text-blue-300 font-medium flex items-center gap-1">
-              Restock All <ArrowRight className="h-3 w-3" />
+            <Link href="/admin/inventory" className="text-xs text-primary-600 hover:text-primary-700 font-semibold flex items-center gap-1 shrink-0">
+              Restock <ArrowRight className="h-3 w-3" />
             </Link>
           </div>
 
@@ -718,35 +721,35 @@ export default function DashboardPage() {
                 return (
                   <div
                     key={prod.id}
-                    className="flex items-center justify-between p-3 rounded-2xl bg-zinc-950/60 border border-zinc-800/60 space-x-3"
+                    className="flex items-center justify-between p-3 rounded-xl bg-bg-page border border-border-subtle space-x-2 sm:space-x-3"
                   >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <span className={`px-2 py-1 rounded-xl text-[10px] font-bold border uppercase tracking-wider shrink-0 ${
+                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 pr-1">
+                      <span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold border uppercase tracking-wider shrink-0 ${
                         isCritical
-                          ? "bg-rose-500/10 text-rose-400 border-rose-500/20 animate-pulse"
-                          : "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                          ? "bg-rose-500/10 text-rose-600 border-rose-500/20"
+                          : "bg-accent/20 text-accent border-accent/40"
                       }`}>
-                        {prod.stock} {prod.stockUnit} Left
+                        {prod.stock} Left
                       </span>
                       <div className="min-w-0">
-                        <h4 className="text-xs font-bold text-white truncate">{prod.name}</h4>
-                        <p className="text-[10px] text-zinc-400">₹{prod.sellingPrice} selling price</p>
+                        <h4 className="text-xs font-bold text-gray-900 truncate">{prod.name}</h4>
+                        <p className="text-[10px] text-zinc-500">₹{prod.sellingPrice}</p>
                       </div>
                     </div>
 
                     <Link
                       href="/admin/inventory"
-                      className="px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-200 text-xs font-semibold transition-colors shrink-0 flex items-center gap-1 cursor-pointer"
+                      className="px-2.5 py-1.5 rounded-lg bg-primary-600 hover:bg-primary-700 text-white text-xs font-semibold shadow-xs transition-colors shrink-0 flex items-center gap-1 cursor-pointer"
                     >
                       <span>Restock</span>
-                      <ExternalLink className="h-3 w-3 text-blue-400" />
+                      <ExternalLink className="h-3 w-3 text-white" />
                     </Link>
                   </div>
                 );
               })
             ) : (
               <div className="flex flex-col items-center justify-center text-center py-8 text-zinc-500 space-y-1">
-                <CheckCircle2 className="h-6 w-6 text-emerald-400" />
+                <CheckCircle2 className="h-6 w-6 text-emerald-500" />
                 <p className="text-xs">All inventory stock levels are healthy.</p>
               </div>
             )}
@@ -756,19 +759,19 @@ export default function DashboardPage() {
       </div>
 
       {/* 7. Recently Sold Products & Recently Acquired Customers */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
 
         {/* Recently Sold Products Card */}
-        <div className="p-6 rounded-3xl bg-zinc-900/30 border border-zinc-800/60 space-y-4 shadow-xl">
-          <div className="flex items-center justify-between border-b border-zinc-800/60 pb-3">
+        <div className="p-4 sm:p-6 rounded-2xl bg-bg-surface border border-border-subtle space-y-4">
+          <div className="flex items-center justify-between border-b border-border-subtle pb-3">
             <div>
-              <h2 className="text-base font-bold text-white flex items-center gap-2">
-                <Clock className="h-4 w-4 text-blue-400" /> Recently Sold Items
+              <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                <Clock className="h-4 w-4 text-primary-600 shrink-0" /> Recently Sold Items
               </h2>
-              <p className="text-xs text-zinc-400 mt-0.5">Latest item transactions from completed orders.</p>
+              <p className="text-xs text-zinc-500 mt-0.5">Latest item transactions from completed orders.</p>
             </div>
-            <Link href="/admin/orders" className="text-xs text-blue-400 hover:text-blue-300 font-medium flex items-center gap-1">
-              All Orders <ArrowRight className="h-3 w-3" />
+            <Link href="/admin/orders" className="text-xs text-primary-600 hover:text-primary-700 font-semibold flex items-center gap-1 shrink-0">
+              Orders <ArrowRight className="h-3 w-3" />
             </Link>
           </div>
 
@@ -777,18 +780,18 @@ export default function DashboardPage() {
               recentlySoldProducts.map((item, idx) => (
                 <div
                   key={`${item.orderId}-${idx}`}
-                  className="flex items-center justify-between p-3 rounded-2xl bg-zinc-950/60 border border-zinc-800/60 text-xs"
+                  className="flex items-center justify-between p-3 rounded-xl bg-bg-page border border-border-subtle text-xs"
                 >
                   <div className="min-w-0 pr-2">
-                    <h4 className="font-semibold text-zinc-100 truncate">{item.productName}</h4>
-                    <p className="text-[10px] text-zinc-400 mt-0.5">
-                      Buyer: <span className="text-zinc-300 font-medium">{item.customerName}</span> • {new Date(item.date).toLocaleDateString("en-IN")}
+                    <h4 className="font-semibold text-gray-900 truncate">{item.productName}</h4>
+                    <p className="text-[10px] text-zinc-500 mt-0.5 truncate">
+                      Buyer: <span className="text-gray-900 font-medium">{item.customerName}</span> • {new Date(item.date).toLocaleDateString("en-IN")}
                     </p>
                   </div>
 
                   <div className="text-right shrink-0">
-                    <span className="font-bold text-white">{item.quantity} qty</span>
-                    <p className="text-[10px] text-emerald-400 font-mono">₹{item.subtotal}</p>
+                    <span className="font-bold text-gray-900">{item.quantity} qty</span>
+                    <p className="text-[10px] text-emerald-600 font-mono font-semibold">₹{item.subtotal}</p>
                   </div>
                 </div>
               ))
@@ -799,15 +802,15 @@ export default function DashboardPage() {
         </div>
 
         {/* Recently New Customers Card */}
-        <div className="p-6 rounded-3xl bg-zinc-900/30 border border-zinc-800/60 space-y-4 shadow-xl">
-          <div className="flex items-center justify-between border-b border-zinc-800/60 pb-3">
+        <div className="p-4 sm:p-6 rounded-2xl bg-bg-surface border border-border-subtle space-y-4">
+          <div className="flex items-center justify-between border-b border-border-subtle pb-3">
             <div>
-              <h2 className="text-base font-bold text-white flex items-center gap-2">
-                <Users className="h-4 w-4 text-purple-400" /> Recently Acquired Customers
+              <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                <Users className="h-4 w-4 text-primary-600 shrink-0" /> Recently Acquired Customers
               </h2>
-              <p className="text-xs text-zinc-400 mt-0.5">New buyer accounts registered in store.</p>
+              <p className="text-xs text-zinc-500 mt-0.5">New buyer accounts registered in store.</p>
             </div>
-            <Link href="/admin/customers" className="text-xs text-blue-400 hover:text-blue-300 font-medium flex items-center gap-1">
+            <Link href="/admin/customers" className="text-xs text-primary-600 hover:text-primary-700 font-semibold flex items-center gap-1 shrink-0">
               Customers <ArrowRight className="h-3 w-3" />
             </Link>
           </div>
@@ -817,20 +820,20 @@ export default function DashboardPage() {
               recentlyNewCustomers.map((cust) => (
                 <div
                   key={cust.id}
-                  className="flex items-center justify-between p-3 rounded-2xl bg-zinc-950/60 border border-zinc-800/60 text-xs"
+                  className="flex items-center justify-between p-3 rounded-xl bg-bg-page border border-border-subtle text-xs"
                 >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-purple-600 flex items-center justify-center text-xs font-bold text-white shrink-0">
+                  <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 pr-2">
+                    <div className="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center text-xs font-bold text-white shrink-0">
                       {cust.name[0].toUpperCase()}
                     </div>
                     <div className="min-w-0">
-                      <h4 className="font-semibold text-zinc-100 truncate">{cust.name}</h4>
-                      <p className="text-[10px] text-zinc-400 font-mono mt-0.5">{cust.phone}</p>
+                      <h4 className="font-semibold text-gray-900 truncate">{cust.name}</h4>
+                      <p className="text-[10px] text-zinc-500 font-mono mt-0.5">{cust.phone}</p>
                     </div>
                   </div>
 
                   <div className="text-right shrink-0">
-                    <span className="text-[10px] px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-400 border border-purple-500/20 font-bold">
+                    <span className="text-[10px] px-2 py-0.5 rounded-md bg-primary-50 text-primary-700 border border-primary-200 font-bold">
                       {cust.orderCount} Orders
                     </span>
                     <p className="text-[10px] text-zinc-500 mt-0.5">
@@ -849,52 +852,51 @@ export default function DashboardPage() {
 
       {/* PROFIT & EXPENSE BREAKDOWN DRILL-DOWN ANALYTICS WORKBENCH MODAL */}
       <Dialog open={!!breakdownModalPeriod} onOpenChange={(open) => !open && setBreakdownModalPeriod(null)}>
-        <DialogContent className="bg-[#0c0c0e] border border-zinc-800 text-white rounded-2xl w-[96vw] md:w-[92vw] xl:w-[90vw] max-w-7xl xl:max-w-[1300px] !max-w-[1300px] sm:max-w-none h-[90vh] max-h-[90vh] p-0 flex flex-col shadow-2xl overflow-hidden font-sans">
+        <DialogContent className="bg-bg-surface border border-border-subtle text-gray-900 rounded-2xl w-[95vw] max-w-7xl xl:max-w-[1300px] h-[90vh] max-h-[90vh] p-0 flex flex-col shadow-2xl overflow-hidden font-sans">
           {/* 1. PROFESSIONAL STICKY TOP HEADER */}
-          <div className="border-b border-zinc-800/80 p-6 shrink-0 bg-[#0e0e12] flex flex-col sm:flex-row sm:items-center justify-between gap-4 z-20">
-            <div className="flex items-start gap-3.5">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
+          <div className="border-b border-border-subtle p-4 sm:p-6 shrink-0 bg-primary-50/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 z-20">
+            <div className="flex items-start gap-3">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-primary-100 border border-primary-200 text-primary-600 flex items-center justify-center shrink-0 mt-0.5">
                 <DollarSign className="h-5 w-5" />
               </div>
-              <div>
-                <div className="flex flex-wrap items-center gap-2.5">
-                  <DialogTitle className="text-lg sm:text-xl font-extrabold text-white tracking-tight">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <DialogTitle className="text-base sm:text-xl font-extrabold text-gray-900 tracking-tight leading-snug">
                     Net Profit Breakdown — {breakdownData?.label || (breakdownModalPeriod === "month" ? "This Month" : "This Week")}
                   </DialogTitle>
                   {breakdownData?.dateRangeStr && (
-                    <span className="text-xs font-mono font-medium text-zinc-300 bg-zinc-900 border border-zinc-800 px-3 py-1 rounded-lg">
+                    <span className="text-xs font-mono font-medium text-primary-700 bg-bg-surface border border-primary-200 px-2.5 py-0.5 rounded-lg">
                       {breakdownData.dateRangeStr}
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-zinc-400 mt-1">
-                  Itemized product profit margins and operating expenses for full Net Profit reconciliation.
+                <p className="text-xs text-zinc-500 mt-0.5 sm:mt-1">
+                  Itemized product profit margins and operating expenses.
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-3 pr-10 sm:pr-2 shrink-0">
+            <div className="flex items-center gap-3 shrink-0">
               {breakdownData?.breakdown?.length > 0 && (
                 <Button
                   onClick={() => handleExportBreakdownCsv(breakdownData)}
-                  variant="outline"
-                  className="border-zinc-800 bg-zinc-900 text-zinc-300 hover:text-white hover:bg-zinc-800 rounded-xl px-4 h-9 text-xs font-semibold flex items-center gap-2 cursor-pointer shadow-sm"
+                  className="bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-xl px-3.5 h-8 sm:h-9 text-xs flex items-center gap-2 cursor-pointer shadow-xs"
                 >
-                  <Download className="w-4 h-4 text-emerald-400" /> Export CSV
+                  <Download className="w-4 h-4 text-white" /> Export CSV
                 </Button>
               )}
             </div>
           </div>
 
           {/* 2. SCROLLABLE FINANCIAL TABLE AREA */}
-          <div className="flex-1 overflow-y-auto p-6 custom-scrollbar min-h-0 bg-[#09090b] space-y-8">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 custom-scrollbar min-h-0 bg-bg-surface space-y-6 sm:space-y-8">
             {isBreakdownLoading ? (
-              <div className="py-24 text-center text-zinc-400 text-xs font-medium space-y-3">
-                <RefreshCw className="h-7 w-7 text-emerald-400 animate-spin mx-auto" />
-                <p className="text-zinc-300 text-sm font-semibold">Calculating itemized profit margins and expenses...</p>
+              <div className="py-24 text-center text-zinc-500 text-xs font-medium space-y-3">
+                <RefreshCw className="h-7 w-7 text-primary-600 animate-spin mx-auto" />
+                <p className="text-gray-900 text-sm font-semibold">Calculating itemized profit margins and expenses...</p>
               </div>
             ) : breakdownError || !breakdownData ? (
-              <div className="py-16 text-center text-rose-400 text-xs space-y-2">
+              <div className="py-16 text-center text-rose-500 text-xs space-y-2">
                 <AlertTriangle className="h-8 w-8 text-rose-500 mx-auto" />
                 <p className="font-semibold text-sm">Failed to load profit breakdown data.</p>
                 <p className="text-zinc-500">Please close and reopen the analytics report.</p>
@@ -903,65 +905,65 @@ export default function DashboardPage() {
               <>
                 {/* SECTION A: PRODUCT PROFIT BREAKDOWN */}
                 <div className="space-y-3">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-2">
-                    <Package className="w-4 h-4 text-emerald-400" /> 1. Product Sales & Gross Profit
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-primary-700 flex items-center gap-2">
+                    <Package className="w-4 h-4 text-primary-600" /> 1. Product Sales & Gross Profit
                   </h3>
                   {breakdownData.breakdown.length === 0 ? (
-                    <div className="py-8 text-center text-zinc-500 text-xs border border-dashed border-zinc-800 rounded-xl">
+                    <div className="py-8 text-center text-zinc-500 text-xs border border-dashed border-border-subtle rounded-xl">
                       No product sales recorded in this period.
                     </div>
                   ) : (
-                    <div className="overflow-x-auto rounded-2xl border border-zinc-800/80 bg-zinc-950/80 shadow-lg">
+                    <div className="overflow-x-auto rounded-xl border border-border-subtle bg-bg-surface shadow-xs">
                       <Table className="w-full text-xs">
-                        <TableHeader className="bg-[#121216] sticky top-0 z-10 border-b border-zinc-800">
-                          <TableRow className="border-b border-zinc-800 uppercase tracking-wider text-[11px] text-zinc-400 hover:bg-transparent">
-                            <TableHead className="font-bold py-3 text-zinc-400 text-left min-w-[280px]">Product</TableHead>
-                            <TableHead className="font-bold py-3 text-zinc-400 text-center w-[90px]">Qty Sold</TableHead>
-                            <TableHead className="font-bold py-3 text-zinc-400 text-right w-[120px]">Cost Price</TableHead>
-                            <TableHead className="font-bold py-3 text-zinc-400 text-right w-[130px]">Selling Price</TableHead>
-                            <TableHead className="font-bold py-3 text-zinc-400 text-right w-[130px]">Profit / Item</TableHead>
-                            <TableHead className="font-bold py-3 text-zinc-400 text-right w-[150px]">Total Sale</TableHead>
-                            <TableHead className="font-bold py-3 text-zinc-400 text-right w-[150px]">Total Profit</TableHead>
+                        <TableHeader className="bg-primary-50/80 sticky top-0 z-10 border-b border-border-subtle">
+                          <TableRow className="border-b border-border-subtle uppercase tracking-wider text-[11px] text-zinc-600 hover:bg-transparent">
+                            <TableHead className="font-bold py-3 text-zinc-700 text-left min-w-[200px]">Product</TableHead>
+                            <TableHead className="font-bold py-3 text-zinc-700 text-center w-[80px]">Qty</TableHead>
+                            <TableHead className="font-bold py-3 text-zinc-700 text-right w-[100px]">Cost</TableHead>
+                            <TableHead className="font-bold py-3 text-zinc-700 text-right w-[110px]">Selling</TableHead>
+                            <TableHead className="font-bold py-3 text-zinc-700 text-right w-[110px]">Profit/Item</TableHead>
+                            <TableHead className="font-bold py-3 text-zinc-700 text-right w-[130px]">Total Sale</TableHead>
+                            <TableHead className="font-bold py-3 text-zinc-700 text-right w-[130px]">Total Profit</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {breakdownData.breakdown.map((item, idx) => (
                             <TableRow 
                               key={idx} 
-                              className={`border-b border-zinc-800/60 transition-colors ${idx % 2 === 1 ? "bg-zinc-900/30" : "bg-transparent"} hover:bg-zinc-800/40`}
+                              className={`border-b border-border-subtle transition-colors ${idx % 2 === 1 ? "bg-bg-page" : "bg-transparent"} hover:bg-primary-50/50`}
                             >
-                              <TableCell className="py-3 text-left font-sans min-w-[280px]">
+                              <TableCell className="py-3 text-left font-sans min-w-[200px]">
                                 <div className="flex flex-col">
-                                  <span className="font-bold text-zinc-100 capitalize text-xs">{item.productName}</span>
+                                  <span className="font-bold text-gray-900 capitalize text-xs">{item.productName}</span>
                                   {item.hasPriceVariation && (
-                                    <span className="text-[10px] text-amber-400 font-semibold italic mt-0.5">
+                                    <span className="text-[10px] text-accent font-semibold italic mt-0.5">
                                       (price changed mid-period)
                                     </span>
                                   )}
                                 </div>
                               </TableCell>
-                              <TableCell className="text-center font-mono py-3 text-zinc-300 w-[90px] font-bold text-xs">
+                              <TableCell className="text-center font-mono py-3 text-gray-900 w-[80px] font-bold text-xs">
                                 {item.quantitySold}
                               </TableCell>
-                              <TableCell className="text-right font-mono py-3 text-zinc-400 w-[120px] text-xs">
+                              <TableCell className="text-right font-mono py-3 text-zinc-600 w-[100px] text-xs">
                                 ₹{item.costPricePerUnit}
                               </TableCell>
-                              <TableCell className="text-right font-mono py-3 text-zinc-100 font-semibold w-[130px] text-xs">
+                              <TableCell className="text-right font-mono py-3 text-gray-900 font-semibold w-[110px] text-xs">
                                 ₹{item.pricePerUnit}
                               </TableCell>
-                              <TableCell className="text-right font-mono py-3 w-[130px]">
+                              <TableCell className="text-right font-mono py-3 w-[110px]">
                                 <span className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-bold border ${
                                   item.profitPerUnit >= 0 
-                                    ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/25" 
-                                    : "text-rose-400 bg-rose-500/10 border-rose-500/25"
+                                    ? "text-emerald-600 bg-emerald-500/10 border-emerald-500/25" 
+                                    : "text-rose-600 bg-rose-500/10 border-rose-500/25"
                                 }`}>
                                   ₹{item.profitPerUnit}
                                 </span>
                               </TableCell>
-                              <TableCell className="text-right font-mono py-3 text-zinc-100 font-bold w-[150px] text-xs">
+                              <TableCell className="text-right font-mono py-3 text-gray-900 font-bold w-[130px] text-xs">
                                 ₹{item.totalSale.toLocaleString("en-IN")}
                               </TableCell>
-                              <TableCell className="text-right font-mono py-3 text-emerald-400 font-extrabold w-[150px] text-xs">
+                              <TableCell className="text-right font-mono py-3 text-emerald-600 font-extrabold w-[130px] text-xs">
                                 ₹{item.totalProfit.toLocaleString("en-IN")}
                               </TableCell>
                             </TableRow>
@@ -974,29 +976,29 @@ export default function DashboardPage() {
 
                 {/* SECTION B: OPERATING EXPENSES BREAKDOWN */}
                 <div className="space-y-3">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-2">
-                    <Receipt className="w-4 h-4 text-rose-400" /> 2. Operating Expenses ({breakdownData.label})
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-primary-700 flex items-center gap-2">
+                    <Receipt className="w-4 h-4 text-rose-500" /> 2. Operating Expenses ({breakdownData.label})
                   </h3>
                   {!breakdownData.expenseBreakdown || breakdownData.expenseBreakdown.length === 0 ? (
-                    <div className="py-6 text-center text-zinc-500 text-xs border border-dashed border-zinc-800 rounded-xl">
+                    <div className="py-6 text-center text-zinc-500 text-xs border border-dashed border-border-subtle rounded-xl">
                       No operating expenses recorded for this period.
                     </div>
                   ) : (
-                    <div className="overflow-x-auto rounded-2xl border border-zinc-800/80 bg-zinc-950/80 shadow-lg">
+                    <div className="overflow-x-auto rounded-xl border border-border-subtle bg-bg-surface shadow-xs">
                       <Table className="w-full text-xs">
-                        <TableHeader className="bg-[#121216] border-b border-zinc-800">
-                          <TableRow className="border-b border-zinc-800 uppercase tracking-wider text-[11px] text-zinc-400 hover:bg-transparent">
-                            <TableHead className="font-bold py-3 text-zinc-400 text-left">Expense Category</TableHead>
-                            <TableHead className="font-bold py-3 text-zinc-400 text-right w-48">Period Amount</TableHead>
+                        <TableHeader className="bg-primary-50/80 border-b border-border-subtle">
+                          <TableRow className="border-b border-border-subtle uppercase tracking-wider text-[11px] text-zinc-600 hover:bg-transparent">
+                            <TableHead className="font-bold py-3 text-zinc-700 text-left">Expense Category</TableHead>
+                            <TableHead className="font-bold py-3 text-zinc-700 text-right w-40">Period Amount</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {breakdownData.expenseBreakdown.map((exp, idx) => (
-                            <TableRow key={idx} className="border-b border-zinc-800/60 hover:bg-zinc-900/40 transition-colors">
-                              <TableCell className="py-3 font-bold text-zinc-200 capitalize">
+                            <TableRow key={idx} className="border-b border-border-subtle hover:bg-primary-50/50 transition-colors">
+                              <TableCell className="py-3 font-bold text-gray-900 capitalize">
                                 {exp.category}
                               </TableCell>
-                              <TableCell className="py-3 text-right font-mono font-bold text-rose-400 text-xs">
+                              <TableCell className="py-3 text-right font-mono font-bold text-rose-600 text-xs">
                                 ₹{exp.amount.toLocaleString("en-IN")}
                               </TableCell>
                             </TableRow>
@@ -1018,29 +1020,29 @@ export default function DashboardPage() {
             const netProfit = breakdownData.grandTotal?.netProfit || (grandTotalProfit - totalExpenses);
 
             return (
-              <div className="border-t border-zinc-800 bg-[#0e0e12] p-5 shrink-0 z-20 shadow-2xl">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 items-center">
-                  <div className="bg-zinc-900/50 border border-zinc-800/80 p-3 rounded-xl">
+              <div className="border-t border-border-subtle bg-primary-50/90 p-4 sm:p-5 shrink-0 z-20 shadow-lg">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 items-center">
+                  <div className="bg-bg-surface border border-border-subtle p-3 rounded-xl">
                     <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold block">Gross Sales</span>
-                    <span className="font-mono text-base font-bold text-zinc-100">₹{grandTotalSale.toLocaleString("en-IN")}</span>
+                    <span className="font-mono text-base font-bold text-gray-900">₹{grandTotalSale.toLocaleString("en-IN")}</span>
                   </div>
-                  <div className="bg-zinc-900/50 border border-zinc-800/80 p-3 rounded-xl">
+                  <div className="bg-bg-surface border border-border-subtle p-3 rounded-xl">
                     <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold block">Gross Profit</span>
-                    <span className="font-mono text-base font-bold text-zinc-100">
+                    <span className="font-mono text-base font-bold text-gray-900">
                       ₹{grandTotalProfit.toLocaleString("en-IN")}
                     </span>
                   </div>
                   <div className="bg-rose-500/10 border border-rose-500/20 p-3 rounded-xl">
-                    <span className="text-[10px] text-rose-400 uppercase tracking-wider font-bold block">Total Operating Expenses</span>
-                    <span className="font-mono text-base font-bold text-rose-400">
+                    <span className="text-[10px] text-rose-600 uppercase tracking-wider font-bold block">Total Operating Expenses</span>
+                    <span className="font-mono text-base font-bold text-rose-600">
                       ₹{totalExpenses.toLocaleString("en-IN")}
                     </span>
                   </div>
                   <div className={`border p-3 rounded-xl ${netProfit >= 0 ? "bg-emerald-500/10 border-emerald-500/30" : "bg-rose-500/10 border-rose-500/30"}`}>
-                    <span className={`text-[10px] uppercase tracking-wider font-bold block ${netProfit >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                    <span className={`text-[10px] uppercase tracking-wider font-bold block ${netProfit >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
                       Grand Net Profit
                     </span>
-                    <span className={`font-mono text-xl sm:text-2xl font-extrabold ${netProfit >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                    <span className={`font-mono text-xl font-extrabold ${netProfit >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
                       ₹{netProfit.toLocaleString("en-IN")}
                     </span>
                   </div>

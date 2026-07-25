@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
-import { Loader2, Trash2, Edit2, Sparkles, UploadCloud, Search } from "lucide-react";
+import { Loader2, Trash2, Edit2, Sparkles, UploadCloud, Search, FolderTree, Plus } from "lucide-react";
 import IconLibraryPicker from "@/components/admin/IconLibraryPicker";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
@@ -263,49 +263,50 @@ export default function CategoryManagementPage() {
 
   if (categoriesLoading) {
     return (
-      <div className="fixed inset-0 bg-[#09090b] z-50 flex items-center justify-center">
+      <div className="flex h-[70vh] items-center justify-center">
         <LoadingSpinner size={240} label="Loading categories catalog..." />
       </div>
     );
   }
 
   return (
-    <div className="w-full min-h-screen bg-[#09090b] text-white p-6 space-y-6 font-sans">
+    <div className="w-full max-w-full min-h-screen text-gray-900 p-2 sm:p-4 space-y-6 font-sans overflow-x-hidden">
       
-      {/* Top Header Grid Section */}
-      <div className="flex justify-between items-center border-b border-zinc-800 pb-5">
+      {/* 1. UNIQUE HAZED PURPLE GRADIENT TOP CONTAINER UI */}
+      <div className="hazed-purple-banner p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold tracking-tight text-white">Categories</h1>
-          <p className="mt-1 text-xs text-zinc-400">
-            Organize stationery product categories ({String(categories.length).padStart(2, "0")} active categories).
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-3">
+            <FolderTree className="h-7 w-7 text-accent shrink-0" /> Categories Matrix
+          </h1>
+          <p className="mt-1 text-sm text-purple-100 font-semibold max-w-2xl">
+            Organize stationery product taxonomies ({String(categories.length).padStart(2, "0")} active categories).
           </p>
         </div>
-        
         <Button
           onClick={openCreateModal}
-          className="bg-white text-black font-semibold hover:bg-zinc-200 rounded-xl px-4 py-2 text-sm shadow-md"
+          className="bg-white text-primary-800 font-black hover:bg-primary-50 rounded-xl px-4 h-10 text-sm shadow-md cursor-pointer btn-modern shrink-0"
         >
-          + Add Category
+          <Plus className="w-4 h-4 mr-2 text-primary-600" /> Add New Category
         </Button>
       </div>
 
       {/* Workspace Area Table Arena */}
-      <div className="bg-[#0c0c0e] border border-zinc-800 rounded-2xl p-6 space-y-4 shadow-xl">
+      <div className="bg-bg-surface border border-border-subtle rounded-2xl p-4 sm:p-6 space-y-4 shadow-xs">
         
         {/* Wireframe Input Search Box */}
         <div className="flex flex-col items-center justify-center w-full space-y-2">
-          <div className="flex items-center w-full max-w-md bg-[#141416] border border-zinc-700 rounded-xl px-3.5 transition-all gap-2 h-11 focus-within:border-zinc-500 focus-within:ring-1 focus-within:ring-zinc-500">
-            <Search className="h-4 w-4 text-zinc-500 shrink-0" />
+          <div className="flex items-center w-full max-w-md bg-bg-surface border border-border-subtle rounded-xl px-3.5 transition-all gap-2 h-11 focus-within:border-primary-400 focus-within:ring-1 focus-within:ring-primary-400">
+            <Search className="h-4 w-4 text-zinc-400 shrink-0" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search..."
-              className="flex-1 bg-transparent border-none text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-full py-0 shadow-none"
+              className="flex-1 bg-transparent border-none text-xs text-gray-900 placeholder-zinc-400 focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-full py-0 shadow-none"
             />
             <VoiceSearchButton 
               onResult={(text) => setSearchQuery(text)} 
-              className="shrink-0 h-8 w-8"
+              className="shrink-0 h-8 w-8 text-primary-600"
             />
           </div>
 

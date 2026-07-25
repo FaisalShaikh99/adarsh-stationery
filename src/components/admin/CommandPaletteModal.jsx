@@ -128,8 +128,8 @@ export default function CommandPaletteModal() {
       />
       <CommandList>
         {isSearching && (
-          <div className="flex items-center justify-center py-6 text-xs text-zinc-400 gap-2 font-mono">
-            <Loader2 className="w-4 h-4 animate-spin text-emerald-400" />
+          <div className="flex items-center justify-center py-6 text-xs text-zinc-500 gap-2 font-mono">
+            <Loader2 className="w-4 h-4 animate-spin text-primary-600" />
             <span>Searching live inventory, orders & customers...</span>
           </div>
         )}
@@ -142,10 +142,10 @@ export default function CommandPaletteModal() {
             const Icon = page.icon;
             return (
               <CommandItem key={page.href} onSelect={() => handleSelect(page.href)}>
-                <div className="w-6 h-6 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400 flex items-center justify-center shrink-0">
+                <div className="w-6 h-6 rounded-lg bg-primary-50 border border-primary-200 text-primary-600 flex items-center justify-center shrink-0">
                   <Icon className="w-3.5 h-3.5" />
                 </div>
-                <span className="font-medium text-zinc-200">{page.name}</span>
+                <span className="font-extrabold text-gray-900">{page.name}</span>
                 <span className="ml-auto font-mono text-[10px] text-zinc-500">{page.href}</span>
               </CommandItem>
             );
@@ -159,16 +159,16 @@ export default function CommandPaletteModal() {
           <CommandGroup heading="Products">
             {searchResults.products.map((prod) => (
               <CommandItem key={prod._id} onSelect={() => handleSelect(`/admin/products`)}>
-                <div className="w-6 h-6 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                <div className="w-6 h-6 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 flex items-center justify-center shrink-0">
                   <Package className="w-3.5 h-3.5" />
                 </div>
                 <div className="flex flex-col min-w-0 flex-1">
-                  <span className="font-semibold text-zinc-100 truncate">{prod.name}</span>
+                  <span className="font-bold text-gray-900 truncate">{prod.name}</span>
                   <span className="text-[10px] text-zinc-500 font-mono">
                     Stock: {prod.stock || 0} • ₹{prod.sellingPrice}
                   </span>
                 </div>
-                <ExternalLink className="w-3.5 h-3.5 text-zinc-600 ml-auto shrink-0" />
+                <ExternalLink className="w-3.5 h-3.5 text-zinc-400 ml-auto shrink-0" />
               </CommandItem>
             ))}
           </CommandGroup>
@@ -178,16 +178,16 @@ export default function CommandPaletteModal() {
           <CommandGroup heading="Orders">
             {searchResults.orders.map((order) => (
               <CommandItem key={order._id} onSelect={() => handleSelect(`/admin/orders/${order._id}`)}>
-                <div className="w-6 h-6 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
+                <div className="w-6 h-6 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-600 flex items-center justify-center shrink-0">
                   <ShoppingBag className="w-3.5 h-3.5" />
                 </div>
                 <div className="flex flex-col min-w-0 flex-1">
-                  <span className="font-mono font-bold text-zinc-100">#{order.orderNumber}</span>
-                  <span className="text-[10px] text-zinc-400">
-                    Status: <span className="text-blue-400 font-semibold">{order.status}</span> • ₹{order.totalAmount}
+                  <span className="font-mono font-bold text-gray-900">#{order.orderNumber}</span>
+                  <span className="text-[10px] text-zinc-500">
+                    Status: <span className="text-blue-600 font-semibold">{order.status}</span> • ₹{order.totalAmount}
                   </span>
                 </div>
-                <ExternalLink className="w-3.5 h-3.5 text-zinc-600 ml-auto shrink-0" />
+                <ExternalLink className="w-3.5 h-3.5 text-zinc-400 ml-auto shrink-0" />
               </CommandItem>
             ))}
           </CommandGroup>
@@ -197,14 +197,14 @@ export default function CommandPaletteModal() {
           <CommandGroup heading="Customers">
             {searchResults.customers.map((cust) => (
               <CommandItem key={cust._id} onSelect={() => handleSelect(`/admin/customers/${cust._id}`)}>
-                <div className="w-6 h-6 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center shrink-0">
+                <div className="w-6 h-6 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-600 flex items-center justify-center shrink-0">
                   <Users className="w-3.5 h-3.5" />
                 </div>
                 <div className="flex flex-col min-w-0 flex-1">
-                  <span className="font-semibold text-zinc-100 truncate">{cust.name}</span>
+                  <span className="font-bold text-gray-900 truncate">{cust.name}</span>
                   <span className="text-[10px] text-zinc-500 font-mono">{cust.phone}</span>
                 </div>
-                <ExternalLink className="w-3.5 h-3.5 text-zinc-600 ml-auto shrink-0" />
+                <ExternalLink className="w-3.5 h-3.5 text-zinc-400 ml-auto shrink-0" />
               </CommandItem>
             ))}
           </CommandGroup>

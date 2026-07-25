@@ -10,7 +10,7 @@ const Command = React.forwardRef(({ className, ...props }, ref) => (
   <CommandPrimitive
     ref={ref}
     className={cn(
-      "flex h-full w-full flex-col overflow-hidden rounded-2xl bg-zinc-950 text-zinc-100",
+      "flex h-full w-full flex-col overflow-hidden rounded-2xl bg-white/95 text-gray-900 font-sans",
       className
     )}
     {...props}
@@ -21,8 +21,8 @@ Command.displayName = CommandPrimitive.displayName;
 const CommandDialog = ({ children, open, onOpenChange, ...props }) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange} {...props}>
-      <DialogContent className="overflow-hidden p-0 shadow-2xl bg-zinc-950 border-zinc-800 text-zinc-100 w-[92vw] max-w-2xl rounded-2xl">
-        <Command className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:text-zinc-400 [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-group]]:px-2 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-3 [&_[cmdk-item]]:py-2.5 [&_[cmdk-item]_svg]:h-4 [&_[cmdk-item]_svg]:w-4">
+      <DialogContent className="overflow-hidden p-0 shadow-2xl bg-white/95 backdrop-blur-2xl border-border-subtle text-gray-900 w-[92vw] max-w-2xl rounded-2xl">
+        <Command className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-extrabold [&_[cmdk-group-heading]]:text-primary-700 [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-group]]:px-2 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-3 [&_[cmdk-item]]:py-2.5 [&_[cmdk-item]_svg]:h-4 [&_[cmdk-item]_svg]:w-4">
           {children}
         </Command>
       </DialogContent>
@@ -31,12 +31,12 @@ const CommandDialog = ({ children, open, onOpenChange, ...props }) => {
 };
 
 const CommandInput = React.forwardRef(({ className, ...props }, ref) => (
-  <div className="flex items-center border-b border-zinc-800 px-4" cmdk-input-wrapper="">
-    <Search className="mr-2 h-4 w-4 shrink-0 text-zinc-500" />
+  <div className="flex items-center border-b border-border-subtle px-4" cmdk-input-wrapper="">
+    <Search className="mr-2 h-4 w-4 shrink-0 text-zinc-400" />
     <CommandPrimitive.Input
       ref={ref}
       className={cn(
-        "flex h-12 w-full rounded-md bg-transparent py-3 text-xs sm:text-sm outline-none placeholder:text-zinc-500 disabled:cursor-not-allowed disabled:opacity-50 text-zinc-100 font-sans",
+        "flex h-12 w-full rounded-md bg-transparent py-3 text-xs sm:text-sm outline-none placeholder:text-zinc-400 disabled:cursor-not-allowed disabled:opacity-50 text-gray-900 font-sans font-medium",
         className
       )}
       {...props}
@@ -67,7 +67,7 @@ const CommandGroup = React.forwardRef(({ className, ...props }, ref) => (
   <CommandPrimitive.Group
     ref={ref}
     className={cn(
-      "overflow-hidden p-1 text-zinc-100 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-[11px] [&_[cmdk-group-heading]]:font-bold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:text-zinc-500",
+      "overflow-hidden p-1 text-gray-900 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-[11px] [&_[cmdk-group-heading]]:font-bold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:text-primary-700",
       className
     )}
     {...props}
@@ -78,7 +78,7 @@ CommandGroup.displayName = CommandPrimitive.Group.displayName;
 const CommandSeparator = React.forwardRef(({ className, ...props }, ref) => (
   <CommandPrimitive.Separator
     ref={ref}
-    className={cn("-mx-1 h-px bg-zinc-800/80 my-1", className)}
+    className={cn("-mx-1 h-px bg-border-subtle my-1", className)}
     {...props}
   />
 ));
@@ -88,7 +88,7 @@ const CommandItem = React.forwardRef(({ className, ...props }, ref) => (
   <CommandPrimitive.Item
     ref={ref}
     className={cn(
-      "relative flex cursor-pointer select-none items-center rounded-xl px-3 py-2 text-xs sm:text-sm outline-none data-[disabled=true]:pointer-events-none data-[selected='true']:bg-zinc-900 data-[selected=true]:text-white data-[disabled=true]:opacity-50 transition-colors gap-2.5",
+      "relative flex cursor-pointer select-none items-center rounded-xl px-3 py-2 text-xs sm:text-sm outline-none data-[disabled=true]:pointer-events-none data-[selected='true']:bg-primary-50 data-[selected=true]:text-primary-700 data-[disabled=true]:opacity-50 transition-colors gap-2.5 font-medium",
       className
     )}
     {...props}
