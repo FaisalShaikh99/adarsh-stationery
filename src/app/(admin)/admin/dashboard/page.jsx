@@ -753,43 +753,47 @@ export default function AdminDashboardPage() {
 
       </div>
 
-      {/* PROFIT BREAKDOWN DRILL-DOWN ANALYTICS MODAL */}
+      {/* PROFIT BREAKDOWN DRILL-DOWN ANALYTICS WORKBENCH MODAL */}
       <Dialog open={!!breakdownModalPeriod} onOpenChange={(open) => !open && setBreakdownModalPeriod(null)}>
-        <DialogContent className="bg-[#0c0c0e] border border-zinc-800 text-white rounded-2xl w-[95vw] max-w-7xl h-[90vh] max-h-[90vh] p-0 flex flex-col shadow-2xl overflow-hidden font-sans">
-          {/* 1. STICKY TOP HEADER */}
-          <div className="border-b border-zinc-800/80 p-5 shrink-0 bg-[#0e0e12] flex flex-wrap items-center justify-between gap-4 z-20">
-            <div>
-              <div className="flex flex-wrap items-center gap-2.5">
-                <DialogTitle className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-                  <DollarSign className="h-5 w-5 text-emerald-400" />
-                  Profit Breakdown — {breakdownData?.label || (breakdownModalPeriod === "month" ? "This Month" : "This Week")}
-                </DialogTitle>
-                {breakdownData?.dateRangeStr && (
-                  <span className="text-xs text-zinc-400 font-mono font-medium bg-zinc-900 border border-zinc-800 px-2.5 py-0.5 rounded-md">
-                    {breakdownData.dateRangeStr}
-                  </span>
-                )}
+        <DialogContent className="bg-[#0c0c0e] border border-zinc-800 text-white rounded-2xl w-[96vw] md:w-[92vw] xl:w-[90vw] max-w-7xl xl:max-w-[1300px] !max-w-[1300px] sm:max-w-none h-[90vh] max-h-[90vh] p-0 flex flex-col shadow-2xl overflow-hidden font-sans">
+          {/* 1. PROFESSIONAL STICKY TOP HEADER */}
+          <div className="border-b border-zinc-800/80 p-6 shrink-0 bg-[#0e0e12] flex flex-col sm:flex-row sm:items-center justify-between gap-4 z-20">
+            <div className="flex items-start gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
+                <DollarSign className="h-5 w-5" />
               </div>
-              <p className="text-xs text-zinc-400 mt-1">
-                Itemized financial ledger grouped by product snapshot price & cost per unit.
-              </p>
+              <div>
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <DialogTitle className="text-lg sm:text-xl font-extrabold text-white tracking-tight">
+                    Profit Breakdown — {breakdownData?.label || (breakdownModalPeriod === "month" ? "This Month" : "This Week")}
+                  </DialogTitle>
+                  {breakdownData?.dateRangeStr && (
+                    <span className="text-xs font-mono font-medium text-zinc-300 bg-zinc-900 border border-zinc-800 px-3 py-1 rounded-lg">
+                      {breakdownData.dateRangeStr}
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-zinc-400 mt-1">
+                  Itemized financial ledger grouped by snapshot price & cost price per unit.
+                </p>
+              </div>
             </div>
 
-            <div className="flex items-center gap-3 pr-8 sm:pr-0">
+            <div className="flex items-center gap-3 pr-10 sm:pr-2 shrink-0">
               {breakdownData?.breakdown?.length > 0 && (
                 <Button
                   onClick={() => handleExportBreakdownCsv(breakdownData)}
                   variant="outline"
-                  className="border-zinc-800 bg-zinc-900 text-zinc-300 hover:text-white hover:bg-zinc-800 rounded-xl px-3.5 h-8 text-xs font-semibold flex items-center gap-1.5 cursor-pointer shrink-0"
+                  className="border-zinc-800 bg-zinc-900 text-zinc-300 hover:text-white hover:bg-zinc-800 rounded-xl px-4 h-9 text-xs font-semibold flex items-center gap-2 cursor-pointer shadow-sm"
                 >
-                  <Download className="w-3.5 h-3.5" /> Download as CSV
+                  <Download className="w-4 h-4 text-emerald-400" /> Export CSV
                 </Button>
               )}
             </div>
           </div>
 
-          {/* 2. SCROLLABLE TABLE AREA */}
-          <div className="flex-1 overflow-y-auto p-4 sm:p-6 custom-scrollbar min-h-0 bg-[#09090b]">
+          {/* 2. SCROLLABLE FINANCIAL TABLE AREA */}
+          <div className="flex-1 overflow-y-auto p-6 custom-scrollbar min-h-0 bg-[#09090b]">
             {isBreakdownLoading ? (
               <div className="py-24 text-center text-zinc-400 text-xs font-medium space-y-3">
                 <RefreshCw className="h-7 w-7 text-emerald-400 animate-spin mx-auto" />
@@ -802,7 +806,7 @@ export default function AdminDashboardPage() {
                 <p className="text-zinc-500">Please close and reopen the analytics report.</p>
               </div>
             ) : breakdownData.breakdown.length === 0 ? (
-              /* Analytics Empty State (TASK 9) */
+              /* Analytics Empty State */
               <div className="py-20 text-center text-zinc-400 space-y-3 max-w-sm mx-auto">
                 <div className="w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center mx-auto text-zinc-500">
                   <DollarSign className="w-6 h-6 text-zinc-400" />
@@ -814,17 +818,17 @@ export default function AdminDashboardPage() {
               </div>
             ) : (
               /* Itemized Financial Ledger Table */
-              <div className="overflow-x-auto rounded-xl border border-zinc-800/80 bg-zinc-950/80 shadow-md">
+              <div className="overflow-x-auto lg:overflow-x-visible rounded-2xl border border-zinc-800/80 bg-zinc-950/80 shadow-lg">
                 <Table className="w-full text-xs">
                   <TableHeader className="bg-[#121216] sticky top-0 z-10 border-b border-zinc-800">
                     <TableRow className="border-b border-zinc-800 uppercase tracking-wider text-[11px] text-zinc-400 hover:bg-transparent">
-                      <TableHead className="font-bold py-3.5 text-zinc-400 text-left min-w-[200px]">Product</TableHead>
-                      <TableHead className="font-bold py-3.5 text-zinc-400 text-center w-[100px]">Qty Sold</TableHead>
-                      <TableHead className="font-bold py-3.5 text-zinc-400 text-right w-[120px]">Cost Price</TableHead>
-                      <TableHead className="font-bold py-3.5 text-zinc-400 text-right w-[120px]">Selling Price</TableHead>
-                      <TableHead className="font-bold py-3.5 text-zinc-400 text-right w-[140px]">Profit / Item</TableHead>
-                      <TableHead className="font-bold py-3.5 text-zinc-400 text-right w-[140px]">Total Sale</TableHead>
-                      <TableHead className="font-bold py-3.5 text-zinc-400 text-right w-[160px]">Total Profit</TableHead>
+                      <TableHead className="font-bold py-4 text-zinc-400 text-left min-w-[280px]">Product</TableHead>
+                      <TableHead className="font-bold py-4 text-zinc-400 text-center w-[90px]">Qty Sold</TableHead>
+                      <TableHead className="font-bold py-4 text-zinc-400 text-right w-[120px]">Cost Price</TableHead>
+                      <TableHead className="font-bold py-4 text-zinc-400 text-right w-[130px]">Selling Price</TableHead>
+                      <TableHead className="font-bold py-4 text-zinc-400 text-right w-[130px]">Profit / Item</TableHead>
+                      <TableHead className="font-bold py-4 text-zinc-400 text-right w-[150px]">Total Sale</TableHead>
+                      <TableHead className="font-bold py-4 text-zinc-400 text-right w-[150px]">Total Profit</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -834,31 +838,31 @@ export default function AdminDashboardPage() {
                         className={`border-b border-zinc-800/60 transition-colors ${idx % 2 === 1 ? "bg-zinc-900/30" : "bg-transparent"} hover:bg-zinc-800/40`}
                       >
                         {/* Product */}
-                        <TableCell className="py-3.5 text-left font-sans min-w-[200px]">
+                        <TableCell className="py-4 text-left font-sans min-w-[280px]">
                           <div className="flex flex-col">
                             <span className="font-bold text-zinc-100 capitalize text-xs sm:text-sm">{item.productName}</span>
                             {item.hasPriceVariation && (
-                              <span className="text-[9px] text-amber-400 font-semibold italic mt-0.5">
+                              <span className="text-[10px] text-amber-400 font-semibold italic mt-0.5">
                                 (price changed mid-period)
                               </span>
                             )}
                           </div>
                         </TableCell>
                         {/* Qty Sold */}
-                        <TableCell className="text-center font-mono py-3.5 text-zinc-300 w-[100px] font-bold text-xs sm:text-sm">
+                        <TableCell className="text-center font-mono py-4 text-zinc-300 w-[90px] font-bold text-xs sm:text-sm">
                           {item.quantitySold}
                         </TableCell>
                         {/* Cost Price */}
-                        <TableCell className="text-right font-mono py-3.5 text-zinc-400 w-[120px] text-xs sm:text-sm">
+                        <TableCell className="text-right font-mono py-4 text-zinc-400 w-[120px] text-xs sm:text-sm">
                           ₹{item.costPricePerUnit}
                         </TableCell>
                         {/* Selling Price */}
-                        <TableCell className="text-right font-mono py-3.5 text-zinc-100 font-medium w-[120px] text-xs sm:text-sm">
+                        <TableCell className="text-right font-mono py-4 text-zinc-100 font-semibold w-[130px] text-xs sm:text-sm">
                           ₹{item.pricePerUnit}
                         </TableCell>
                         {/* Profit / Item */}
-                        <TableCell className="text-right font-mono py-3.5 w-[140px]">
-                          <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-bold border ${
+                        <TableCell className="text-right font-mono py-4 w-[130px]">
+                          <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold border ${
                             item.profitPerUnit >= 0 
                               ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/25" 
                               : "text-rose-400 bg-rose-500/10 border-rose-500/25"
@@ -867,11 +871,11 @@ export default function AdminDashboardPage() {
                           </span>
                         </TableCell>
                         {/* Total Sale */}
-                        <TableCell className="text-right font-mono py-3.5 text-zinc-100 font-semibold w-[140px] text-xs sm:text-sm">
+                        <TableCell className="text-right font-mono py-4 text-zinc-100 font-bold w-[150px] text-xs sm:text-sm">
                           ₹{item.totalSale.toLocaleString("en-IN")}
                         </TableCell>
                         {/* Total Profit */}
-                        <TableCell className="text-right font-mono py-3.5 text-emerald-400 font-bold w-[160px] text-xs sm:text-sm">
+                        <TableCell className="text-right font-mono py-4 text-emerald-400 font-extrabold w-[150px] text-xs sm:text-sm">
                           ₹{item.totalProfit.toLocaleString("en-IN")}
                         </TableCell>
                       </TableRow>
@@ -882,7 +886,7 @@ export default function AdminDashboardPage() {
             )}
           </div>
 
-          {/* 3. STICKY GRAND TOTAL FOOTER (FIXED) */}
+          {/* 3. STICKY SUMMARY FOOTER */}
           {breakdownData?.breakdown?.length > 0 && (() => {
             const productCount = breakdownData.breakdown.length;
             const grandTotalSale = breakdownData.grandTotal.totalSale;
@@ -890,37 +894,29 @@ export default function AdminDashboardPage() {
             const marginPct = grandTotalSale > 0 ? ((grandTotalProfit / grandTotalSale) * 100).toFixed(1) : "0.0";
 
             return (
-              <div className="border-t border-zinc-800 bg-[#0e0e12] p-4 sm:p-5 shrink-0 z-20 shadow-2xl">
-                <div className="flex flex-wrap items-center justify-between gap-4">
-                  {/* Summary Metrics */}
-                  <div className="flex flex-wrap items-center gap-4 sm:gap-6 text-xs text-zinc-400 font-sans">
-                    <div>
-                      <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold block">Products</span>
-                      <span className="font-bold text-zinc-200 text-sm font-mono">{productCount} items</span>
-                    </div>
-                    <div className="h-6 w-[1px] bg-zinc-800 hidden sm:block" />
-                    <div>
-                      <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold block">Profit Margin</span>
-                      <span className={`font-bold text-sm font-mono ${Number(marginPct) >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
-                        {marginPct}%
-                      </span>
-                    </div>
+              <div className="border-t border-zinc-800 bg-[#0e0e12] p-5 shrink-0 z-20 shadow-2xl">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 items-center">
+                  <div className="bg-zinc-900/50 border border-zinc-800/80 p-3 rounded-xl">
+                    <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold block">Products</span>
+                    <span className="font-mono text-base font-bold text-zinc-100">{productCount} items</span>
                   </div>
-
-                  {/* Grand Totals */}
-                  <div className="flex items-center gap-6 text-xs">
-                    <div className="text-right">
-                      <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold block">Grand Total Sale</span>
-                      <span className="font-mono text-base font-bold text-zinc-100">
-                        ₹{grandTotalSale.toLocaleString("en-IN")}
-                      </span>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-[10px] text-emerald-500/80 uppercase tracking-wider font-bold block">Grand Total Profit</span>
-                      <span className="font-mono text-lg sm:text-xl font-extrabold text-emerald-400">
-                        ₹{grandTotalProfit.toLocaleString("en-IN")}
-                      </span>
-                    </div>
+                  <div className="bg-zinc-900/50 border border-zinc-800/80 p-3 rounded-xl">
+                    <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold block">Profit Margin</span>
+                    <span className={`font-mono text-base font-bold ${Number(marginPct) >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                      {marginPct}%
+                    </span>
+                  </div>
+                  <div className="bg-zinc-900/50 border border-zinc-800/80 p-3 rounded-xl">
+                    <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold block">Grand Total Sales</span>
+                    <span className="font-mono text-base font-bold text-zinc-100">
+                      ₹{grandTotalSale.toLocaleString("en-IN")}
+                    </span>
+                  </div>
+                  <div className="bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-xl">
+                    <span className="text-[10px] text-emerald-400 uppercase tracking-wider font-bold block">Grand Total Profit</span>
+                    <span className="font-mono text-xl sm:text-2xl font-extrabold text-emerald-400">
+                      ₹{grandTotalProfit.toLocaleString("en-IN")}
+                    </span>
                   </div>
                 </div>
               </div>
