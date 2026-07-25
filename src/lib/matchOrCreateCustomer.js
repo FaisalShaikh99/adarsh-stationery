@@ -1,4 +1,5 @@
 import Customer from "../models/customer.model.js";
+import Notification from "../models/notification.model.js";
 import { computeCustomerTags } from "./computeCustomerTags.js";
 
 /**
@@ -66,6 +67,20 @@ export async function matchOrCreateCustomer(shippingAddress, totalAmount, orderD
 
     customer.tags = computeCustomerTags(customer);
     await customer.save();
+
+    // Trigger new_customer notification
+    try {
+      await Notification.create({
+        type: "new_customer",
+        title: "New Customer",
+        message: `New customer registered: ${customer.name}`,
+        link: `/admin/customers/${customer._id}`,
+        relatedId: customer._id,
+        isRead: false,
+      });
+    } catch (nErr) {
+      console.error("Failed to create new_customer notification:", nErr);
+    }
   }
 
   return customer;

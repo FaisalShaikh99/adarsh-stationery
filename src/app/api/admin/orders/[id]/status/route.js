@@ -8,6 +8,7 @@ import paymentService from "@/services/payment.service";
 import { ApiError } from "@/utils/ApiError";
 import { ApiResponse } from "@/utils/ApiResponse";
 import { orderPopulation, sanitizeOrder } from "../../_utils";
+import { createNotification } from "@/lib/createNotification";
 
 const allowedTransitions = {
   Pending: ["Confirmed", "Cancelled"],
@@ -74,6 +75,17 @@ export async function PATCH(request, { params }) {
 
     await order.save();
     await order.populate(orderPopulation);
+
+    // Trigger order_status_change notification
+    const adminName = token.name || token.email || "Admin";
+    await createNotification({
+      type: "order_status_change",
+      title: "Order Status Updated",
+      message: `Order #${order.orderNumber} changed to ${status} by ${adminName}`,
+      link: `/admin/orders/${order._id}`,
+      relatedId: order._id,
+      triggeredByAdminName: adminName,
+    });
 
     const sanitizedOrder = sanitizeOrder(order.toObject());
 

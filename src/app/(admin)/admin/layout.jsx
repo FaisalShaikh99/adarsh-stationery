@@ -4,6 +4,7 @@ import { useState } from "react";
 import { usePathname } from "next/navigation"; 
 import AdminSidebar from "@/components/ui/AdminSidebar";
 import AdminHeader from "@/components/ui/AdminHeader";
+import CommandPaletteModal from "@/components/admin/CommandPaletteModal";
 
 export default function AdminLayout({ children }) {
   const [isCollapsed, setIsCollapsed] = useState(true);
@@ -51,6 +52,9 @@ export default function AdminLayout({ children }) {
           {children}
         </main>
       </div>
+
+      {/* Global Command Palette (Ctrl+K) */}
+      <CommandPaletteModal />
 
     </div>
   );

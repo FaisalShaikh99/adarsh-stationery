@@ -42,10 +42,12 @@ import * as z from "zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { categoryCreateSchema } from "@/schemas/category.schema";
+import { useSearchParams } from "next/navigation";
 import useFuzzySearch from "@/hooks/useFuzzySearch";
 import VoiceSearchButton from "@/components/ui/voice-search-button";
 
 export default function CategoryManagementPage() {
+  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const fileInputRef = useRef(null);
 
@@ -59,6 +61,13 @@ export default function CategoryManagementPage() {
   const [uploadMode, setUploadMode] = useState("manual");
 
   const [editingCategory, setEditingCategory] = useState(null); // null = add mode, object = edit mode
+
+  useEffect(() => {
+    if (searchParams.get("action") === "new") {
+      setEditingCategory(null);
+      setIsModalOpen(true);
+    }
+  }, [searchParams]);
 
   // React Hook Form
   const { register, handleSubmit: handleFormSubmit, reset, setValue, watch, formState: { errors } } = useForm({

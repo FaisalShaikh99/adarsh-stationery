@@ -243,7 +243,24 @@ async function seedOrders() {
   }
   await db.collection("orders").insertMany(sortedOrders);
 
-  console.log(`Successfully inserted ${sortedOrders.length} development seed orders and generated corresponding Customer, Payment & Invoice profiles.`);
+  // Generate new_order notifications for seed orders
+  const notificationsToInsert = sortedOrders.map((order) => ({
+    type: "new_order",
+    title: "New Order Received",
+    message: `New order #${order.orderNumber} received for ₹${order.totalAmount}`,
+    link: `/admin/orders/${order._id}`,
+    relatedId: order._id,
+    isRead: false,
+    createdAt: order.createdAt,
+    updatedAt: order.createdAt,
+  }));
+
+  if (notificationsToInsert.length > 0) {
+    await db.collection("notifications").deleteMany({ type: "new_order" });
+    await db.collection("notifications").insertMany(notificationsToInsert);
+  }
+
+  console.log(`Successfully inserted ${sortedOrders.length} development seed orders and generated corresponding Customer, Payment, Invoice & Notification profiles.`);
 }
 
 seedOrders()

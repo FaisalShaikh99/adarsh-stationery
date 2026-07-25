@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,10 +39,17 @@ const formatLastLogin = (dateString) => {
 };
 
 export default function TeamMembersPage() {
+  const searchParams = useSearchParams();
   const { data: session, status } = useSession();
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+
+  useEffect(() => {
+    if (searchParams.get("action") === "new") {
+      setIsOpen(true);
+    }
+  }, [searchParams]);
 
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingTarget, setPendingTarget] = useState(null);

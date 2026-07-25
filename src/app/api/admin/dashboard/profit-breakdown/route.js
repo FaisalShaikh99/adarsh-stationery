@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { dbConnect } from "@/lib/dbConnect";
 import Order from "@/models/order.model";
+import Expense from "@/models/expense.model";
 
 export const dynamic = "force-dynamic";
 
@@ -36,14 +37,13 @@ export async function GET(req) {
       startDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
       label = "This Month";
     } else {
-      // Default to "week"
       startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       label = "This Week";
     }
 
     const dateRangeStr = formatDateRangeStr(startDate, endDate);
 
-    // Group items by COMBINATION of (product + costPricePerUnit + pricePerUnit)
+    // 1. Product-level Gross Profit Breakdown
     const breakdownAgg = await Order.aggregate([
       {
         $match: {
@@ -96,7 +96,6 @@ export async function GET(req) {
       },
     ]);
 
-    // Count product occurrences to mark mid-period price variations
     const productCountMap = {};
     breakdownAgg.forEach((item) => {
       const pName = item._id.productName;
@@ -132,6 +131,40 @@ export async function GET(req) {
       };
     });
 
+    // 2. Expense Breakdown for the Period
+    const allExpenses = await Expense.find({}).lean();
+    let totalExpenses = 0;
+    const categoryMap = {};
+
+    for (const exp of allExpenses) {
+      const expDate = new Date(exp.date);
+      const recEndDate = exp.recurrenceEndDate ? new Date(exp.recurrenceEndDate) : null;
+
+      if (!exp.isRecurring) {
+        if (expDate >= startDate && expDate <= endDate) {
+          const amt = exp.amount || 0;
+          totalExpenses += amt;
+          categoryMap[exp.category] = (categoryMap[exp.category] || 0) + amt;
+        }
+      } else {
+        const isActive = expDate <= endDate && (!recEndDate || recEndDate >= startDate);
+        if (isActive) {
+          const amt = period === "week" ? exp.amount / 4 : exp.amount;
+          totalExpenses += amt;
+          categoryMap[exp.category] = (categoryMap[exp.category] || 0) + amt;
+        }
+      }
+    }
+
+    const expenseBreakdown = Object.entries(categoryMap)
+      .filter(([_, amount]) => amount > 0)
+      .map(([category, amount]) => ({
+        category,
+        amount: Number(amount.toFixed(2)),
+      }));
+
+    const netProfit = grandTotalProfit - totalExpenses;
+
     return NextResponse.json({
       success: true,
       data: {
@@ -141,10 +174,15 @@ export async function GET(req) {
         startDate,
         endDate,
         breakdown,
+        expenseBreakdown,
+        totalExpenses: Number(totalExpenses.toFixed(2)),
+        netProfit: Number(netProfit.toFixed(2)),
         grandTotal: {
           totalQuantitySold: grandTotalQuantitySold,
           totalSale: grandTotalSale,
           totalProfit: grandTotalProfit,
+          totalExpenses: Number(totalExpenses.toFixed(2)),
+          netProfit: Number(netProfit.toFixed(2)),
         },
       },
     });

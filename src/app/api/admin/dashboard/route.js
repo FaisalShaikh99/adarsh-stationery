@@ -7,6 +7,7 @@ import Product from "@/models/product.model";
 import Customer from "@/models/customer.model";
 import { Category } from "@/models/category.model";
 import Payment from "@/models/payment.model";
+import Expense from "@/models/expense.model";
 import { getCurrentSeasonalReminder } from "@/lib/seasonalReminders";
 
 export const dynamic = "force-dynamic";
@@ -95,7 +96,6 @@ export async function GET(req) {
     const totalRevenue = paidOrdersRevenueAgg[0]?.totalRevenue || 0;
 
     // Helper for profit calculation across paid orders in a date range
-    // EXCLUDES items missing costPricePerUnit entirely to prevent profit inflation
     const getProfitForPeriod = async (startDate, endDate) => {
       const res = await Order.aggregate([
         {
@@ -144,7 +144,28 @@ export async function GET(req) {
       return res[0]?.profit || 0;
     };
 
-    // Check data completeness (true if any Paid order in current month/week missing costPricePerUnit on any item)
+    // Helper for expense calculation for a date range
+    const getExpenseForPeriod = async (startDate, endDate, isWeek) => {
+      const allExpenses = await Expense.find({}).lean();
+      let total = 0;
+      for (const exp of allExpenses) {
+        const expDate = new Date(exp.date);
+        const recEndDate = exp.recurrenceEndDate ? new Date(exp.recurrenceEndDate) : null;
+        if (!exp.isRecurring) {
+          if (expDate >= startDate && expDate <= endDate) {
+            total += exp.amount || 0;
+          }
+        } else {
+          const isActive = expDate <= endDate && (!recEndDate || recEndDate >= startDate);
+          if (isActive) {
+            total += isWeek ? (exp.amount || 0) / 4 : (exp.amount || 0);
+          }
+        }
+      }
+      return Number(total.toFixed(2));
+    };
+
+    // Check data completeness
     const missingCostAgg = await Order.aggregate([
       {
         $match: {
@@ -178,21 +199,24 @@ export async function GET(req) {
 
     const dataCompletenessWarning = missingCostAgg.length > 0;
 
-    // 2. Profit / Loss Summary
-    const [thisWeekProfit, lastWeekProfit, thisMonthProfit, lastMonthProfit] =
+    // 2. Profit / Loss Summary & Expenses
+    const [thisWeekProfit, lastWeekProfit, thisMonthProfit, lastMonthProfit, thisWeekExpenses, thisMonthExpenses] =
       await Promise.all([
         getProfitForPeriod(thisWeekStart, thisWeekEnd),
         getProfitForPeriod(priorWeekStart, priorWeekEnd),
         getProfitForPeriod(thisMonthStart, thisMonthEnd),
         getProfitForPeriod(priorMonthStart, priorMonthEnd),
+        getExpenseForPeriod(thisWeekStart, thisWeekEnd, true),
+        getExpenseForPeriod(thisMonthStart, thisMonthEnd, false),
       ]);
+
+    const thisWeekNetProfit = thisWeekProfit - thisWeekExpenses;
+    const thisMonthNetProfit = thisMonthProfit - thisMonthExpenses;
 
     const weekPercentageChange =
       lastWeekProfit > 0
         ? Number(
-            (((thisWeekProfit - lastWeekProfit) / lastWeekProfit) * 100).toFixed(
-              1
-            )
+            (((thisWeekProfit - lastWeekProfit) / lastWeekProfit) * 100).toFixed(1)
           )
         : thisWeekProfit > 0
         ? 100
@@ -202,15 +226,14 @@ export async function GET(req) {
       lastMonthProfit > 0
         ? Number(
             (
-              ((thisMonthProfit - lastMonthProfit) / lastMonthProfit) *
-              100
+              ((thisMonthProfit - lastMonthProfit) / lastMonthProfit) * 100
             ).toFixed(1)
           )
         : thisMonthProfit > 0
         ? 100
         : 0;
 
-    // 3. Best-selling products (top 5 by quantity sold in Paid orders)
+    // 3. Best-selling products
     const bestSellingProductsAgg = await Order.aggregate([
       {
         $lookup: {
@@ -257,7 +280,7 @@ export async function GET(req) {
       },
     ]);
 
-    // 4. Low stock alerts (products with stock <= threshold)
+    // 4. Low stock alerts
     const lowStockProducts = await Product.find({
       stock: { $lte: lowStockThreshold },
     })
@@ -276,7 +299,7 @@ export async function GET(req) {
       thumbnail: p.images?.[0] || "",
     }));
 
-    // 5. Category-wise purchase trend (last 30 days)
+    // 5. Category-wise purchase trend
     const categoryPurchaseTrend = await Order.aggregate([
       {
         $match: {
@@ -326,7 +349,7 @@ export async function GET(req) {
       { $sort: { totalQuantitySold: -1 } },
     ]);
 
-    // 6. Recently sold products (last 8 items in Paid orders)
+    // 6. Recently sold products
     const recentlySoldProductsAgg = await Order.aggregate([
       {
         $lookup: {
@@ -389,7 +412,7 @@ export async function GET(req) {
       totalSpent: c.totalSpent || 0,
     }));
 
-    // 8. Revenue trend (daily revenue for last 30 days)
+    // 8. Revenue trend
     const dailyRevenueAgg = await Order.aggregate([
       {
         $match: {
@@ -428,7 +451,7 @@ export async function GET(req) {
       const dateObj = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
       const dateStr = dateObj.toISOString().split("T")[0];
       revenueTrend.push({
-        date: dateStr,
+        date: dateObj.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
         revenue: revMap[dateStr] || 0,
       });
     }
@@ -471,6 +494,9 @@ export async function GET(req) {
             startDate: thisWeekStart,
             endDate: thisWeekEnd,
             profit: thisWeekProfit,
+            grossProfit: thisWeekProfit,
+            totalExpenses: thisWeekExpenses,
+            netProfit: thisWeekNetProfit,
             priorProfit: lastWeekProfit,
             percentageChange: weekPercentageChange,
           },
@@ -480,6 +506,9 @@ export async function GET(req) {
             startDate: thisMonthStart,
             endDate: thisMonthEnd,
             profit: thisMonthProfit,
+            grossProfit: thisMonthProfit,
+            totalExpenses: thisMonthExpenses,
+            netProfit: thisMonthNetProfit,
             priorProfit: lastMonthProfit,
             percentageChange: monthPercentageChange,
           },

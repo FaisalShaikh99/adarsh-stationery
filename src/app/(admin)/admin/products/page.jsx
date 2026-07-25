@@ -37,10 +37,12 @@ import * as z from "zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { productSchema } from "@/schemas/products.schema";
+import { useSearchParams } from "next/navigation";
 import useFuzzySearch from "@/hooks/useFuzzySearch";
 import VoiceSearchButton from "@/components/ui/voice-search-button";
  
 export default function ProductManagementPage() {
+  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const fileInputRefs = useRef([]);
 
@@ -78,6 +80,13 @@ export default function ProductManagementPage() {
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
   
   const [editingProduct, setEditingProduct] = useState(null); // null = add, product object = edit
+
+  useEffect(() => {
+    if (searchParams.get("action") === "new") {
+      setEditingProduct(null);
+      setIsModalOpen(true);
+    }
+  }, [searchParams]);
   const [aiDescriptions, setAiDescriptions] = useState([]);
   const [viewMode, setViewMode] = useState("grid"); // default grid-first visual workspace
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState("All");

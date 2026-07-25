@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTheme } from "next-themes";
+import { useAccentTheme } from "@/context/AccentThemeContext";
 import axios from "axios";
 import { toast } from "sonner";
 import { 
@@ -41,6 +42,7 @@ import {
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState("general");
   const { theme, setTheme } = useTheme();
+  const { accentTheme, setAccentTheme } = useAccentTheme();
   const [mounted, setMounted] = useState(false);
 
   // States
@@ -541,6 +543,70 @@ export default function SettingsPage() {
                     <p className="text-[11px] text-zinc-400 mt-0.5">Automatically match your operating system theme settings.</p>
                   </div>
                 </button>
+              </div>
+
+              {/* Accent Palette & Brand Tone Selection */}
+              <div className="border-t border-zinc-800/60 pt-6 space-y-4">
+                <div>
+                  <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-amber-400" /> Brand Accent Palette
+                  </h3>
+                  <p className="text-xs text-zinc-400 mt-1">
+                    Select your preferred accent theme to customize primary highlights, buttons, active states, and analytics gradients.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Indigo Ink Option */}
+                  <button
+                    type="button"
+                    onClick={() => setAccentTheme("indigo-ink")}
+                    className={`p-4 rounded-2xl border text-left transition-all cursor-pointer space-y-3 relative group ${
+                      accentTheme === "indigo-ink"
+                        ? "bg-indigo-600/15 border-indigo-500 shadow-md shadow-indigo-500/10"
+                        : "bg-zinc-950/60 border-zinc-800 hover:border-zinc-700"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-5 h-5 rounded-full bg-indigo-600 shadow-sm" />
+                        <div className="w-5 h-5 rounded-full bg-violet-600 shadow-sm" />
+                      </div>
+                      {accentTheme === "indigo-ink" && (
+                        <span className="h-2 w-2 rounded-full bg-indigo-500 ring-4 ring-indigo-500/20" />
+                      )}
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-white">Indigo Ink (Default)</h4>
+                      <p className="text-[11px] text-zinc-400 mt-0.5">Classic deep indigo and royal violet accent palette.</p>
+                    </div>
+                  </button>
+
+                  {/* Violet Dusk Option */}
+                  <button
+                    type="button"
+                    onClick={() => setAccentTheme("violet-dusk")}
+                    className={`p-4 rounded-2xl border text-left transition-all cursor-pointer space-y-3 relative group ${
+                      accentTheme === "violet-dusk"
+                        ? "bg-purple-600/15 border-purple-500 shadow-md shadow-purple-500/10"
+                        : "bg-zinc-950/60 border-zinc-800 hover:border-zinc-700"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-5 h-5 rounded-full bg-purple-600 shadow-sm" />
+                        <div className="w-5 h-5 rounded-full bg-fuchsia-500 shadow-sm" />
+                      </div>
+                      {accentTheme === "violet-dusk" && (
+                        <span className="h-2 w-2 rounded-full bg-purple-500 ring-4 ring-purple-500/20" />
+                      )}
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-white">Violet Dusk</h4>
+                      <p className="text-[11px] text-zinc-400 mt-0.5">Rich purple-to-fuchsia magenta twilight accent palette.</p>
+                    </div>
+                  </button>
+                </div>
               </div>
             </div>
           )}

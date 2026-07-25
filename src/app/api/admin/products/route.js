@@ -9,6 +9,7 @@ import crypto from "crypto";
 import mongoose from "mongoose";
 import { Brand } from "@/models/brand.model";
 import { productValidationSchema } from "@/schemas/products.schema";
+import { createNotification } from "@/lib/createNotification";
 
 export const POST = asyncHandler(async (request) => {
     await dbConnect();
@@ -232,6 +233,18 @@ export const PUT = asyncHandler(async (request) => {
         updatedProductPayload,
         { new: true, runValidators: true }
     );
+
+    // Low stock notification trigger with unread deduplication
+    const minStockThreshold = savedProduct.minStock !== undefined ? savedProduct.minStock : 10;
+    if (savedProduct.stock <= minStockThreshold) {
+        await createNotification({
+            type: "low_stock",
+            title: "Low Stock Alert",
+            message: `${savedProduct.name} is running low on stock (${savedProduct.stock} ${savedProduct.stockUnit || "Pcs"} remaining)`,
+            link: "/admin/inventory",
+            relatedId: savedProduct._id,
+        });
+    }
 
     return NextResponse.json(
         new ApiResponse(200, savedProduct, "Product specifications updated live into database infrastructure!")

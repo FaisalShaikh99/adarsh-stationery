@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axiosClient from "@/lib/axios";
 import { toast } from "sonner";
@@ -22,6 +23,7 @@ const fetchCategories = async () => {
 };
 
 export default function BrandManagementPage() {
+  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
 
   // 1. Filter & View States
@@ -37,6 +39,13 @@ export default function BrandManagementPage() {
   const [editingBrand, setEditingBrand] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
+
+  useEffect(() => {
+    if (searchParams.get("action") === "new") {
+      setEditingBrand(null);
+      setIsModalOpen(true);
+    }
+  }, [searchParams]);
 
   // 3. Categories Fetch
   const { data: categories = [], isLoading: categoriesLoading } = useQuery({
