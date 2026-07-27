@@ -514,7 +514,7 @@ export default function InventoryManagementPage() {
               <TrendingUp className="w-3 h-3" /> Cost basis valuation
             </div>
           </div>
-        </div>v>
+        </div>
  
         {/* Card 3: In Stock Products */}
         <div 

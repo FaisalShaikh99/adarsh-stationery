@@ -24,67 +24,78 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4 font-sans text-gray-900">
+    <div className="flex min-h-screen items-center justify-center p-4 font-sans text-gray-900 bg-gradient-to-b from-[#CBB4E8] via-[#ECCDF8] to-[#FBF0FD]">
       
-      {/* Shadcn Card Component with Translucent Glass Styling */}
-      <Card className="w-full max-w-md border-border-subtle bg-white/90 backdrop-blur-md shadow-xl rounded-2xl animate-in fade-in zoom-in-95 duration-200">
-        <CardHeader className="space-y-3 text-center pb-6 border-b border-border-subtle flex flex-col items-center">
+      {/* Seamless HD Glass Card with Matching Logo Background Tone */}
+      <Card className="w-full max-w-md border border-purple-200/60 bg-[linear-gradient(180deg,#F8F9FE_0%,#F1F4FD_40%,#ECEFFA_100%)] backdrop-blur-xl shadow-2xl rounded-[32px] overflow-hidden animate-in fade-in zoom-in-95 duration-300">
+        <CardHeader className="space-y-3 text-center pb-6 border-b border-purple-200/50 flex flex-col items-center pt-8 bg-transparent">
           
-          {/* HIGH-CLARITY PROMINENT FULL LOGO */}
-          <div className="flex justify-center w-full my-2">
+          {/* SEAMLESS HIGH-DEFINITION (HD) LOGO BLEND - NO VISIBLE PASTE EDGES */}
+          <div className="flex justify-center w-full my-1">
             <Image
               src="/logo-full.png"
               alt="Adarsh Stationery Mart"
-              width={1036}
-              height={283}
+              width={1024}
+              height={1024}
               quality={95}
               priority
-              className="w-64 sm:w-72 md:w-80 h-auto object-contain drop-shadow-sm"
+              className="w-52 sm:w-60 h-auto object-contain mix-blend-multiply filter drop-shadow-md"
             />
           </div>
 
-          <CardTitle className="text-xl font-black tracking-tight text-gray-900 pt-1">
+          <CardTitle className="text-2xl font-black tracking-tight text-purple-950 pt-2">
             Adarsh Stationery Mart
           </CardTitle>
-          <CardDescription className="text-zinc-600 text-xs font-bold">
+          <CardDescription className="text-purple-800/80 text-xs font-bold">
             Admin & Staff Control Panel Access
           </CardDescription>
         </CardHeader>
         
-        <CardContent className="pt-8 space-y-6">
-          <p className="text-center text-xs font-black uppercase tracking-wider text-primary-700">
+        <CardContent className="pt-8 pb-8 px-6 sm:px-8 space-y-6">
+          <p className="text-center text-xs font-black uppercase tracking-wider text-purple-900">
             Secure Authentication Required
           </p>
 
-          {/* Google Login Button */}
+          {/* Google Login Pill Button with UI Micro-Animation */}
           <Button
             onClick={handleGoogleLogin}
             disabled={loading}
-            className="w-full bg-primary-600 hover:bg-primary-700 text-white font-black h-12 rounded-xl transition-all flex items-center justify-center gap-3 shadow-xs btn-modern cursor-pointer"
+            className="w-full btn-pill-gradient h-13 rounded-full font-black text-sm text-white transition-all duration-300 flex items-center justify-center gap-3 shadow-lg hover:scale-[1.03] active:scale-[0.98] cursor-pointer outline-none group"
           >
             {loading ? (
               <>
                 <Loader2 className="h-5 w-5 animate-spin text-white" />
-                Connecting Securely...
+                <span>Connecting Securely...</span>
               </>
             ) : (
               <>
-                <svg xmlns="http://www.w3.org/2000/svg" width="1.2em" height="1.2em" viewBox="0 0 512 512">
-                  <path d="M0 0h512v512H0z" fill="none" />
-                  <path fill="#fc4c53" d="M502.2 209.5H261.1v99.1h137.8c-6.1 31.9-24.2 58.9-51.4 77c-22.8 15.4-51.9 24.7-86.3 24.7c-66.6 0-123.1-44.9-143.4-105.4h-.3l.3-.2c-5.1-15.4-8.1-31.7-8.1-48.6s3-33.3 8.1-48.6C138 147 194.6 102.1 261.2 102.1c37.7 0 71.2 13 98 38.2L432.5 67C388 25.4 330.2 0 261.1 0C161 0 74.7 57.5 32.6 141.3C15.1 175.7 5.1 214.6 5.1 256s10 80.3 27.5 114.7v.2C74.7 454.5 161 512 261.1 512c69.1 0 127.1-22.8 169.4-61.9c48.4-44.7 76.3-110.3 76.3-188.3c.1-18.1-1.5-35.6-4.6-52.3" />
-                  <radialGradient id="SVGlCFn0bxH" cx="91.998" cy="254.653" r="224.709" gradientTransform="matrix(.8032 0 0 -1.0842 -7.184 568.69)" gradientUnits="userSpaceOnUse">
-                    <stop offset=".368" stopColor="#ffcf09" />
-                    <stop offset=".718" stopColor="#ffcf09" stopOpacity=".7" />
-                    <stop offset="1" stopColor="#ffcf09" stopOpacity="0" />
-                  </radialGradient>
-                  <path fill="url(#SVGlCFn0bxH)" d="M117.8 304.9h-.3l.3-.2c-5.1-15.4-8.1-31.7-8.1-48.6c0-17 3-33.3 8.1-48.6c12.8-38.3 40.2-70.2 75.3-88.6C169 86.9 138.3 64 104 54.2c-29.7 23.3-54.3 52.9-71.5 87C15.1 175.7 5.1 214.6 5.1 256s10 80.3 27.5 114.7v.2c28.3 56 76.5 100.3 135.3 123.4c24.6-22.5 44.7-53 58.6-88.7c-50.9-12.4-92.1-51.1-108.7-100.7" />
-                </svg>
-                Continue with Google
+                {/* Official 4-Color Google Brand G SVG Icon */}
+                <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center p-1 shadow-2xs group-hover:scale-110 transition-transform">
+                  <svg className="w-full h-full" viewBox="0 0 24 24">
+                    <path
+                      fill="#4285F4"
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                    />
+                    <path
+                      fill="#34A853"
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                    />
+                    <path
+                      fill="#FBBC05"
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                    />
+                    <path
+                      fill="#EA4335"
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                    />
+                  </svg>
+                </div>
+                <span className="tracking-wide">Continue with Google</span>
               </>
             )}
           </Button>
 
-          <p className="text-center text-[11px] text-zinc-500 font-medium mt-4">
+          <p className="text-center text-[11px] text-purple-900/70 font-semibold mt-4">
             Authorized personnel only. All access attempts are monitored and logged.
           </p>
         </CardContent>

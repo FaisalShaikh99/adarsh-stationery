@@ -118,16 +118,16 @@ export default function AdminSidebar({
             <Link 
               href="/admin/dashboard" 
               onClick={() => setIsMobileOpen(false)} 
-              className="w-[78%] rounded-2xl bg-white border border-border-subtle p-2 shadow-2xs overflow-hidden flex items-center justify-center hover:scale-102 transition-transform"
+              className="w-[82%] rounded-2xl bg-gradient-to-b from-[#F8F9FE] to-[#ECEFFA] border border-purple-200/60 p-2 shadow-2xs overflow-hidden flex items-center justify-center hover:scale-102 transition-transform"
             >
               <Image
                 src="/logo-full.png"
                 alt="Adarsh Stationery Mart"
-                width={1036}
-                height={283}
+                width={1024}
+                height={1024}
                 quality={95}
                 priority
-                className="w-full h-auto object-contain rounded-xl"
+                className="w-44 h-auto max-h-16 object-contain mix-blend-multiply rounded-xl"
               />
             </Link>
             <button
@@ -183,21 +183,21 @@ export default function AdminSidebar({
         </div>
       </div>
 
-      {/* 🌟 1. STANDALONE COMPANY LOGO CONTAINER (MAXIMIZED FULL LOGO SIZE) */}
+      {/* 🌟 1. STANDALONE COMPANY LOGO CONTAINER (SEAMLESS HD MULTIPLY BLEND) */}
       <div className="hidden lg:flex fixed top-3.5 left-4 z-40">
         <Link 
           href="/admin/dashboard" 
-          className="w-14 h-14 sm:w-16 sm:h-16 rounded-[22px] bg-white border border-border-subtle shadow-xs flex items-center justify-center p-1 overflow-hidden hover:scale-105 hover:shadow-md transition-all duration-200 group cursor-pointer"
+          className="w-14 h-14 sm:w-16 sm:h-16 rounded-[22px] bg-gradient-to-b from-[#F8F9FE] to-[#ECEFFA] border border-purple-200/60 shadow-xs flex items-center justify-center p-1 overflow-hidden hover:scale-105 hover:shadow-md transition-all duration-200 group cursor-pointer"
           title="Adarsh Stationery Mart"
         >
           <Image 
             src="/logo-icon.png" 
             alt="Adarsh Stationery Mart Logo" 
-            width={590}
-            height={590}
+            width={1024}
+            height={1024}
             quality={95}
             priority
-            className="w-full h-full object-cover rounded-[18px] filter drop-shadow-xs group-hover:drop-shadow-md transition-all" 
+            className="w-full h-full object-contain mix-blend-multiply filter drop-shadow-xs group-hover:drop-shadow-md transition-all" 
           />
         </Link>
       </div>
