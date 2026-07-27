@@ -16,24 +16,27 @@ import {
   Clock,
   Mail,
   X,
-  ExternalLink
+  ExternalLink,
+  Package,
+  Sparkles,
+  CheckCircle2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { jsPDF } from "jspdf";
 
 const statusClasses = {
-  Pending: "bg-amber-500/10 text-amber-700 border border-amber-500/25 font-bold",
-  Confirmed: "bg-sky-500/10 text-sky-700 border border-sky-500/25 font-bold",
-  Shipped: "bg-purple-500/10 text-purple-700 border border-purple-500/25 font-bold",
-  Delivered: "bg-emerald-500/10 text-emerald-700 border border-emerald-500/25 font-bold",
-  Cancelled: "bg-rose-500/10 text-rose-700 border border-rose-500/25 font-bold",
+  Pending: "bg-amber-100 text-amber-900 border border-amber-300 font-black",
+  Confirmed: "bg-sky-100 text-sky-900 border border-sky-300 font-black",
+  Shipped: "bg-purple-100 text-purple-900 border border-purple-300 font-black",
+  Delivered: "bg-emerald-100 text-emerald-900 border border-emerald-300 font-black",
+  Cancelled: "bg-rose-100 text-rose-900 border border-rose-300 font-black",
 };
 
 const paymentStatusClasses = {
-  Paid: "bg-emerald-500/10 text-emerald-700 border border-emerald-500/25 font-bold",
-  Pending: "bg-amber-500/10 text-amber-700 border border-amber-500/25 font-bold",
-  Failed: "bg-rose-500/10 text-rose-700 border border-rose-500/25 font-bold",
+  Paid: "bg-emerald-100 text-emerald-900 border border-emerald-300 font-black",
+  Pending: "bg-amber-100 text-amber-900 border border-amber-300 font-black",
+  Failed: "bg-rose-100 text-rose-900 border border-rose-300 font-black",
 };
 
 const allowedTransitions = {
@@ -58,12 +61,13 @@ function formatDate(dateString) {
     day: "2-digit",
     month: "short",
     year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }
 
 export default function OrderDetailDrawer({ orderId, isOpen, onClose }) {
   const queryClient = useQueryClient();
-  const [selectedNextStatus, setSelectedNextStatus] = useState("");
 
   const { data: order, isLoading, error } = useQuery({
     queryKey: ["order", orderId],
@@ -82,7 +86,6 @@ export default function OrderDetailDrawer({ orderId, isOpen, onClose }) {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       queryClient.invalidateQueries({ queryKey: ["dashboardData"] });
       toast.success(response.data?.message || "Order status updated!");
-      setSelectedNextStatus("");
     },
     onError: (err) => {
       toast.error(err.response?.data?.message || "Failed to update order status");
@@ -129,9 +132,9 @@ export default function OrderDetailDrawer({ orderId, isOpen, onClose }) {
     y += 8;
     doc.setFont("helvetica", "normal");
     order.items?.forEach((item) => {
-      const title = item.product?.name || "Product Item";
+      const title = item.product?.name || item.productName || "Product Item";
       const qty = item.quantity || 1;
-      const price = item.price || 0;
+      const price = item.pricePerUnit || item.price || 0;
       const total = qty * price;
 
       doc.text(title.slice(0, 45), 14, y);
@@ -161,31 +164,31 @@ export default function OrderDetailDrawer({ orderId, isOpen, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
+    <div className="fixed inset-0 z-50 flex justify-end font-sans">
       {/* Backdrop */}
       <div 
-        className="fixed inset-0 bg-black/30 backdrop-blur-xs transition-opacity animate-in fade-in duration-200" 
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity animate-in fade-in duration-200" 
         onClick={onClose} 
       />
 
-      {/* Drawer Container */}
-      <div className="relative w-full lg:w-[45%] max-w-[700px] bg-white/95 backdrop-blur-2xl border-l border-border-subtle h-full flex flex-col shadow-2xl z-10 animate-in slide-in-from-right duration-300 text-gray-900">
+      {/* Drawer Container (Strict Clip with overflow-hidden & rounded-l-[36px]) */}
+      <div className="relative w-full sm:w-[88vw] lg:w-[48%] max-w-[720px] bg-gradient-to-br from-[#9B66D4] via-[#B885E2] to-[#D8A5E9] border-l border-white/30 h-full flex flex-col shadow-2xl z-10 animate-in slide-in-from-right duration-300 text-white sm:rounded-l-[36px] overflow-hidden">
         
         {/* FIXED DRAWER HEADER */}
-        <div className="flex items-center justify-between border-b border-border-subtle p-5 shrink-0 bg-white/95 sticky top-0 z-20">
-          <div className="flex items-center gap-3 min-w-0 pr-2">
+        <div className="flex items-center justify-between border-b border-white/25 p-4 sm:p-6 shrink-0 bg-white/10 backdrop-blur-xl sticky top-0 z-20">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 pr-2">
             <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-base font-extrabold text-gray-900 tracking-tight">{order?.orderNumber || "Loading Order..."}</h3>
+              <div className="flex items-center gap-2.5">
+                <h3 className="text-xl sm:text-2xl font-black text-white font-mono tracking-tight">{order?.orderNumber || "Loading Order..."}</h3>
                 {order && (
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] ${statusClasses[order.status] || "bg-zinc-100 text-zinc-700 border-zinc-200"}`}>
+                  <span className={`px-3 py-1 rounded-xl text-xs ${statusClasses[order.status] || "bg-white/20 text-white font-bold"}`}>
                     {order.status}
                   </span>
                 )}
               </div>
               {order && (
-                <p className="text-[11px] text-zinc-500 flex items-center gap-1 mt-0.5">
-                  <Calendar className="w-3 h-3 text-zinc-400" /> Placed on {formatDate(order.createdAt)}
+                <p className="text-xs text-purple-100 font-bold flex items-center gap-1.5 mt-1">
+                  <Calendar className="w-3.5 h-3.5 text-white" /> Placed on {formatDate(order.createdAt)}
                 </p>
               )}
             </div>
@@ -196,153 +199,161 @@ export default function OrderDetailDrawer({ orderId, isOpen, onClose }) {
               <>
                 <Button 
                   onClick={handleDownloadInvoice} 
-                  variant="outline" 
-                  className="border-border-subtle bg-bg-surface text-gray-900 rounded-xl px-3 h-8 text-xs font-semibold hover:bg-primary-50 transition-all shadow-xs shrink-0 flex items-center gap-1.5 cursor-pointer btn-modern"
+                  className="bg-white text-purple-950 font-black rounded-2xl px-4 h-10 text-xs hover:bg-purple-50 transition-all shadow-md shrink-0 flex items-center gap-1.5 cursor-pointer btn-modern"
                 >
-                  <Download className="w-3.5 h-3.5 text-primary-600" /> Invoice
+                  <Download className="w-3.5 h-3.5 text-purple-700" /> Tax Invoice
                 </Button>
                 <Link
                   href={`/admin/orders/${order._id}`}
-                  className="p-1.5 text-zinc-500 hover:text-gray-900 hover:bg-primary-50 rounded-lg transition-colors cursor-pointer"
+                  className="p-2 text-white/90 hover:text-white hover:bg-white/20 rounded-xl transition-colors cursor-pointer"
                   title="Open standalone page"
                 >
-                  <ExternalLink className="w-4 h-4" />
+                  <ExternalLink className="w-5 h-5" />
                 </Link>
               </>
             )}
             <button 
               onClick={onClose} 
-              className="p-1.5 rounded-lg text-zinc-500 hover:text-gray-900 hover:bg-primary-50 transition-colors cursor-pointer"
+              className="p-2 rounded-xl text-white/90 hover:text-white hover:bg-white/20 transition-colors cursor-pointer"
             >
-              <X className="w-5 h-5" />
+              <X className="w-6 h-6" />
             </button>
           </div>
         </div>
 
         {/* SCROLLABLE DRAWER CONTENT */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-6 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6 custom-scrollbar">
           {isLoading ? (
             <div className="flex h-64 items-center justify-center">
-              <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
+              <Loader2 className="w-8 h-8 animate-spin text-white" />
             </div>
           ) : error || !order ? (
-            <div className="p-8 text-center text-rose-600 font-semibold text-xs">
+            <div className="p-8 text-center text-white font-black text-sm bg-rose-500/20 rounded-2xl border border-rose-400">
               Failed to load order record.
             </div>
           ) : (
             <>
               {/* STATUS TRANSITION PANEL */}
-              <div className="bg-bg-surface border border-border-subtle rounded-2xl p-4 space-y-3 shadow-xs">
-                <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider block">Update Order Status</span>
+              <div className="bg-white/95 backdrop-blur-2xl border border-white/60 rounded-[24px] p-5 space-y-3 shadow-xl text-gray-900">
+                <span className="text-xs text-purple-950 font-black uppercase tracking-wider block">Update Order Status</span>
                 {allowedTransitions[order.status]?.length > 0 ? (
-                  <div className="flex flex-wrap gap-2 items-center">
+                  <div className="flex flex-wrap gap-2.5 items-center">
                     {allowedTransitions[order.status].map((next) => (
                       <Button
                         key={next}
                         onClick={() => statusMutation.mutate({ id: order._id, nextStatus: next })}
                         disabled={statusMutation.isPending}
-                        className="bg-primary-600 text-white hover:bg-primary-700 rounded-xl px-3 h-8 text-xs font-bold shadow-xs cursor-pointer btn-modern"
+                        className="bg-primary-600 text-white hover:bg-primary-700 font-black rounded-2xl px-4 h-10 text-xs shadow-md cursor-pointer btn-modern"
                       >
                         Mark as {next}
                       </Button>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-xs text-zinc-500 font-medium">Order status is terminal ({order.status}).</p>
+                  <p className="text-xs text-zinc-600 font-bold">Order status is terminal ({order.status}).</p>
                 )}
               </div>
 
               {/* CUSTOMER INFORMATION CARD */}
-              <div className="bg-bg-surface border border-border-subtle rounded-2xl p-4 space-y-3 shadow-xs">
-                <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider flex items-center gap-1.5">
-                  <User className="w-3.5 h-3.5 text-primary-600" /> Customer Information
+              <div className="bg-white/95 backdrop-blur-2xl border border-white/60 rounded-[24px] p-5 space-y-3 shadow-xl text-gray-900">
+                <span className="text-xs text-purple-950 font-black uppercase tracking-wider flex items-center gap-2">
+                  <User className="w-4 h-4 text-purple-700" /> Customer Information
                 </span>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-sans pt-2">
                   <div>
-                    <span className="text-zinc-500 text-[11px]">Full Name</span>
-                    <p className="font-bold text-gray-900 capitalize mt-0.5">{order.customer?.name || "Customer unavailable"}</p>
+                    <span className="text-zinc-500 font-bold text-xs uppercase tracking-wider block">Full Name</span>
+                    <p className="font-black text-gray-900 capitalize text-sm sm:text-base mt-0.5">{order.customer?.name || order.shippingAddress?.name || "Customer"}</p>
                   </div>
                   <div>
-                    <span className="text-zinc-500 text-[11px]">Email Address</span>
-                    <p className="font-mono text-zinc-700 mt-0.5">{order.customer?.email || "—"}</p>
+                    <span className="text-zinc-500 font-bold text-xs uppercase tracking-wider block">Email Address</span>
+                    <p className="font-mono text-zinc-700 font-bold text-xs sm:text-sm mt-0.5">{order.customer?.email || "—"}</p>
                   </div>
                   <div>
-                    <span className="text-zinc-500 text-[11px]">Phone Number</span>
-                    <p className="font-mono text-zinc-700 mt-0.5">{order.customer?.phone || "—"}</p>
+                    <span className="text-zinc-500 font-bold text-xs uppercase tracking-wider block">Phone Number</span>
+                    <p className="font-mono text-zinc-700 font-bold text-xs sm:text-sm mt-0.5">{order.customer?.phone || order.shippingAddress?.phone || "—"}</p>
                   </div>
                 </div>
               </div>
 
               {/* SHIPPING ADDRESS CARD */}
-              <div className="bg-bg-surface border border-border-subtle rounded-2xl p-4 space-y-3 shadow-xs">
-                <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-primary-600" /> Shipping Address
+              <div className="bg-white/95 backdrop-blur-2xl border border-white/60 rounded-[24px] p-5 space-y-3 shadow-xl text-gray-900">
+                <span className="text-xs text-purple-950 font-black uppercase tracking-wider flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-purple-700" /> Delivery Address
                 </span>
-                <div className="text-xs space-y-1 text-zinc-700 leading-relaxed">
-                  <p className="font-bold text-gray-900">{order.shippingAddress?.fullName || order.customer?.name}</p>
-                  <p>{order.shippingAddress?.street}</p>
-                  <p>{order.shippingAddress?.city}, {order.shippingAddress?.state} - {order.shippingAddress?.postalCode}</p>
-                  {order.shippingAddress?.phoneNumber && <p className="font-mono text-[11px] text-zinc-600">Phone: {order.shippingAddress.phoneNumber}</p>}
+                <div className="text-xs sm:text-sm space-y-1 text-zinc-700 leading-relaxed font-sans pt-1">
+                  <p className="font-black text-gray-900 text-sm sm:text-base">{order.shippingAddress?.fullName || order.shippingAddress?.name || order.customer?.name}</p>
+                  <p className="font-semibold">{order.shippingAddress?.street || order.shippingAddress?.addressLine1}</p>
+                  <p className="font-semibold">{order.shippingAddress?.city}, {order.shippingAddress?.state} - {order.shippingAddress?.postalCode || order.shippingAddress?.pincode}</p>
+                  {(order.shippingAddress?.phoneNumber || order.shippingAddress?.phone) && (
+                    <p className="font-mono font-bold text-xs text-zinc-600 mt-1">
+                      Phone: {order.shippingAddress.phoneNumber || order.shippingAddress.phone}
+                    </p>
+                  )}
                 </div>
               </div>
 
               {/* ORDERED ITEMS TABLE */}
-              <div className="bg-bg-surface border border-border-subtle rounded-2xl p-4 space-y-3 shadow-xs">
-                <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider block">Ordered Items</span>
-                <div className="overflow-x-auto rounded-xl border border-border-subtle bg-white">
-                  <Table className="min-w-[450px] text-xs">
+              <div className="bg-white/95 backdrop-blur-2xl border border-white/60 rounded-[24px] p-5 space-y-3 shadow-xl text-gray-900">
+                <span className="text-xs text-purple-950 font-black uppercase tracking-wider block">Ordered Stationery Items</span>
+                <div className="overflow-x-auto rounded-2xl border border-border-subtle bg-white shadow-2xs">
+                  <Table className="min-w-[480px] text-xs font-sans">
                     <TableHeader className="bg-primary-50/90 border-b border-border-subtle">
-                      <TableRow className="uppercase text-[10px]">
-                        <TableHead className="font-bold text-primary-800">Product</TableHead>
-                        <TableHead className="text-center font-bold text-primary-800">Qty</TableHead>
-                        <TableHead className="text-right font-bold text-primary-800">Price</TableHead>
-                        <TableHead className="text-right font-bold text-primary-800">Total</TableHead>
+                      <TableRow className="uppercase text-xs">
+                        <TableHead className="font-black text-primary-900">Product</TableHead>
+                        <TableHead className="text-center font-black text-primary-900">Qty</TableHead>
+                        <TableHead className="text-right font-black text-primary-900">Price</TableHead>
+                        <TableHead className="text-right font-black text-primary-900">Total</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {order.items?.map((item, idx) => (
-                        <TableRow key={idx} className="border-b border-border-subtle text-gray-900">
-                          <TableCell className="py-2.5">
-                            <div className="flex items-center gap-2">
-                              <div className="w-8 h-8 rounded-lg bg-white border border-border-subtle p-0.5 shrink-0 flex items-center justify-center overflow-hidden">
-                                {item.product?.images?.[0] ? (
-                                  <img src={item.product.images[0]} alt="" className="w-full h-full object-contain" />
-                                ) : (
-                                  <span className="text-[8px] text-zinc-400">No img</span>
-                                )}
+                      {order.items?.map((item, idx) => {
+                        const itemPrice = item.pricePerUnit || item.price || 0;
+                        const subtotal = item.subtotal || (item.quantity * itemPrice) || 0;
+
+                        return (
+                          <TableRow key={idx} className="border-b border-border-subtle text-gray-900 bg-white">
+                            <TableCell className="py-3">
+                              <div className="flex items-center gap-2.5">
+                                <div className="w-10 h-10 rounded-xl bg-white border border-border-subtle p-0.5 shrink-0 flex items-center justify-center overflow-hidden shadow-2xs">
+                                  {item.product?.images?.[0] ? (
+                                    <img src={item.product.images[0]} alt="" className="w-full h-full object-contain" />
+                                  ) : (
+                                    <span className="text-[8px] text-zinc-400">No img</span>
+                                  )}
+                                </div>
+                                <span className="font-black text-xs sm:text-sm text-gray-900 truncate max-w-[200px]">{item.product?.name || item.productName || "Product"}</span>
                               </div>
-                              <span className="font-bold text-xs truncate max-w-[180px]">{item.product?.name || "Product"}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-center font-mono font-bold py-2.5">{item.quantity}</TableCell>
-                          <TableCell className="text-right font-mono py-2.5 text-zinc-600">₹{item.price}</TableCell>
-                          <TableCell className="text-right font-mono font-bold py-2.5 text-gray-900">₹{item.quantity * item.price}</TableCell>
-                        </TableRow>
-                      ))}
+                            </TableCell>
+                            <TableCell className="text-center font-mono font-black py-3 text-xs sm:text-sm">{item.quantity}</TableCell>
+                            <TableCell className="text-right font-mono font-bold py-3 text-zinc-600 text-xs sm:text-sm">₹{itemPrice}</TableCell>
+                            <TableCell className="text-right font-mono font-black py-3 text-emerald-600 text-xs sm:text-sm">₹{subtotal}</TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </div>
               </div>
 
               {/* PAYMENT & FINANCIAL SUMMARY */}
-              <div className="bg-bg-surface border border-border-subtle rounded-2xl p-4 space-y-3 shadow-xs">
-                <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider flex items-center gap-1.5">
-                  <CreditCard className="w-3.5 h-3.5 text-primary-600" /> Payment & Financial Summary
+              <div className="bg-white/95 backdrop-blur-2xl border border-white/60 rounded-[24px] p-5 space-y-3 shadow-xl text-gray-900">
+                <span className="text-xs text-purple-950 font-black uppercase tracking-wider flex items-center gap-2">
+                  <CreditCard className="w-4 h-4 text-purple-700" /> Financial Reconciliation
                 </span>
-                <div className="space-y-2 text-xs font-mono border-t border-border-subtle pt-3">
+                <div className="space-y-2.5 text-xs sm:text-sm font-mono border-t border-border-subtle pt-3">
                   <div className="flex justify-between text-zinc-600">
-                    <span>Payment Method</span>
-                    <span className="font-bold text-gray-900">{order.paymentMethod || "COD"}</span>
+                    <span className="font-bold font-sans">Payment Method</span>
+                    <span className="font-black text-gray-900">{order.paymentMethod || "COD"}</span>
                   </div>
                   <div className="flex justify-between text-zinc-600">
-                    <span>Payment Status</span>
-                    <span className={`px-2 py-0.5 rounded text-[10px] ${paymentStatusClasses[order.paymentStatus] || "bg-zinc-100 text-zinc-700"}`}>
+                    <span className="font-bold font-sans">Payment Status</span>
+                    <span className={`px-2.5 py-0.5 rounded-lg text-xs ${paymentStatusClasses[order.paymentStatus] || "bg-zinc-100 text-zinc-700"}`}>
                       {order.paymentStatus}
                     </span>
                   </div>
-                  <div className="flex justify-between text-base font-bold text-gray-900 pt-2 border-t border-border-subtle">
-                    <span>Total Amount Paid</span>
-                    <span className="text-emerald-600 font-extrabold">{formatCurrency(order.totalAmount)}</span>
+                  <div className="flex justify-between text-base sm:text-lg font-black text-gray-900 pt-3 border-t border-border-subtle">
+                    <span className="font-sans font-black">Grand Total Amount</span>
+                    <span className="text-emerald-600 font-black font-mono">{formatCurrency(order.totalAmount)}</span>
                   </div>
                 </div>
               </div>

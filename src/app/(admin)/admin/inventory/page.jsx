@@ -482,7 +482,8 @@ export default function InventoryManagementPage() {
       </div>
  
       {/* 2. SUMMARY DASHBOARD CARDS ROW */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4"        {/* Card 1: Total Products */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-4">
+        {/* Card 1: Total Products */}
         <div 
           onClick={() => setSelectedStockStatus("All")}
           className={`bg-bg-surface border p-4.5 rounded-2xl flex flex-col justify-between min-h-[105px] cursor-pointer transition-all duration-200 select-none shadow-xs ${

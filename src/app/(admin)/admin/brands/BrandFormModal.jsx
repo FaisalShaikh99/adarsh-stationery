@@ -1,143 +1,130 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import axiosClient from "@/lib/axios";
+import axios from "axios";
 import { toast } from "sonner";
-import { Loader2, Sparkles, X, Building2, Wand2, UploadCloud } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Building2, Sparkles, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle 
+} from "@/components/ui/dialog";
 
-export default function BrandFormModal({ isOpen, onClose, editingBrand, categories }) {
-  const queryClient = useQueryClient();
-
+export default function BrandFormModal({
+  isOpen,
+  onClose,
+  editingBrand,
+  onSuccess,
+  categories = []
+}) {
   const [form, setForm] = useState({
     name: "",
+    slug: "",
+    logoUrl: "",
+    website: "",
     primaryContact: "",
-    websiteURL: "",
-    logo: "",
-    description: ""
+    supportEmail: "",
+    description: "",
+    isActive: true,
   });
-  const [selectedCategories, setSelectedCategories] = useState([]);
 
-  // AI Content Generator & Enhancer States
+  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isGeneratingAi, setIsGeneratingAi] = useState(false);
   const [aiDescriptions, setAiDescriptions] = useState([]);
-  const [isAiLoading, setIsAiLoading] = useState(false);
-  const [isEnhancingImage, setIsEnhancingImage] = useState(false);
 
   useEffect(() => {
     if (editingBrand) {
       setForm({
         name: editingBrand.name || "",
+        slug: editingBrand.slug || "",
+        logoUrl: editingBrand.logoUrl || "",
+        website: editingBrand.website || "",
         primaryContact: editingBrand.primaryContact || "",
-        websiteURL: editingBrand.websiteURL || "",
-        logo: editingBrand.logo || "",
-        description: editingBrand.description || ""
+        supportEmail: editingBrand.supportEmail || "",
+        description: editingBrand.description || "",
+        isActive: editingBrand.isActive !== undefined ? editingBrand.isActive : true,
       });
-      setSelectedCategories(editingBrand.categories?.map((c) => c._id) || []);
+      setSelectedCategories(
+        editingBrand.categories ? editingBrand.categories.map(c => typeof c === "object" ? c._id : c) : []
+      );
     } else {
-      setForm({ name: "", primaryContact: "", websiteURL: "", logo: "", description: "" });
+      setForm({
+        name: "",
+        slug: "",
+        logoUrl: "",
+        website: "",
+        primaryContact: "",
+        supportEmail: "",
+        description: "",
+        isActive: true,
+      });
       setSelectedCategories([]);
-      setAiDescriptions([]);
     }
+    setAiDescriptions([]);
   }, [editingBrand, isOpen]);
 
   const updateField = (field, value) => {
     setForm(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleNameChange = (value) => {
-    updateField("name", value);
-    const lowerVal = value.toLowerCase();
-
-    const commonKeywords = ["bag", "pen", "pencil", "notebook", "register", "eraser", "color"];
-
-    for (let keyword of commonKeywords) {
-      if (lowerVal.includes(keyword)) {
-        const matchedCat = categories.find(cat => cat.name.toLowerCase().includes(keyword));
-        if (matchedCat && !selectedCategories.includes(matchedCat._id)) {
-          setSelectedCategories(prev => [...prev, matchedCat._id]);
-          toast.info(`Auto-linked category: ${matchedCat.name}`);
-          break;
-        }
-      }
-    }
+  const handleNameChange = (val) => {
+    const generatedSlug = val.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+    setForm(prev => ({
+      ...prev,
+      name: val,
+      slug: editingBrand ? prev.slug : generatedSlug
+    }));
   };
 
-  const generateAIDescription = async () => {
-    if (!form.name.trim()) return toast.error("Please fill Brand Name first to assist AI context.");
-    
-    setIsAiLoading(true);
+  const generateAiDescription = async () => {
+    if (!form.name.trim()) {
+      return toast.error("Please enter a brand name first.");
+    }
+    setIsGeneratingAi(true);
     try {
-      const res = await axiosClient.post("/api/admin/ai-generate", { productName: form.name });
-      if (res.success && Array.isArray(res.options)) {
-        setAiDescriptions(res.options);
-        if (res.fallback) {
-          toast.info("Offline fallback descriptions generated successfully.");
-        } else {
-          toast.success("AI Content variations generated successfully!");
-        }
-        return;
+      const res = await axios.post("/api/admin/brands/ai-suggest", { brandName: form.name });
+      if (res.data?.success && res.data?.data?.suggestions) {
+        setAiDescriptions(res.data.data.suggestions);
+        toast.success("AI generated brand profile descriptions!");
       }
-    } catch (err) {
-      console.warn("AI generation endpoint failed, using local generator:", err);
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to generate AI brand overview.");
     } finally {
-      setIsAiLoading(false);
+      setIsGeneratingAi(false);
     }
-
-    const brandName = form.name.trim();
-    const adjectives = ["Premium", "Leading", "Innovative", "Trusted", "Global", "Eco-friendly"];
-    const descriptions = [
-      `${brandName} is a ${adjectives[0].toLowerCase()} name in stationery, committed to delivering ergonomic design and superior reliability for students and professionals alike.`,
-      `Discover premium quality with ${brandName}. Specialized in high-quality writing instruments, office supplies, and creative stationery essentials.`,
-      `${brandName} is a ${adjectives[3].toLowerCase()} manufacturer, crafting premium school and workspace products engineered for durability, precision, and excellence.`
-    ];
-    setAiDescriptions(descriptions);
-    toast.info("Offline fallback descriptions generated successfully.");
   };
 
-  const handleImageEnhance = () => {
-    if (!form.logo.trim()) return toast.error("Please add a raw image URL first to enhance.");
-    
-    setIsEnhancingImage(true);
-    if (form.logo.includes("res.cloudinary.com")) {
-      const enhancedUrl = form.logo.replace("/upload/", "/upload/e_bgremoval/e_enhance/e_shadow:40/");
-      updateField("logo", enhancedUrl);
-      toast.success("AI Image Layer Applied: Background removed with 3D drop shadow!");
-    } else {
-      toast.warning("URL manipulation targeted outside cloud storage nodes. Finish manually.");
-    }
-    setIsEnhancingImage(false);
-  };
-
-  const { mutate: saveBrand, isLoading: isSaving } = useMutation({
-    mutationFn: async (payload) => {
-      const url = editingBrand ? `/api/admin/brands?id=${editingBrand._id}` : "/api/admin/brands";
-      const method = editingBrand ? "put" : "post";
-      return axiosClient[method](url, payload);
-    },
-    onSuccess: (res) => {
-      toast.success(res.message || "Database entry committed successfully!");
-      queryClient.invalidateQueries({ queryKey: ["brands"] });
-      onClose();
-    },
-    onError: (err) => {
-      toast.error(err.message || "Transaction matrix breakdown execution rejected.");
-    }
-  });
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (selectedCategories.length === 0) return toast.error("Select at least one category mapping layer.");
-    if (!form.logo.trim()) return toast.error("Brand Logo image url asset is required.");
+    if (!form.name.trim()) return toast.error("Brand name is required.");
 
-    saveBrand({
+    setIsSaving(true);
+    const payload = {
       ...form,
-      categories: selectedCategories
-    });
+      categories: selectedCategories,
+    };
+
+    try {
+      if (editingBrand) {
+        await axios.patch(`/api/admin/brands/${editingBrand._id}`, payload);
+        toast.success("Brand profile updated successfully!");
+      } else {
+        await axios.post("/api/admin/brands", payload);
+        toast.success("New brand profile published!");
+      }
+      onSuccess();
+      onClose();
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Unable to save brand details.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const toggleCategory = (id) => {
@@ -148,18 +135,18 @@ export default function BrandFormModal({ isOpen, onClose, editingBrand, categori
 
   return (
     <Dialog open={isOpen} onOpenChange={(val) => !val && onClose()}>
-      <DialogContent className="max-w-[92vw] w-full sm:max-w-6xl bg-white/95 backdrop-blur-2xl text-gray-900 rounded-[28px] overflow-hidden border border-border-subtle shadow-2xl p-0 font-sans">
-        <DialogHeader className="p-5 border-b border-border-subtle bg-primary-50/80 flex flex-row items-center justify-between">
-          <DialogTitle className="text-xl font-black tracking-tight text-gray-900 flex items-center gap-2.5">
-            <Building2 className="text-primary-600 w-5 h-5" /> 
+      <DialogContent className="max-w-[95vw] w-full sm:max-w-4xl lg:max-w-6xl max-h-[92vh] overflow-y-auto bg-white/95 backdrop-blur-2xl text-gray-900 rounded-2xl sm:rounded-[28px] border border-border-subtle shadow-2xl p-0 font-sans custom-scrollbar">
+        <DialogHeader className="p-4 sm:p-5 border-b border-border-subtle bg-primary-50/80 flex flex-row items-center justify-between">
+          <DialogTitle className="text-lg sm:text-xl font-black tracking-tight text-gray-900 flex items-center gap-2 sm:gap-2.5">
+            <Building2 className="text-primary-600 w-4.5 h-4.5 sm:w-5 sm:h-5" /> 
             {editingBrand ? "Edit Brand Profile" : "Add New Brand Profile"}
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="flex flex-col lg:flex-row min-h-[65vh]">
+        <form onSubmit={handleSubmit} className="flex flex-col lg:flex-row min-h-0">
           {/* Left Layout Pane (Standard Inputs) */}
-          <div className="lg:w-[60%] overflow-y-auto p-6 space-y-6 max-h-[70vh] custom-scrollbar">
-            <div className="rounded-[24px] border border-border-subtle bg-bg-surface p-6 space-y-4 shadow-xs">
+          <div className="lg:w-[60%] overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6 max-h-[65vh] lg:max-h-[70vh] custom-scrollbar">
+            <div className="rounded-2xl sm:rounded-[24px] border border-border-subtle bg-bg-surface p-4 sm:p-6 space-y-3 sm:space-y-4 shadow-xs">
               <h3 className="text-xs font-black uppercase tracking-wider text-primary-700">Core Parameters</h3>
               
               <div className="space-y-2">
@@ -178,102 +165,93 @@ export default function BrandFormModal({ isOpen, onClose, editingBrand, categori
                   <Label className="text-xs font-black text-gray-900">Contact Phone</Label>
                   <Input 
                     value={form.primaryContact} 
-                    onChange={(e) => updateField("primaryContact", e.target.value)} 
-                    placeholder="e.g. +91 98765 43210" 
-                    className="bg-white border border-border-subtle rounded-2xl h-11 text-xs font-semibold text-gray-900 placeholder-zinc-400 focus-visible:ring-1 focus-visible:ring-primary-400 focus-visible:border-primary-400 shadow-2xs" 
+                    onChange={(e) => updateField("primaryContact", e.target.value)}
+                    placeholder="+91 98765 43210" 
+                    className="bg-white border border-border-subtle rounded-2xl h-11 text-xs font-semibold text-gray-900 placeholder-zinc-400 focus-visible:ring-1 focus-visible:ring-primary-400 font-mono shadow-2xs"
                   />
                 </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs font-black text-gray-900">Support Email</Label>
+                  <Input 
+                    value={form.supportEmail} 
+                    onChange={(e) => updateField("supportEmail", e.target.value)}
+                    placeholder="support@doms.com" 
+                    type="email"
+                    className="bg-white border border-border-subtle rounded-2xl h-11 text-xs font-semibold text-gray-900 placeholder-zinc-400 focus-visible:ring-1 focus-visible:ring-primary-400 font-mono shadow-2xs"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-xs font-black text-gray-900">Brand Logo URL</Label>
+                  <Input 
+                    value={form.logoUrl} 
+                    onChange={(e) => updateField("logoUrl", e.target.value)}
+                    placeholder="https://images.com/logo.png" 
+                    className="bg-white border border-border-subtle rounded-2xl h-11 text-xs font-semibold text-gray-900 placeholder-zinc-400 focus-visible:ring-1 focus-visible:ring-primary-400 font-mono shadow-2xs"
+                  />
+                </div>
+
                 <div className="space-y-2">
                   <Label className="text-xs font-black text-gray-900">Official Website URL</Label>
                   <Input 
-                    type="url" 
-                    value={form.websiteURL} 
-                    onChange={(e) => updateField("websiteURL", e.target.value)} 
+                    value={form.website} 
+                    onChange={(e) => updateField("website", e.target.value)}
                     placeholder="https://domsindia.com" 
-                    className="bg-white border border-border-subtle rounded-2xl h-11 text-xs font-semibold text-gray-900 placeholder-zinc-400 focus-visible:ring-1 focus-visible:ring-primary-400 focus-visible:border-primary-400 shadow-2xs" 
+                    className="bg-white border border-border-subtle rounded-2xl h-11 text-xs font-semibold text-gray-900 placeholder-zinc-400 focus-visible:ring-1 focus-visible:ring-primary-400 font-mono shadow-2xs"
                   />
                 </div>
               </div>
             </div>
 
-            {/* Associated Categories Grid */}
+            {/* Category Association Grid */}
             <div className="rounded-[24px] border border-border-subtle bg-bg-surface p-6 space-y-3 shadow-xs">
-              <h3 className="text-xs font-black uppercase tracking-wider text-primary-700">Associated Category Chains</h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-h-52 overflow-y-auto p-1 custom-scrollbar">
+              <h3 className="text-xs font-black uppercase tracking-wider text-primary-700">Associated Categories ({selectedCategories.length})</h3>
+              <p className="text-[11px] text-zinc-500 font-medium">Link this brand to relevant store catalog categories:</p>
+              
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-1 max-h-48 overflow-y-auto custom-scrollbar">
                 {categories.map((cat) => {
                   const isChecked = selectedCategories.includes(cat._id);
                   return (
-                    <button
-                      type="button"
-                      key={cat._id}
+                    <div 
+                      key={cat._id} 
                       onClick={() => toggleCategory(cat._id)}
-                      className={`rounded-2xl border p-3 text-left text-xs capitalize transition-all cursor-pointer ${
+                      className={`flex items-center gap-2 p-2.5 rounded-xl border text-xs cursor-pointer transition-all ${
                         isChecked 
-                          ? "border-primary-600 bg-primary-600 text-white font-black shadow-xs" 
-                          : "border-border-subtle bg-white text-gray-900 hover:bg-primary-50 font-bold shadow-2xs"
+                          ? "bg-primary-50 border-primary-300 text-primary-900 font-black shadow-2xs" 
+                          : "bg-white border-border-subtle text-zinc-700 font-bold hover:bg-primary-50/40"
                       }`}
                     >
-                      <div className="flex justify-between items-center">
-                        <span>{cat.name}</span>
-                        {isChecked && <span>✓</span>}
-                      </div>
-                    </button>
+                      <input 
+                        type="checkbox" 
+                        checked={isChecked} 
+                        onChange={() => {}} 
+                        className="w-4 h-4 rounded border-border-subtle text-primary-600 focus:ring-primary-400 cursor-pointer accent-primary-600" 
+                      />
+                      <span className="truncate">{cat.name}</span>
+                    </div>
                   );
                 })}
               </div>
             </div>
           </div>
 
-          {/* Right Layout Pane (Logo & AI Generator) */}
-          <div className="lg:w-[40%] overflow-y-auto p-6 space-y-6 max-h-[70vh] bg-bg-surface border-l border-border-subtle custom-scrollbar">
-            {/* Logo Identity Asset */}
-            <div className="rounded-[24px] border border-border-subtle bg-white p-6 space-y-4 shadow-xs">
-              <div className="flex justify-between items-center gap-2">
-                <h3 className="text-xs uppercase tracking-wider text-primary-700 font-black">Logo Asset</h3>
+          {/* Right Layout Pane (AI Bio Generator & Final Actions) */}
+          <div className="lg:w-[40%] bg-primary-50/50 border-l border-border-subtle p-6 flex flex-col justify-between space-y-6">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between border-b border-border-subtle pb-3">
+                <span className="text-xs font-black uppercase tracking-wider text-primary-700 flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4 text-purple-600" /> AI Bio Synthesizer
+                </span>
                 <Button 
                   type="button" 
-                  size="sm" 
-                  onClick={handleImageEnhance} 
-                  disabled={isEnhancingImage} 
-                  className="bg-primary-50 hover:bg-primary-100 text-primary-700 border border-primary-200 rounded-xl text-xs h-8 px-3 font-bold cursor-pointer"
+                  onClick={generateAiDescription} 
+                  disabled={isGeneratingAi}
+                  className="bg-primary-600 hover:bg-primary-700 text-white rounded-xl h-8 text-[11px] font-black px-3 cursor-pointer shadow-xs btn-modern"
                 >
-                  <Wand2 className="w-3.5 h-3.5 mr-1" /> AI Enhance
-                </Button>
-              </div>
-              <Input 
-                value={form.logo} 
-                onChange={(e) => updateField("logo", e.target.value)} 
-                placeholder="Paste brand logo image URL..." 
-                className="bg-white border border-border-subtle rounded-2xl h-11 text-xs font-semibold text-gray-900 placeholder-zinc-400 focus-visible:ring-1 focus-visible:ring-primary-400 focus-visible:border-primary-400 shadow-2xs" 
-              />
-              
-              {form.logo && (
-                <div className="relative w-24 h-24 mx-auto rounded-2xl bg-white p-2 border border-border-subtle flex items-center justify-center shadow-xs">
-                  <img src={form.logo} alt="Preview Asset" className="w-full h-full object-contain rounded-xl" />
-                  <button 
-                    type="button" 
-                    onClick={() => updateField("logo", "")} 
-                    className="absolute -top-1.5 -right-1.5 bg-white text-gray-900 rounded-full p-1 border border-border-subtle shadow-md hover:text-rose-600 transition-colors cursor-pointer"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* AI Text Content Engine */}
-            <div className="rounded-[24px] border border-border-subtle bg-white p-6 space-y-3 shadow-xs">
-              <div className="flex justify-between items-center gap-2">
-                <h3 className="text-xs uppercase tracking-wider text-primary-700 font-black">Brand Summary</h3>
-                <Button 
-                  type="button" 
-                  size="sm" 
-                  onClick={generateAIDescription} 
-                  disabled={isAiLoading} 
-                  className="bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-xs h-8 px-3 font-bold cursor-pointer"
-                >
-                  {isAiLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 mr-1 inline" />}
-                  {isAiLoading ? "Generating..." : "Generate AI Copy"}
+                  {isGeneratingAi ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "✨ Auto-Suggest AI Overview"}
                 </Button>
               </div>
 
@@ -301,11 +279,11 @@ export default function BrandFormModal({ isOpen, onClose, editingBrand, categori
             </div>
 
             {/* Core Mutation Trigger Actions */}
-            <div className="flex flex-col gap-2 pt-2">
-              <Button type="submit" disabled={isSaving} className="w-full rounded-2xl bg-primary-600 font-black text-xs h-11 text-white hover:bg-primary-700 shadow-md cursor-pointer btn-modern">
+            <div className="flex flex-col gap-2.5 pt-2">
+              <Button type="submit" disabled={isSaving} className="w-full btn-pill-gradient h-11 text-xs font-black cursor-pointer">
                 {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : editingBrand ? "Save profile changes" : "Publish brand profile"}
               </Button>
-              <Button type="button" variant="outline" onClick={onClose} className="w-full rounded-2xl border border-border-subtle bg-white text-xs font-bold text-gray-900 h-11 hover:bg-primary-50 cursor-pointer shadow-2xs">Cancel</Button>
+              <Button type="button" variant="outline" onClick={onClose} className="w-full rounded-full border border-border-subtle bg-white text-xs font-bold text-gray-900 h-11 hover:bg-primary-50 cursor-pointer shadow-2xs">Cancel</Button>
             </div>
           </div>
         </form>

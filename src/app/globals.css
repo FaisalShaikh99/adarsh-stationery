@@ -97,14 +97,50 @@ body {
   box-shadow: 0 10px 30px -5px rgba(108, 53, 164, 0.35);
 }
 
+/* 🌟 GRADIENT PILL BUTTON (SOLID GRADIENT DEFAULT -> LIGHT PURPLE HOVER) */
+.btn-pill-submit,
+.btn-pill-gradient {
+  background: linear-gradient(135deg, #DF43F0 0%, #A851E8 50%, #7B3BE0 100%) !important;
+  color: #ffffff !important;
+  font-weight: 900 !important;
+  border-radius: 9999px !important;
+  padding: 0.7rem 1.75rem !important;
+  border: 2px solid transparent !important;
+  box-shadow: 0 6px 20px rgba(168, 81, 232, 0.35) !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-pill-submit:hover,
+.btn-pill-gradient:hover {
+  background: #F4EEFB !important; /* Soft light purple / lavender background on hover */
+  color: #5B2C8F !important; /* Rich brand purple text on hover */
+  border-color: #DF43F0 !important; /* Vibrant magenta border outline ring */
+  box-shadow: 0 6px 24px rgba(168, 81, 232, 0.4), inset 0 0 12px rgba(229, 212, 245, 0.6) !important;
+  transform: translateY(-2px) scale(1.02) !important;
+}
+
+.btn-pill-submit:active,
+.btn-pill-gradient:active {
+  transform: translateY(0) scale(0.97) !important;
+}
+
 /* Modern Button Micro-Animations */
 .btn-modern {
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .btn-modern:hover {
   transform: translateY(-2px) scale(1.02);
-  box-shadow: 0 6px 18px rgba(91, 44, 143, 0.25);
+  box-shadow: 0 6px 20px rgba(91, 44, 143, 0.3);
 }
 
 .btn-modern:active {

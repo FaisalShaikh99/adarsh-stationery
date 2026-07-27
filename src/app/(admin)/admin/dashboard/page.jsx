@@ -205,32 +205,32 @@ export default function DashboardPage() {
     <div className="w-full space-y-5 sm:space-y-7 pb-12 font-sans text-gray-900 min-h-screen px-1 sm:px-2 md:px-3 overflow-x-hidden">
       
       {/* 1. UNIQUE HAZED PURPLE GRADIENT TOP CONTAINER UI */}
-      <div className="hazed-purple-banner p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="hazed-purple-banner p-4 sm:p-6 md:p-8 rounded-2xl sm:rounded-[26px] flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-3">
-            <Sparkles className="h-7 w-7 text-accent shrink-0 animate-pulse" /> Executive Command Center
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-black tracking-tight text-white flex items-center gap-2.5 sm:gap-3">
+            <Sparkles className="h-5 w-5 sm:h-7 sm:w-7 text-accent shrink-0 animate-pulse" /> Executive Command Center
           </h1>
-          <p className="text-sm text-purple-100 font-semibold mt-1 max-w-2xl leading-relaxed">
+          <p className="text-xs sm:text-sm text-purple-100 font-semibold mt-1 max-w-2xl leading-relaxed">
             Real-time sales performance, profit/loss reconciliation, and inventory analytics for Adarsh Stationery.
           </p>
         </div>
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           <Button
             onClick={() => refetch()}
             variant="outline"
             size="sm"
             disabled={isRefetching}
-            className="rounded-xl border-white/40 bg-white/20 text-white hover:bg-white hover:text-primary-800 text-sm font-extrabold px-4 h-10 cursor-pointer shadow-xs btn-modern"
+            className="rounded-xl border-white/40 bg-white/20 text-white hover:bg-white hover:text-primary-800 text-xs sm:text-sm font-extrabold px-3 sm:px-4 h-9 sm:h-10 cursor-pointer shadow-xs btn-modern"
           >
-            <RefreshCw className={`mr-2 h-4 w-4 ${isRefetching ? "animate-spin" : ""}`} />
+            <RefreshCw className={`mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4 ${isRefetching ? "animate-spin" : ""}`} />
             <span>Refresh</span>
           </Button>
           <Link href="/admin/products">
             <Button
               size="sm"
-              className="bg-white text-primary-800 hover:bg-primary-50 font-black rounded-xl text-sm px-4 h-10 shadow-md cursor-pointer btn-modern"
+              className="bg-white text-primary-800 hover:bg-primary-50 font-black rounded-xl text-xs sm:text-sm px-3 sm:px-4 h-9 sm:h-10 shadow-md cursor-pointer btn-modern"
             >
-              <Package className="mr-2 h-4 w-4 text-primary-600" />
+              <Package className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary-600" />
               <span>Catalog Matrix</span>
             </Button>
           </Link>
@@ -239,14 +239,14 @@ export default function DashboardPage() {
 
       {/* 2. Seasonal Advisory Banner */}
       {seasonalReminder && !isReminderDismissed && (
-        <div className="p-3.5 sm:p-4 rounded-2xl bg-bg-surface border border-accent/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
-          <div className="flex items-start gap-3 min-w-0">
-            <div className="p-2 rounded-xl bg-accent/20 text-accent shrink-0 mt-0.5">
+        <div className="p-3 sm:p-4 rounded-2xl bg-bg-surface border border-accent/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-start gap-2.5 sm:gap-3 min-w-0">
+            <div className="p-1.5 sm:p-2 rounded-xl bg-accent/20 text-accent shrink-0 mt-0.5">
               <Sparkles className="h-4 w-4 sm:h-5 sm:w-5" />
             </div>
             <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-[11px] font-extrabold uppercase tracking-wider text-accent">Seasonal Advisory</span>
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-accent">Seasonal Advisory</span>
                 <span className="text-[10px] text-zinc-600 bg-primary-50 px-2 py-0.5 rounded-md border border-primary-100 font-mono">
                   {seasonalReminder.title}
                 </span>
@@ -266,85 +266,85 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* 3. Top Summary KPI Cards (Colorful Mesh Gradient UI Inspired by Reference) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
+      {/* 3. Top Summary KPI Cards (Colorful Mesh Gradient UI - 2 Grid Columns on Mobile) */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-2.5 sm:gap-4">
         {/* KPI 1: Total Revenue */}
-        <div className="p-5 sm:p-6 rounded-[28px] bg-[linear-gradient(135deg,#F4ECFF_0%,#FFD9EC_50%,#FFE4D6_100%)] border border-purple-200/70 space-y-3 relative overflow-hidden transition-all hover:scale-[1.02] shadow-xs">
+        <div className="p-3.5 sm:p-5 md:p-6 rounded-2xl sm:rounded-[28px] bg-[linear-gradient(135deg,#F4ECFF_0%,#FFD9EC_50%,#FFE4D6_100%)] border border-purple-200/70 space-y-2 sm:space-y-3 relative overflow-hidden transition-all hover:scale-[1.02] shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-black uppercase tracking-wider text-purple-900">Total Revenue</span>
-            <div className="p-2.5 rounded-2xl bg-white/80 border border-white text-purple-700 shadow-2xs">
-              <IndianRupee className="h-5 w-5" />
+            <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-purple-900 truncate">Total Revenue</span>
+            <div className="p-1.5 sm:p-2.5 rounded-xl sm:rounded-2xl bg-white/80 border border-white text-purple-700 shadow-2xs shrink-0">
+              <IndianRupee className="h-4 w-4 sm:h-5 sm:w-5" />
             </div>
           </div>
           <div>
-            <h3 className="text-2xl sm:text-3xl xl:text-4xl font-black text-gray-900 tracking-tight font-mono">
+            <h3 className="text-lg sm:text-2xl xl:text-3xl font-black text-gray-900 tracking-tight font-mono truncate">
               ₹{kpis.totalRevenue.toLocaleString("en-IN")}
             </h3>
-            <p className="text-xs text-emerald-700 font-extrabold mt-1">Paid Orders Net</p>
+            <p className="text-[10px] sm:text-xs text-emerald-700 font-extrabold mt-0.5 sm:mt-1 truncate">Paid Orders Net</p>
           </div>
         </div>
 
         {/* KPI 2: Total Orders */}
-        <Link href="/admin/orders" className="p-5 sm:p-6 rounded-[28px] bg-[linear-gradient(135deg,#D6F6FF_0%,#E3E8FF_50%,#F3E8FF_100%)] border border-blue-200/70 space-y-3 relative overflow-hidden transition-all hover:scale-[1.02] shadow-xs block">
+        <Link href="/admin/orders" className="p-3.5 sm:p-5 md:p-6 rounded-2xl sm:rounded-[28px] bg-[linear-gradient(135deg,#D6F6FF_0%,#E3E8FF_50%,#F3E8FF_100%)] border border-blue-200/70 space-y-2 sm:space-y-3 relative overflow-hidden transition-all hover:scale-[1.02] shadow-xs block">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-black uppercase tracking-wider text-blue-900">Total Orders</span>
-            <div className="p-2.5 rounded-2xl bg-white/80 border border-white text-blue-700 shadow-2xs">
-              <ShoppingBag className="h-5 w-5" />
+            <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-blue-900 truncate">Total Orders</span>
+            <div className="p-1.5 sm:p-2.5 rounded-xl sm:rounded-2xl bg-white/80 border border-white text-blue-700 shadow-2xs shrink-0">
+              <ShoppingBag className="h-4 w-4 sm:h-5 sm:w-5" />
             </div>
           </div>
           <div>
-            <h3 className="text-2xl sm:text-3xl xl:text-4xl font-black text-gray-900 tracking-tight font-mono">
+            <h3 className="text-lg sm:text-2xl xl:text-3xl font-black text-gray-900 tracking-tight font-mono truncate">
               {kpis.totalOrders}
             </h3>
-            <p className="text-xs text-blue-700 font-extrabold mt-1">Lifetime Orders</p>
+            <p className="text-[10px] sm:text-xs text-blue-700 font-extrabold mt-0.5 sm:mt-1 truncate">Lifetime Orders</p>
           </div>
         </Link>
 
         {/* KPI 3: Total Customers */}
-        <Link href="/admin/customers" className="p-5 sm:p-6 rounded-[28px] bg-[linear-gradient(135deg,#ECFDF5_0%,#D1FAE5_50%,#FEF3C7_100%)] border border-emerald-200/70 space-y-3 relative overflow-hidden transition-all hover:scale-[1.02] shadow-xs block">
+        <Link href="/admin/customers" className="p-3.5 sm:p-5 md:p-6 rounded-2xl sm:rounded-[28px] bg-[linear-gradient(135deg,#ECFDF5_0%,#D1FAE5_50%,#FEF3C7_100%)] border border-emerald-200/70 space-y-2 sm:space-y-3 relative overflow-hidden transition-all hover:scale-[1.02] shadow-xs block">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-black uppercase tracking-wider text-emerald-900">Customers</span>
-            <div className="p-2.5 rounded-2xl bg-white/80 border border-white text-emerald-700 shadow-2xs">
-              <Users className="h-5 w-5" />
+            <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-emerald-900 truncate">Customers</span>
+            <div className="p-1.5 sm:p-2.5 rounded-xl sm:rounded-2xl bg-white/80 border border-white text-emerald-700 shadow-2xs shrink-0">
+              <Users className="h-4 w-4 sm:h-5 sm:w-5" />
             </div>
           </div>
           <div>
-            <h3 className="text-2xl sm:text-3xl xl:text-4xl font-black text-gray-900 tracking-tight font-mono">
+            <h3 className="text-lg sm:text-2xl xl:text-3xl font-black text-gray-900 tracking-tight font-mono truncate">
               {kpis.totalCustomers}
             </h3>
-            <p className="text-xs text-emerald-700 font-extrabold mt-1">Registered Profiles</p>
+            <p className="text-[10px] sm:text-xs text-emerald-700 font-extrabold mt-0.5 sm:mt-1 truncate">Registered Profiles</p>
           </div>
         </Link>
 
         {/* KPI 4: Total Products */}
-        <Link href="/admin/products" className="p-5 sm:p-6 rounded-[28px] bg-[linear-gradient(135deg,#F3E8FF_0%,#FEF3C7_50%,#FDE68A_100%)] border border-amber-200/70 space-y-3 relative overflow-hidden transition-all hover:scale-[1.02] shadow-xs block">
+        <Link href="/admin/products" className="p-3.5 sm:p-5 md:p-6 rounded-2xl sm:rounded-[28px] bg-[linear-gradient(135deg,#F3E8FF_0%,#FEF3C7_50%,#FDE68A_100%)] border border-amber-200/70 space-y-2 sm:space-y-3 relative overflow-hidden transition-all hover:scale-[1.02] shadow-xs block">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-black uppercase tracking-wider text-purple-900">Catalog Products</span>
-            <div className="p-2.5 rounded-2xl bg-white/80 border border-white text-purple-700 shadow-2xs">
-              <Package className="h-5 w-5" />
+            <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-purple-900 truncate">Catalog Products</span>
+            <div className="p-1.5 sm:p-2.5 rounded-xl sm:rounded-2xl bg-white/80 border border-white text-purple-700 shadow-2xs shrink-0">
+              <Package className="h-4 w-4 sm:h-5 sm:w-5" />
             </div>
           </div>
           <div>
-            <h3 className="text-2xl sm:text-3xl xl:text-4xl font-black text-gray-900 tracking-tight font-mono">
+            <h3 className="text-lg sm:text-2xl xl:text-3xl font-black text-gray-900 tracking-tight font-mono truncate">
               {kpis.totalProducts}
             </h3>
-            <p className="text-xs text-purple-700 font-extrabold mt-1">Active SKUs</p>
+            <p className="text-[10px] sm:text-xs text-purple-700 font-extrabold mt-0.5 sm:mt-1 truncate">Active SKUs</p>
           </div>
         </Link>
 
         {/* KPI 5: Pending Fulfillment */}
-        <Link href="/admin/orders" className="p-5 sm:p-6 rounded-[28px] bg-[linear-gradient(135deg,#FEF3C7_0%,#FEE2E2_50%,#FFEDD5_100%)] border border-amber-200/70 space-y-3 relative overflow-hidden transition-all hover:scale-[1.02] shadow-xs block">
+        <Link href="/admin/orders" className="col-span-2 sm:col-span-1 p-3.5 sm:p-5 md:p-6 rounded-2xl sm:rounded-[28px] bg-[linear-gradient(135deg,#FEF3C7_0%,#FEE2E2_50%,#FFEDD5_100%)] border border-amber-200/70 space-y-2 sm:space-y-3 relative overflow-hidden transition-all hover:scale-[1.02] shadow-xs block">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-black uppercase tracking-wider text-amber-900">Pending Action</span>
-            <div className="p-2.5 rounded-2xl bg-white/80 border border-white text-amber-700 shadow-2xs">
-              <Clock className="h-5 w-5" />
+            <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-amber-900 truncate">Pending Action</span>
+            <div className="p-1.5 sm:p-2.5 rounded-xl sm:rounded-2xl bg-white/80 border border-white text-amber-700 shadow-2xs shrink-0">
+              <Clock className="h-4 w-4 sm:h-5 sm:w-5" />
             </div>
           </div>
           <div>
-            <h3 className="text-2xl sm:text-3xl xl:text-4xl font-black text-amber-950 tracking-tight font-mono">
+            <h3 className="text-lg sm:text-2xl xl:text-3xl font-black text-gray-900 tracking-tight font-mono truncate">
               {kpis.pendingFulfillment}
             </h3>
-            <p className="text-xs text-amber-800 font-extrabold mt-1">Confirmed Orders</p>
+            <p className="text-[10px] sm:text-xs text-amber-700 font-extrabold mt-0.5 sm:mt-1 truncate">Fulfillment Queue</p>
           </div>
         </Link>
       </div>

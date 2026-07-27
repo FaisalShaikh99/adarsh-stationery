@@ -23,7 +23,8 @@ import {
   RefreshCw,
   Sparkles,
   ShieldAlert,
-  Pencil
+  Pencil,
+  DollarSign
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -44,14 +45,16 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { customerContactSchema } from "@/schemas/customer.schema";
 
 const statusClasses = {
-  Active: "bg-emerald-500/10 text-emerald-700 border border-emerald-500/25 font-bold",
-  Blocked: "bg-rose-500/10 text-rose-700 border border-rose-500/25 font-bold",
+  Active: "bg-emerald-50 text-emerald-700 border border-emerald-200 font-black",
+  Blocked: "bg-rose-50 text-rose-700 border border-rose-200 font-black",
 };
 
-const tagClasses = {
-  VIP: "bg-amber-500/10 text-amber-700 border border-amber-500/25 font-bold",
-  New: "bg-blue-500/10 text-blue-700 border border-blue-500/25 font-bold",
-  "At Risk": "bg-rose-500/10 text-rose-700 border border-rose-500/25 font-bold",
+const orderStatusClasses = {
+  Pending: "bg-amber-50 text-amber-700 border border-amber-200 font-black",
+  Confirmed: "bg-sky-50 text-sky-700 border border-sky-200 font-black",
+  Shipped: "bg-purple-50 text-purple-700 border border-purple-200 font-black",
+  Delivered: "bg-emerald-50 text-emerald-700 border border-emerald-200 font-black",
+  Cancelled: "bg-rose-50 text-rose-700 border border-rose-200 font-black",
 };
 
 function formatCurrency(amount) {
@@ -73,14 +76,14 @@ function formatDate(dateString) {
 
 function CustomerDetailSkeleton() {
   return (
-    <div className="w-full max-w-full space-y-6 p-4 animate-pulse">
+    <div className="w-full max-w-full space-y-6 p-4 animate-pulse font-sans">
       <div className="h-8 bg-primary-50 rounded-xl w-64"></div>
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="h-24 bg-bg-surface border border-border-subtle rounded-2xl"></div>
+          <div key={i} className="h-28 bg-white border border-border-subtle rounded-[26px]"></div>
         ))}
       </div>
-      <div className="h-64 bg-bg-surface border border-border-subtle rounded-2xl"></div>
+      <div className="h-64 bg-white border border-border-subtle rounded-[26px]"></div>
     </div>
   );
 }
@@ -102,17 +105,6 @@ export default function CustomerDetailPage() {
       return res.data?.data;
     },
     enabled: !!id,
-  });
-
-  const { data: insightData, isLoading: isInsightLoading } = useQuery({
-    queryKey: ["customer-insight", id],
-    queryFn: async () => {
-      if (!id) return null;
-      const res = await axios.get(`/api/admin/customers/${id}/insight`);
-      return res.data?.data;
-    },
-    enabled: !!id,
-    staleTime: 5 * 60 * 1000,
   });
 
   const {
@@ -139,7 +131,7 @@ export default function CustomerDetailPage() {
   const toggleStatusMutation = useMutation({
     mutationFn: () => axios.patch(`/api/admin/customers/${id}/toggle-status`),
     onSuccess: (res) => {
-      toast.success(res.data?.message || "Customer status toggled!");
+      toast.success(res.data?.message || "Customer status updated!");
       queryClient.invalidateQueries({ queryKey: ["customer-detail", id] });
       queryClient.invalidateQueries({ queryKey: ["customers"] });
     },
@@ -150,12 +142,12 @@ export default function CustomerDetailPage() {
 
   if (error || !customer) {
     return (
-      <div className="w-full max-w-full py-12 text-center space-y-4 text-gray-900">
-        <h1 className="text-xl font-bold">Customer Profile Not Found</h1>
-        <p className="text-zinc-500 text-sm">We couldn't retrieve details for the requested Customer ID.</p>
+      <div className="w-full max-w-full py-12 text-center space-y-4 text-gray-900 font-sans">
+        <h1 className="text-xl font-black">Customer Profile Not Found</h1>
+        <p className="text-zinc-600 text-sm font-medium">We couldn't retrieve details for the requested Customer ID.</p>
         <Link href="/admin/customers" passHref>
-          <Button variant="outline" className="border-border-subtle bg-bg-surface text-gray-900 rounded-xl px-4 py-2 text-xs font-semibold btn-modern">
-            <ArrowLeft className="w-4 h-4 mr-2 text-primary-600" /> Back to Customers
+          <Button variant="outline" className="border-border-subtle bg-white text-gray-900 rounded-2xl px-5 py-2.5 text-xs font-black shadow-2xs btn-modern">
+            <ArrowLeft className="w-4 h-4 mr-2 text-primary-600" /> Back to Customer Directory
           </Button>
         </Link>
       </div>
@@ -165,137 +157,174 @@ export default function CustomerDetailPage() {
   const orders = customer.orders || [];
 
   return (
-    <div className="w-full max-w-full space-y-6 text-gray-900 font-sans p-2 sm:p-4 overflow-x-hidden">
+    <div className="w-full max-w-full space-y-6 text-gray-900 font-sans pb-12 overflow-x-hidden">
       
       {/* 1. HEADER SECTION */}
-      <div className="flex flex-wrap gap-4 justify-between items-start border-b border-border-subtle pb-5">
-        <div className="space-y-2">
-          <Link href="/admin/customers" className="flex items-center gap-1.5 text-zinc-500 hover:text-primary-600 transition-colors text-xs font-bold uppercase tracking-wider mb-2">
-            <ArrowLeft className="w-3.5 h-3.5" /> Back to Customers
+      <div className="flex flex-wrap gap-4 justify-between items-center border-b border-border-subtle pb-5">
+        <div className="space-y-1.5">
+          <Link href="/admin/customers" className="inline-flex items-center gap-1.5 text-zinc-600 hover:text-primary-700 transition-colors text-xs font-black uppercase tracking-wider">
+            <ArrowLeft className="w-4 h-4 text-primary-600" /> Back to Customers
           </Link>
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-xl font-extrabold tracking-tight text-gray-900">{customer.name}</h1>
-            <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${statusClasses[customer.status] || "bg-zinc-100 text-zinc-700 border-zinc-200"}`}>
+            <h1 className="text-xl sm:text-3xl font-black tracking-tight text-gray-900">{customer.name}</h1>
+            <span className={`px-3 py-1 rounded-xl text-xs ${statusClasses[customer.status] || "bg-zinc-100 text-zinc-700"}`}>
               {customer.status}
             </span>
           </div>
-          <p className="text-xs text-zinc-500 flex items-center gap-1.5 pt-0.5 font-mono">
+          <p className="text-xs text-zinc-600 font-bold font-mono">
             ID: {customer._id}
           </p>
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 bg-bg-surface border border-border-subtle px-3 py-1.5 rounded-xl shadow-xs">
+          <div className="flex items-center gap-3 bg-white border border-border-subtle px-4 py-2.5 rounded-2xl shadow-2xs">
             <Switch
               checked={customer.status === "Active"}
               onCheckedChange={() => {
                 if (customer.status === "Active") setBlockDialogOpen(true);
                 else toggleStatusMutation.mutate();
               }}
-              className="data-[state=checked]:bg-emerald-600 scale-75 cursor-pointer"
+              className="data-[state=checked]:bg-emerald-600 scale-90 cursor-pointer"
             />
-            <span className="text-xs font-bold text-gray-900">
+            <span className="text-xs font-black text-gray-900">
               {customer.status === "Active" ? "Account Active" : "Account Blocked"}
             </span>
           </div>
         </div>
       </div>
 
-      {/* 2. KPI METRICS CARDS */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-bg-surface border border-border-subtle p-5 rounded-2xl shadow-xs space-y-1">
-          <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold block">Lifetime Spent</span>
-          <p className="text-2xl font-extrabold font-mono text-emerald-600">{formatCurrency(customer.totalSpent)}</p>
-          <p className="text-[11px] text-zinc-500">Gross revenue generated</p>
+      {/* 2. TOP KPI COUNTER CARDS (SIGNATURE AMETHYST-LAVENDER GRADIENT & BOLD NUMBERS) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        {/* KPI 1: Lifetime Spent (Base Purple Mesh Gradient #9B66D4 -> #D8A5E9) */}
+        <div className="rounded-[26px] bg-gradient-to-br from-[#9B66D4] via-[#B885E2] to-[#D8A5E9] p-6 text-white shadow-md flex flex-col justify-between group hover:shadow-xl transition-all duration-300">
+          <div className="flex items-start justify-between">
+            <h2 className="text-3xl sm:text-4xl font-black font-mono tracking-tight text-white">{formatCurrency(customer.totalSpent)}</h2>
+            <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-white shadow-xs">
+              <DollarSign className="w-5 h-5" />
+            </div>
+          </div>
+          <div>
+            <p className="text-xs sm:text-sm font-bold text-white/90 mt-2">Lifetime Customer Spend</p>
+            {/* Smooth Wave Graph SVG */}
+            <svg className="w-full h-8 opacity-80 mt-3 text-white" viewBox="0 0 100 25" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <path d="M0 18 Q20 5 40 16 T80 10 T100 14" />
+            </svg>
+          </div>
         </div>
 
-        <div className="bg-bg-surface border border-border-subtle p-5 rounded-2xl shadow-xs space-y-1">
-          <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold block">Total Orders</span>
-          <p className="text-2xl font-extrabold font-mono text-primary-600">{customer.orderCount || 0}</p>
-          <p className="text-[11px] text-zinc-500">Completed order checkouts</p>
+        {/* KPI 2: Total Orders */}
+        <div className="rounded-[26px] bg-bg-surface border border-border-subtle p-6 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-black uppercase tracking-wider text-zinc-500">Total Orders</span>
+            <div className="w-10 h-10 rounded-2xl bg-primary-50 border border-primary-200 flex items-center justify-center text-primary-600 shadow-2xs">
+              <ShoppingBag className="w-5 h-5" />
+            </div>
+          </div>
+          <div className="mt-4">
+            <h3 className="text-3xl font-black font-mono tracking-tight text-gray-900">{customer.orderCount || 0}</h3>
+            <p className="text-xs text-zinc-600 font-bold mt-1">Completed order checkouts</p>
+          </div>
         </div>
 
-        <div className="bg-bg-surface border border-border-subtle p-5 rounded-2xl shadow-xs space-y-1">
-          <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold block">Average Order Value</span>
-          <p className="text-2xl font-extrabold font-mono text-gray-900">{formatCurrency(customer.avgOrderValue)}</p>
-          <p className="text-[11px] text-zinc-500">Revenue per transaction</p>
+        {/* KPI 3: Average Order Value */}
+        <div className="rounded-[26px] bg-bg-surface border border-border-subtle p-6 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-black uppercase tracking-wider text-zinc-500">Average Order Value</span>
+            <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 shadow-2xs">
+              <TrendingUp className="w-5 h-5" />
+            </div>
+          </div>
+          <div className="mt-4">
+            <h3 className="text-3xl font-black font-mono tracking-tight text-emerald-600">{formatCurrency(customer.avgOrderValue)}</h3>
+            <p className="text-xs text-zinc-600 font-bold mt-1">Revenue per transaction</p>
+          </div>
         </div>
 
-        <div className="bg-bg-surface border border-border-subtle p-5 rounded-2xl shadow-xs space-y-1">
-          <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold block">Customer Since</span>
-          <p className="text-lg font-bold font-mono text-gray-900 mt-1">{formatDate(customer.createdAt)}</p>
-          <p className="text-[11px] text-zinc-500">Registration timestamp</p>
+        {/* KPI 4: Customer Since */}
+        <div className="rounded-[26px] bg-bg-surface border border-border-subtle p-6 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-black uppercase tracking-wider text-zinc-500">Customer Since</span>
+            <div className="w-10 h-10 rounded-2xl bg-cyan-50 border border-cyan-200 flex items-center justify-center text-cyan-600 shadow-2xs">
+              <Calendar className="w-5 h-5" />
+            </div>
+          </div>
+          <div className="mt-4">
+            <h3 className="text-xl sm:text-2xl font-black font-mono tracking-tight text-gray-900">{formatDate(customer.createdAt)}</h3>
+            <p className="text-xs text-zinc-600 font-bold mt-1">Registration timestamp</p>
+          </div>
         </div>
+
       </div>
 
-      {/* 3. MAIN DETAILS CONTENT */}
+      {/* 3. MAIN DETAILS RESPONSIVE CONTENT */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        {/* LEFT COLUMN: CONTACT & ADDRESS DETAILS */}
+        {/* LEFT COLUMN: CONTACT DETAILS */}
         <div className="space-y-6">
-          <div className="bg-bg-surface border border-border-subtle rounded-2xl p-5 space-y-4 shadow-xs">
-            <div className="flex items-center justify-between border-b border-border-subtle pb-3">
-              <h3 className="text-xs font-extrabold text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
+          <div className="bg-bg-surface border border-border-subtle rounded-[26px] p-6 space-y-4 shadow-xs">
+            <div className="flex items-center justify-between border-b border-border-subtle pb-3.5">
+              <h3 className="text-sm font-black text-gray-900 uppercase tracking-wider flex items-center gap-2">
                 <User className="w-4 h-4 text-primary-600" /> Contact Details
               </h3>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setIsEditingContact(!isEditingContact)}
-                className="h-7 px-2 text-[11px] text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-lg cursor-pointer"
+                className="h-8 px-3 text-xs text-primary-600 font-bold hover:text-primary-700 hover:bg-primary-50 rounded-xl cursor-pointer"
               >
-                <Pencil className="w-3 h-3 mr-1" /> Edit
+                <Pencil className="w-3.5 h-3.5 mr-1" /> Edit
               </Button>
             </div>
 
             {!isEditingContact ? (
-              <div className="space-y-3 text-xs">
+              <div className="space-y-4 text-xs sm:text-sm font-sans pt-1">
                 <div>
-                  <span className="text-zinc-500 text-[11px]">Email Address</span>
-                  <p className="font-mono text-gray-900 font-semibold mt-0.5">{customer.email || "No email provided"}</p>
+                  <span className="text-zinc-500 font-black text-xs uppercase tracking-wider block">Email Address</span>
+                  <p className="font-mono text-gray-900 font-bold text-xs sm:text-sm mt-0.5">{customer.email || "No email provided"}</p>
                 </div>
                 <div>
-                  <span className="text-zinc-500 text-[11px]">Phone Number</span>
-                  <p className="font-mono text-gray-900 font-semibold mt-0.5">{customer.phone || "No phone registered"}</p>
+                  <span className="text-zinc-500 font-black text-xs uppercase tracking-wider block">Phone Number</span>
+                  <p className="font-mono text-gray-900 font-bold text-xs sm:text-sm mt-0.5">{customer.phone || "No phone registered"}</p>
                 </div>
               </div>
             ) : (
               <form 
                 onSubmit={handleSubmitContact((data) => updateContactMutation.mutate(data))}
-                className="space-y-3 pt-1"
+                className="space-y-3.5 pt-1"
               >
                 <div>
-                  <label className="text-[10px] text-zinc-500 uppercase font-bold">Name</label>
+                  <label className="text-xs text-gray-900 uppercase font-black block">Full Name</label>
                   <input 
                     {...registerContact("name")}
                     defaultValue={customer.name}
-                    className="w-full bg-white border border-border-subtle rounded-xl p-2 text-xs text-gray-900 mt-1"
+                    className="w-full bg-white border border-border-subtle rounded-2xl p-3 text-xs sm:text-sm font-bold text-gray-900 mt-1 focus:outline-none focus:border-primary-400 shadow-2xs"
                   />
-                  {contactErrors.name && <p className="text-[10px] text-rose-500 mt-0.5">{contactErrors.name.message}</p>}
+                  {contactErrors.name && <p className="text-xs text-rose-600 font-bold mt-1">{contactErrors.name.message}</p>}
                 </div>
                 <div>
-                  <label className="text-[10px] text-zinc-500 uppercase font-bold">Email</label>
+                  <label className="text-xs text-gray-900 uppercase font-black block">Email Address</label>
                   <input 
                     {...registerContact("email")}
                     defaultValue={customer.email}
-                    className="w-full bg-white border border-border-subtle rounded-xl p-2 text-xs text-gray-900 mt-1"
+                    className="w-full bg-white border border-border-subtle rounded-2xl p-3 text-xs sm:text-sm font-bold text-gray-900 mt-1 focus:outline-none focus:border-primary-400 shadow-2xs"
                   />
-                  {contactErrors.email && <p className="text-[10px] text-rose-500 mt-0.5">{contactErrors.email.message}</p>}
+                  {contactErrors.email && <p className="text-xs text-rose-600 font-bold mt-1">{contactErrors.email.message}</p>}
                 </div>
                 <div>
-                  <label className="text-[10px] text-zinc-500 uppercase font-bold">Phone</label>
+                  <label className="text-xs text-gray-900 uppercase font-black block">Phone Number</label>
                   <input 
                     {...registerContact("phone")}
                     defaultValue={customer.phone}
-                    className="w-full bg-white border border-border-subtle rounded-xl p-2 text-xs text-gray-900 mt-1"
+                    className="w-full bg-white border border-border-subtle rounded-2xl p-3 text-xs sm:text-sm font-bold text-gray-900 mt-1 focus:outline-none focus:border-primary-400 shadow-2xs"
                   />
-                  {contactErrors.phone && <p className="text-[10px] text-rose-500 mt-0.5">{contactErrors.phone.message}</p>}
+                  {contactErrors.phone && <p className="text-xs text-rose-600 font-bold mt-1">{contactErrors.phone.message}</p>}
                 </div>
-                <div className="flex gap-2 pt-2">
-                  <Button type="submit" disabled={updateContactMutation.isPending} size="sm" className="bg-primary-600 text-white font-bold text-xs rounded-xl flex-1 btn-modern cursor-pointer">
+                <div className="flex gap-2.5 pt-2">
+                  <Button type="submit" disabled={updateContactMutation.isPending} className="bg-primary-600 text-white font-black text-xs h-10 rounded-2xl flex-1 btn-modern cursor-pointer">
                     Save Changes
                   </Button>
-                  <Button type="button" onClick={() => setIsEditingContact(false)} variant="outline" size="sm" className="border-border-subtle text-gray-900 text-xs rounded-xl cursor-pointer">
+                  <Button type="button" onClick={() => setIsEditingContact(false)} variant="outline" className="border-border-subtle text-gray-900 font-bold text-xs h-10 rounded-2xl cursor-pointer">
                     Cancel
                   </Button>
                 </div>
@@ -306,39 +335,39 @@ export default function CustomerDetailPage() {
 
         {/* RIGHT COLUMN: ORDERS HISTORY */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-bg-surface border border-border-subtle rounded-2xl p-5 space-y-4 shadow-xs">
-            <h3 className="text-xs font-extrabold text-gray-900 uppercase tracking-wider flex items-center gap-1.5 border-b border-border-subtle pb-3">
-              <ShoppingBag className="w-4 h-4 text-primary-600" /> Order History ({orders.length})
+          <div className="bg-bg-surface border border-border-subtle rounded-[26px] p-6 space-y-4 shadow-xs">
+            <h3 className="text-sm font-black text-gray-900 uppercase tracking-wider flex items-center gap-2 border-b border-border-subtle pb-3.5">
+              <ShoppingBag className="w-4 h-4 text-primary-600" /> Customer Order History ({orders.length})
             </h3>
 
             {orders.length === 0 ? (
-              <p className="text-xs text-zinc-500 py-6 text-center">No order records found for this buyer profile.</p>
+              <p className="text-xs text-zinc-500 font-bold py-8 text-center">No order records found for this buyer profile.</p>
             ) : (
-              <div className="overflow-x-auto rounded-xl border border-border-subtle bg-white">
-                <Table className="min-w-[500px] text-xs">
+              <div className="overflow-x-auto rounded-2xl border border-border-subtle bg-white shadow-2xs">
+                <Table className="min-w-[550px] text-xs font-sans">
                   <TableHeader className="bg-primary-50/90 border-b border-border-subtle">
-                    <TableRow className="uppercase text-[10px]">
-                      <TableHead className="font-bold text-primary-800">Order ID</TableHead>
-                      <TableHead className="font-bold text-primary-800">Date</TableHead>
-                      <TableHead className="font-bold text-primary-800">Status</TableHead>
-                      <TableHead className="text-right font-bold text-primary-800">Amount</TableHead>
+                    <TableRow className="uppercase text-xs">
+                      <TableHead className="font-black text-primary-900">Order ID</TableHead>
+                      <TableHead className="font-black text-primary-900">Date</TableHead>
+                      <TableHead className="font-black text-primary-900">Status</TableHead>
+                      <TableHead className="text-right font-black text-primary-900">Amount</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {orders.map((o) => (
-                      <TableRow key={o._id} className="border-b border-border-subtle text-gray-900">
-                        <TableCell className="font-mono font-bold text-primary-700 py-3">
-                          <Link href={`/admin/orders/${o._id}`} className="hover:underline flex items-center gap-1">
-                            {o.orderNumber} <Eye className="w-3 h-3 text-zinc-400" />
+                      <TableRow key={o._id} className="border-b border-border-subtle text-gray-900 hover:bg-primary-50/50 transition-colors bg-white">
+                        <TableCell className="font-mono font-black text-xs sm:text-sm text-gray-900 py-3.5">
+                          <Link href={`/admin/orders/${o._id}`} className="hover:text-primary-700 flex items-center gap-1.5 transition-colors">
+                            <span>{o.orderNumber}</span> <Eye className="w-3.5 h-3.5 text-zinc-400" />
                           </Link>
                         </TableCell>
-                        <TableCell className="font-mono text-zinc-600 py-3">{formatDate(o.createdAt)}</TableCell>
-                        <TableCell className="py-3">
-                          <span className="bg-primary-50 text-primary-700 border border-primary-200 px-2 py-0.5 rounded text-[10px] font-bold">
+                        <TableCell className="font-mono text-zinc-700 font-bold text-xs sm:text-sm py-3.5">{formatDate(o.createdAt)}</TableCell>
+                        <TableCell className="py-3.5">
+                          <span className={`px-3 py-1 rounded-xl text-xs ${orderStatusClasses[o.status] || "bg-zinc-100 text-zinc-700"}`}>
                             {o.status}
                           </span>
                         </TableCell>
-                        <TableCell className="text-right font-mono font-extrabold text-emerald-600 py-3">{formatCurrency(o.totalAmount)}</TableCell>
+                        <TableCell className="text-right font-mono font-black text-emerald-600 text-xs sm:text-sm py-3.5">{formatCurrency(o.totalAmount)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -350,22 +379,23 @@ export default function CustomerDetailPage() {
 
       </div>
 
+      {/* BLOCK CONFIRMATION DIALOG */}
       <AlertDialog open={blockDialogOpen} onOpenChange={setBlockDialogOpen}>
-        <AlertDialogContent className="bg-white/95 backdrop-blur-2xl border border-border-subtle text-gray-900 rounded-2xl shadow-xl">
+        <AlertDialogContent className="bg-white/95 backdrop-blur-2xl border border-border-subtle text-gray-900 rounded-[28px] p-6 shadow-2xl font-sans">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-gray-900 font-bold">Block Customer Profile</AlertDialogTitle>
-            <AlertDialogDescription className="text-zinc-600">
+            <AlertDialogTitle className="text-gray-900 font-black text-lg">Block Customer Profile</AlertDialogTitle>
+            <AlertDialogDescription className="text-zinc-600 text-xs sm:text-sm font-medium">
               Are you sure you want to block <strong className="text-gray-900">{customer.name}</strong>? Blocked customers will be restricted from placing new orders.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="bg-bg-surface text-gray-900 border-border-subtle hover:bg-primary-50 rounded-xl cursor-pointer">Cancel</AlertDialogCancel>
+          <AlertDialogFooter className="pt-2">
+            <AlertDialogCancel className="bg-white text-gray-900 border-border-subtle hover:bg-primary-50 rounded-2xl font-bold cursor-pointer">Cancel</AlertDialogCancel>
             <AlertDialogAction 
               onClick={() => {
                 setBlockDialogOpen(false);
                 toggleStatusMutation.mutate();
               }}
-              className="bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl cursor-pointer"
+              className="bg-rose-600 hover:bg-rose-700 text-white font-black rounded-2xl cursor-pointer shadow-md"
             >
               Confirm Block
             </AlertDialogAction>

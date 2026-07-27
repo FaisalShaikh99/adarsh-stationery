@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, PenTool } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 export default function AdminLoginPage() {
@@ -27,20 +28,31 @@ export default function AdminLoginPage() {
       
       {/* Shadcn Card Component with Translucent Glass Styling */}
       <Card className="w-full max-w-md border-border-subtle bg-white/90 backdrop-blur-md shadow-xl rounded-2xl animate-in fade-in zoom-in-95 duration-200">
-        <CardHeader className="space-y-2 text-center pb-6 border-b border-border-subtle">
-          <div className="mx-auto w-12 h-12 rounded-2xl bg-primary-600 flex items-center justify-center text-white shadow-xs mb-1">
-            <PenTool className="w-6 h-6" />
+        <CardHeader className="space-y-3 text-center pb-6 border-b border-border-subtle flex flex-col items-center">
+          
+          {/* HIGH-CLARITY PROMINENT FULL LOGO */}
+          <div className="flex justify-center w-full my-2">
+            <Image
+              src="/logo-full.png"
+              alt="Adarsh Stationery Mart"
+              width={1036}
+              height={283}
+              quality={95}
+              priority
+              className="w-64 sm:w-72 md:w-80 h-auto object-contain drop-shadow-sm"
+            />
           </div>
-          <CardTitle className="text-2xl font-extrabold tracking-tight text-gray-900">
-            Adarsh Stationery
+
+          <CardTitle className="text-xl font-black tracking-tight text-gray-900 pt-1">
+            Adarsh Stationery Mart
           </CardTitle>
-          <CardDescription className="text-zinc-500 text-xs">
+          <CardDescription className="text-zinc-600 text-xs font-bold">
             Admin & Staff Control Panel Access
           </CardDescription>
         </CardHeader>
         
         <CardContent className="pt-8 space-y-6">
-          <p className="text-center text-xs font-bold uppercase tracking-wider text-primary-700">
+          <p className="text-center text-xs font-black uppercase tracking-wider text-primary-700">
             Secure Authentication Required
           </p>
 
@@ -48,7 +60,7 @@ export default function AdminLoginPage() {
           <Button
             onClick={handleGoogleLogin}
             disabled={loading}
-            className="w-full bg-primary-600 hover:bg-primary-700 text-white font-bold h-12 rounded-xl transition-all flex items-center justify-center gap-3 shadow-xs btn-modern cursor-pointer"
+            className="w-full bg-primary-600 hover:bg-primary-700 text-white font-black h-12 rounded-xl transition-all flex items-center justify-center gap-3 shadow-xs btn-modern cursor-pointer"
           >
             {loading ? (
               <>
@@ -72,7 +84,7 @@ export default function AdminLoginPage() {
             )}
           </Button>
 
-          <p className="text-center text-[11px] text-zinc-500 mt-4">
+          <p className="text-center text-[11px] text-zinc-500 font-medium mt-4">
             Authorized personnel only. All access attempts are monitored and logged.
           </p>
         </CardContent>

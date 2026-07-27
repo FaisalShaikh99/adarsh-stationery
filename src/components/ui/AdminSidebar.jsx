@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { 
@@ -108,22 +109,30 @@ export default function AdminSidebar({
 
       {/* MOBILE DRAWER */}
       <div 
-        className={`fixed top-0 bottom-0 left-0 z-50 w-[300px] max-w-[85vw] bg-white/95 backdrop-blur-2xl border-r border-border-subtle p-5 flex flex-col justify-between overflow-y-auto lg:hidden transition-transform duration-300 ease-in-out shadow-2xl ${
+        className={`fixed top-0 bottom-0 left-0 z-50 w-[320px] max-w-[88vw] bg-white/95 backdrop-blur-2xl border-r border-border-subtle p-5 flex flex-col justify-between overflow-y-auto lg:hidden transition-transform duration-300 ease-in-out shadow-2xl ${
           isMobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         <div className="space-y-6">
           <div className="flex items-center justify-between pb-4 border-b border-border-subtle">
-            <Link href="/admin/dashboard" onClick={() => setIsMobileOpen(false)} className="flex items-center gap-3">
-              <img src="/logo.png" alt="Adarsh Stationery Mart" className="w-14 h-14 object-contain drop-shadow-md shrink-0" />
-              <div className="flex flex-col">
-                <span className="font-black text-base text-gray-900 tracking-tight">Adarsh Stationery</span>
-                <span className="text-xs text-primary-700 font-extrabold">Mart Control Panel</span>
-              </div>
+            <Link 
+              href="/admin/dashboard" 
+              onClick={() => setIsMobileOpen(false)} 
+              className="w-[78%] rounded-2xl bg-white border border-border-subtle p-2 shadow-2xs overflow-hidden flex items-center justify-center hover:scale-102 transition-transform"
+            >
+              <Image
+                src="/logo-full.png"
+                alt="Adarsh Stationery Mart"
+                width={1036}
+                height={283}
+                quality={95}
+                priority
+                className="w-full h-auto object-contain rounded-xl"
+              />
             </Link>
             <button
               onClick={() => setIsMobileOpen(false)}
-              className="p-2 rounded-full text-zinc-500 hover:text-gray-900 hover:bg-primary-50 transition-colors"
+              className="p-2 rounded-full text-zinc-500 hover:text-gray-900 hover:bg-primary-50 transition-colors cursor-pointer"
             >
               <X className="w-6 h-6" />
             </button>
@@ -174,111 +183,111 @@ export default function AdminSidebar({
         </div>
       </div>
 
-      {/* 🌟 DESKTOP SLIM RAIL SIDEBAR (LARGER HD LOGO & CIRCULAR BUTTONS) */}
-      <aside className="hidden lg:flex fixed top-0 bottom-0 left-0 z-40 w-20 bg-white/75 backdrop-blur-xl border-r border-border-subtle flex-col justify-between items-center py-5 px-2 select-none shadow-2xs">
+      {/* 🌟 1. STANDALONE COMPANY LOGO CONTAINER (MAXIMIZED FULL LOGO SIZE) */}
+      <div className="hidden lg:flex fixed top-3.5 left-4 z-40">
+        <Link 
+          href="/admin/dashboard" 
+          className="w-14 h-14 sm:w-16 sm:h-16 rounded-[22px] bg-white border border-border-subtle shadow-xs flex items-center justify-center p-1 overflow-hidden hover:scale-105 hover:shadow-md transition-all duration-200 group cursor-pointer"
+          title="Adarsh Stationery Mart"
+        >
+          <Image 
+            src="/logo-icon.png" 
+            alt="Adarsh Stationery Mart Logo" 
+            width={590}
+            height={590}
+            quality={95}
+            priority
+            className="w-full h-full object-cover rounded-[18px] filter drop-shadow-xs group-hover:drop-shadow-md transition-all" 
+          />
+        </Link>
+      </div>
+
+      {/* 🌟 2. SEPARATE SIDEBAR NAVIGATION CAPSULE (TRIMMED BORDER STARTING FROM FIRST ICON) */}
+      <aside className="hidden lg:flex fixed top-20 bottom-4 left-4 z-40 w-14 sm:w-16 bg-white/90 backdrop-blur-2xl border border-border-subtle rounded-[32px] flex-col justify-between items-center py-4 px-1.5 select-none shadow-md">
         
-        {/* Top Section: LARGER & CLEARER HD STORE LOGO */}
-        <div className="flex flex-col items-center gap-6 w-full">
-          
-          {/* Separate Standalone Adarsh Logo Container */}
-          <div className="relative flex justify-center w-full pb-4 mb-1 border-b border-border-subtle/80">
-            <Link 
-              href="/admin/dashboard" 
-              className="w-14 h-14 rounded-2xl flex items-center justify-center p-1.5 hover:scale-105 transition-transform duration-200 bg-white border border-border-subtle shadow-xs group"
-              title="Adarsh Stationery Mart"
-            >
-              <img 
-                src="/logo.png" 
-                alt="Adarsh Stationery Mart" 
-                className="w-full h-full object-contain filter drop-shadow-sm group-hover:drop-shadow-md transition-all" 
-              />
-            </Link>
-          </div>
+        {/* TOP SECTION: STACKED NAVIGATION ICON BUTTONS */}
+        <nav className="flex flex-col items-center gap-3.5 w-full">
+          {navigationGroups.map((group) => {
+            const GroupIcon = group.icon;
+            const isGroupActive = activeGroupId === group.id;
+            const isHovered = hoveredGroupId === group.id;
 
-          {/* STACKED ICON NAVIGATION BUTTONS WITH ROUNDED CUT STYLING */}
-          <nav className="flex flex-col items-center gap-4 w-full">
-            {navigationGroups.map((group) => {
-              const GroupIcon = group.icon;
-              const isGroupActive = activeGroupId === group.id;
-              const isHovered = hoveredGroupId === group.id;
+            const visibleLinks = group.links.filter(
+              l => !l.requireSuperAdmin || session?.user?.role === "superadmin"
+            );
 
-              const visibleLinks = group.links.filter(
-                l => !l.requireSuperAdmin || session?.user?.role === "superadmin"
-              );
-
-              return (
-                <div 
-                  key={group.id} 
-                  className="relative w-full flex justify-center"
-                  onMouseEnter={() => handleMouseEnter(group.id)}
-                  onMouseLeave={handleMouseLeave}
+            return (
+              <div 
+                key={group.id} 
+                className="relative w-full flex justify-center"
+                onMouseEnter={() => handleMouseEnter(group.id)}
+                onMouseLeave={handleMouseLeave}
+              >
+                {/* ICON NAVIGATION CAPSULE BUTTON */}
+                <button
+                  onClick={() => handleGroupClick(group.id)}
+                  className={`w-11 h-11 sm:w-12 sm:h-12 rounded-2xl transition-all duration-200 cursor-pointer flex items-center justify-center relative ${
+                    isGroupActive
+                      ? "bg-primary-600 text-white font-bold shadow-md shadow-primary-600/30 ring-4 ring-primary-100 scale-105"
+                      : "bg-white border border-border-subtle text-zinc-700 hover:text-primary-700 hover:bg-primary-50 hover:border-primary-300 hover:scale-105 shadow-2xs"
+                  }`}
+                  title={group.title}
+                  aria-label={group.title}
                 >
-                  {/* ROUNDED CUT SQUIRCLE ICON BUTTON */}
-                  <button
-                    onClick={() => handleGroupClick(group.id)}
-                    className={`w-12 h-12 rounded-2xl transition-all duration-200 cursor-pointer flex items-center justify-center relative ${
-                      isGroupActive
-                        ? "bg-primary-600 text-white font-bold shadow-md shadow-primary-600/30 ring-4 ring-primary-100 scale-105"
-                        : "bg-white border border-border-subtle text-zinc-700 hover:text-primary-700 hover:bg-primary-50 hover:border-primary-300 hover:scale-105 shadow-2xs"
-                    }`}
-                    title={group.title}
-                    aria-label={group.title}
+                  <GroupIcon className={`h-5 w-5 sm:h-5.5 sm:w-5.5 transition-transform ${isGroupActive ? "text-white" : "text-zinc-600"}`} />
+                </button>
+
+                {/* HOVER FLYOUT SUBMENU PANEL */}
+                {isHovered && (
+                  <div 
+                    className="absolute left-16 top-0 bg-white/95 backdrop-blur-2xl border border-border-subtle shadow-2xl rounded-2xl p-3 min-w-[220px] space-y-1.5 z-50 animate-in fade-in zoom-in-95 duration-150"
+                    onMouseEnter={() => handleMouseEnter(group.id)}
+                    onMouseLeave={handleMouseLeave}
                   >
-                    <GroupIcon className={`h-5.5 w-5.5 transition-transform ${isGroupActive ? "text-white" : "text-zinc-600"}`} />
-                  </button>
-
-                  {/* HOVER FLYOUT SUBMENU PANEL */}
-                  {isHovered && (
-                    <div 
-                      className="absolute left-16 top-0 bg-white/95 backdrop-blur-2xl border border-border-subtle shadow-2xl rounded-2xl p-3 min-w-[220px] space-y-1.5 z-50 animate-in fade-in zoom-in-95 duration-150"
-                      onMouseEnter={() => handleMouseEnter(group.id)}
-                      onMouseLeave={handleMouseLeave}
-                    >
-                      <div className="px-3 py-1.5 border-b border-border-subtle flex items-center justify-between mb-1">
-                        <span className="text-xs font-black uppercase tracking-wider text-primary-700 flex items-center gap-2">
-                          <GroupIcon className="w-4 h-4 text-primary-600" />
-                          {group.title}
-                        </span>
-                      </div>
-
-                      <div className="space-y-1">
-                        {visibleLinks.map((link) => {
-                          const Icon = link.icon;
-                          const isLinkActive = pathname === link.href;
-
-                          return (
-                            <Link
-                              key={link.href}
-                              href={link.href}
-                              onClick={() => {
-                                setHoveredGroupId(null);
-                              }}
-                              className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs transition-all duration-150 ${
-                                isLinkActive
-                                  ? "bg-primary-100 text-primary-700 font-black border-l-4 border-primary-600 pl-3 shadow-2xs"
-                                  : "text-gray-900 hover:text-primary-700 hover:bg-primary-50 font-bold"
-                              }`}
-                            >
-                              <div className="flex items-center gap-2.5 min-w-0">
-                                <Icon className={`h-4.5 w-4.5 shrink-0 ${isLinkActive ? "text-primary-600" : "text-zinc-500"}`} />
-                                <span className="truncate">{link.name}</span>
-                              </div>
-                              {isLinkActive && <ChevronRight className="h-3.5 w-3.5 text-primary-600 shrink-0" />}
-                            </Link>
-                          );
-                        })}
-                      </div>
+                    <div className="px-3 py-1.5 border-b border-border-subtle flex items-center justify-between mb-1">
+                      <span className="text-xs font-black uppercase tracking-wider text-primary-700 flex items-center gap-2">
+                        <GroupIcon className="w-4 h-4 text-primary-600" />
+                        {group.title}
+                      </span>
                     </div>
-                  )}
 
-                </div>
-              );
-            })}
-          </nav>
-        </div>
+                    <div className="space-y-1">
+                      {visibleLinks.map((link) => {
+                        const Icon = link.icon;
+                        const isLinkActive = pathname === link.href;
 
-        {/* Bottom Section: CIRCULAR SETTINGS BUTTON */}
-        <div className="w-full flex justify-center pt-3 border-t border-border-subtle">
+                        return (
+                          <Link
+                            key={link.href}
+                            href={link.href}
+                            onClick={() => {
+                              setHoveredGroupId(null);
+                            }}
+                            className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs transition-all duration-150 ${
+                              isLinkActive
+                                ? "bg-primary-100 text-primary-700 font-black border-l-4 border-primary-600 pl-3 shadow-2xs"
+                                : "text-gray-900 hover:text-primary-700 hover:bg-primary-50 font-bold"
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <Icon className={`h-4.5 w-4.5 shrink-0 ${isLinkActive ? "text-primary-600" : "text-zinc-500"}`} />
+                              <span className="truncate">{link.name}</span>
+                            </div>
+                            {isLinkActive && <ChevronRight className="h-3.5 w-3.5 text-primary-600 shrink-0" />}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+              </div>
+            );
+          })}
+        </nav>
+
+        {/* BOTTOM SECTION: CIRCULAR STORE SETTINGS BUTTON */}
+        <div className="w-full flex justify-center pt-2 border-t border-border-subtle">
           <div 
             className="relative w-full flex justify-center"
             onMouseEnter={() => handleMouseEnter("settings")}
@@ -286,7 +295,7 @@ export default function AdminSidebar({
           >
             <Link
               href="/admin/settings"
-              className={`w-12 h-12 rounded-full transition-all duration-200 cursor-pointer flex items-center justify-center ${
+              className={`w-11 h-11 sm:w-12 sm:h-12 rounded-full transition-all duration-200 cursor-pointer flex items-center justify-center ${
                 pathname === "/admin/settings"
                   ? "bg-primary-600 text-white shadow-md ring-3 ring-primary-200"
                   : "bg-white/90 border border-border-subtle text-zinc-700 hover:text-primary-700 hover:bg-primary-50 shadow-2xs"

@@ -303,64 +303,64 @@ export default function CategoryManagementPage() {
       </div>
 
       {/* 2. STATS KPI MESH GRID */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
         {/* KPI 1: Purple Gradient Base (#9B66D4 -> #D8A5E9) */}
-        <div className="rounded-[24px] bg-gradient-to-br from-[#9B66D4] via-[#B885E2] to-[#D8A5E9] p-5 text-white shadow-md relative overflow-hidden flex flex-col justify-between group">
+        <div className="rounded-2xl sm:rounded-[24px] bg-gradient-to-br from-[#9B66D4] via-[#B885E2] to-[#D8A5E9] p-3.5 sm:p-5 text-white shadow-md relative overflow-hidden flex flex-col justify-between group">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-black uppercase tracking-wider text-purple-100">Total Categories</span>
-            <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-white shadow-xs">
-              <Layers className="w-5 h-5" />
+            <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-purple-100 truncate">Total Categories</span>
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-white shadow-xs shrink-0">
+              <Layers className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
           </div>
-          <div className="mt-4">
-            <h3 className="text-3xl font-black font-mono tracking-tight text-white">{String(totalCategoryCount).padStart(2, '0')}</h3>
-            <p className="text-xs text-purple-100 font-medium mt-1">Taxonomy Nodes Active</p>
+          <div className="mt-2.5 sm:mt-4">
+            <h3 className="text-xl sm:text-3xl font-black font-mono tracking-tight text-white">{String(totalCategoryCount).padStart(2, '0')}</h3>
+            <p className="text-[10px] sm:text-xs text-purple-100 font-medium mt-0.5 sm:mt-1 truncate">Taxonomy Nodes Active</p>
           </div>
         </div>
 
         {/* KPI 2: Active Store Catalogs */}
-        <div className="rounded-[24px] bg-bg-surface border border-border-subtle p-5 shadow-xs flex flex-col justify-between">
+        <div className="rounded-2xl sm:rounded-[24px] bg-bg-surface border border-border-subtle p-3.5 sm:p-5 shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-black uppercase tracking-wider text-zinc-500">Live Status</span>
-            <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 shadow-2xs">
-              <CheckCircle2 className="w-5 h-5" />
+            <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-zinc-500 truncate">Live Status</span>
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 shadow-2xs shrink-0">
+              <CheckCircle2 className="w-4 h-4 sm:w-5 sm:w-5" />
             </div>
           </div>
-          <div className="mt-4">
-            <h3 className="text-3xl font-black font-mono tracking-tight text-gray-900">{String(activeCount).padStart(2, '0')}</h3>
-            <p className="text-xs text-emerald-600 font-bold mt-1">
+          <div className="mt-2.5 sm:mt-4">
+            <h3 className="text-xl sm:text-3xl font-black font-mono tracking-tight text-gray-900">{String(activeCount).padStart(2, '0')}</h3>
+            <p className="text-[10px] sm:text-xs text-emerald-600 font-bold mt-0.5 sm:mt-1 truncate">
               {totalCategoryCount > 0 ? Math.round((activeCount / totalCategoryCount) * 100) : 0}% Active Coverage
             </p>
           </div>
         </div>
 
         {/* KPI 3: Total Products Assigned */}
-        <div className="rounded-[24px] bg-bg-surface border border-border-subtle p-5 shadow-xs flex flex-col justify-between">
+        <div className="rounded-2xl sm:rounded-[24px] bg-bg-surface border border-border-subtle p-3.5 sm:p-5 shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-black uppercase tracking-wider text-zinc-500">Total Products</span>
-            <div className="w-10 h-10 rounded-2xl bg-primary-50 border border-primary-200 flex items-center justify-center text-primary-600 shadow-2xs">
-              <Package className="w-5 h-5" />
+            <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-zinc-500 truncate">Total Products</span>
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-primary-50 border border-primary-200 flex items-center justify-center text-primary-600 shadow-2xs shrink-0">
+              <Package className="w-4 h-4 sm:w-5 sm:w-5" />
             </div>
           </div>
-          <div className="mt-4">
-            <h3 className="text-3xl font-black font-mono tracking-tight text-gray-900">{totalProductsAssigned}</h3>
-            <p className="text-xs text-primary-700 font-bold mt-1">Catalog items linked</p>
+          <div className="mt-2.5 sm:mt-4">
+            <h3 className="text-xl sm:text-3xl font-black font-mono tracking-tight text-gray-900">{totalProductsAssigned}</h3>
+            <p className="text-[10px] sm:text-xs text-primary-700 font-bold mt-0.5 sm:mt-1 truncate">Catalog items linked</p>
           </div>
         </div>
 
         {/* KPI 4: Catalog Density */}
-        <div className="rounded-[24px] bg-bg-surface border border-border-subtle p-5 shadow-xs flex flex-col justify-between">
+        <div className="rounded-2xl sm:rounded-[24px] bg-bg-surface border border-border-subtle p-3.5 sm:p-5 shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-black uppercase tracking-wider text-zinc-500">Avg Density</span>
-            <div className="w-10 h-10 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 shadow-2xs">
-              <BarChart3 className="w-5 h-5" />
+            <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-zinc-500 truncate">Avg Density</span>
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 shadow-2xs shrink-0">
+              <BarChart3 className="w-4 h-4 sm:w-5 sm:w-5" />
             </div>
           </div>
-          <div className="mt-4">
-            <h3 className="text-3xl font-black font-mono tracking-tight text-gray-900">
+          <div className="mt-2.5 sm:mt-4">
+            <h3 className="text-xl sm:text-3xl font-black font-mono tracking-tight text-gray-900">
               {totalCategoryCount > 0 ? (totalProductsAssigned / totalCategoryCount).toFixed(1) : 0}
             </h3>
-            <p className="text-xs text-amber-700 font-bold mt-1">Items / Category avg</p>
+            <p className="text-[10px] sm:text-xs text-amber-600 font-bold mt-0.5 sm:mt-1 truncate">SKUs per category</p>
           </div>
         </div>
       </div>

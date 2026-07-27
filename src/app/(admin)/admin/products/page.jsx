@@ -1273,13 +1273,13 @@ export default function ProductManagementPage() {
 
       {/* 5. ADD / EDIT PRODUCT MODAL (LIGHT SAAS PURPLE THEME) */}
       <Dialog open={isModalOpen} onOpenChange={(val) => !val && closeModal()}>
-        <DialogContent className="max-w-[88vw] w-full sm:max-w-6xl bg-white/95 backdrop-blur-2xl border border-border-subtle text-gray-900 rounded-[28px] overflow-hidden shadow-2xl flex flex-col max-h-[88vh] p-0 font-sans">
+        <DialogContent className="max-w-[95vw] w-full sm:max-w-4xl lg:max-w-6xl max-h-[92vh] overflow-y-auto bg-white/95 backdrop-blur-2xl border border-border-subtle text-gray-900 rounded-2xl sm:rounded-[28px] shadow-2xl flex flex-col p-0 font-sans custom-scrollbar">
  
           {/* Header */}
-          <DialogHeader className="flex items-center justify-between gap-4 p-5 border-b border-border-subtle bg-primary-50/80 shrink-0">
-            <div className="flex items-center gap-2.5">
-              <Sparkles className="text-primary-600 w-5 h-5" />
-              <DialogTitle className="text-xl font-black text-gray-900 tracking-tight">
+          <DialogHeader className="flex items-center justify-between gap-4 p-4 sm:p-5 border-b border-border-subtle bg-primary-50/80 shrink-0">
+            <div className="flex items-center gap-2 sm:gap-2.5">
+              <Sparkles className="text-primary-600 w-4.5 h-4.5 sm:w-5 sm:h-5" />
+              <DialogTitle className="text-lg sm:text-xl font-black text-gray-900 tracking-tight">
                 {editingProduct ? "Edit Product Profile" : "Add New Product"}
               </DialogTitle>
             </div>
@@ -1287,8 +1287,8 @@ export default function ProductManagementPage() {
  
           <form onSubmit={handleFormSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0">
             <div className="flex flex-col lg:flex-row flex-1 min-h-0">
-              <div className="lg:w-[58%] min-h-0 overflow-y-auto p-6 space-y-6">
-                <div className="rounded-[24px] border border-border-subtle bg-bg-surface p-6 shadow-xs">
+              <div className="lg:w-[58%] min-h-0 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
+                <div className="rounded-2xl sm:rounded-[24px] border border-border-subtle bg-bg-surface p-4 sm:p-6 shadow-xs">
                   <div className="mb-5">
                     <p className="text-xs uppercase tracking-wider font-black text-primary-700">Product details</p>
                     <h2 className="mt-1 text-xl font-black text-gray-900">Basic product information</h2>

@@ -1,5 +1,6 @@
 import { dbConnect } from "@/lib/dbConnect";
 import { Admin } from "@/models/admin.model";
+import { AdminInvite } from "@/models/adminInvite.model";
 import { ApiError } from "@/utils/ApiError";
 import { ApiResponse } from "@/utils/ApiResponse";
 import { asyncHandler } from "@/utils/asyncHandler";
@@ -15,10 +16,13 @@ export const GET = asyncHandler(async (request) => {
         throw new ApiError(401, "Unauthorized access. Please login first.");
     }
     
-    const teamMembers = await Admin.find({}).sort({ createdAt: -1 });
+    // Query actual existing Admin & Staff accounts from MongoDB
+    const teamMembers = await Admin.find({}).sort({ createdAt: -1 }).lean();
+    
+    // Query any pending non-used AdminInvites from MongoDB
+    const pendingInvites = await AdminInvite.find({ isUsed: false }).sort({ createdAt: -1 }).lean();
 
-    // Return the list safely
     return NextResponse.json(
-        new ApiResponse(200, teamMembers, "Team members fetched successfully!")
+        new ApiResponse(200, { teamMembers, pendingInvites }, "Team members fetched successfully!")
     );
 });
