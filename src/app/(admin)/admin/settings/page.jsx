@@ -211,13 +211,16 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6 w-full max-w-full font-sans animate-in fade-in duration-300 overflow-x-hidden">
       
-      {/* 1. UNIQUE HAZED PURPLE GRADIENT TOP CONTAINER UI */}
-      <div className="hazed-purple-banner p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      {/* 1. CLEAN PAGE HEADER */}
+      <div className="flex flex-wrap gap-4 justify-between items-center border-b border-border-subtle pb-5">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-3">
-            <Store className="h-7 w-7 text-accent shrink-0" /> Store Administrative Settings
-          </h1>
-          <p className="mt-1 text-sm text-purple-100 font-semibold max-w-2xl">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-primary-50 border border-primary-100 text-primary-600">
+              <Store className="h-5 w-5" />
+            </div>
+            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-gray-900">Store Administrative Settings</h1>
+          </div>
+          <p className="mt-1 text-xs sm:text-sm text-zinc-600 font-medium">
             Configure store business details, security authentication, notification preferences, and team roles.
           </p>
         </div>
@@ -227,7 +230,7 @@ export default function SettingsPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-start">
         
         {/* Left Navigation Rail */}
-        <div className="md:col-span-1 space-y-1.5 bg-zinc-900/40 p-2 border border-zinc-800/60 rounded-2xl">
+        <div className="md:col-span-1 space-y-1.5 bg-bg-surface p-2.5 border border-border-subtle rounded-2xl shadow-xs">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;

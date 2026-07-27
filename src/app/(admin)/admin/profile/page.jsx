@@ -12,22 +12,25 @@ export default function ProfilePage() {
 
   return (
     <div className="w-full max-w-full space-y-6 text-gray-900 animate-in fade-in duration-300 overflow-x-hidden">
-      {/* 1. UNIQUE HAZED PURPLE GRADIENT TOP CONTAINER UI */}
-      <div className="hazed-purple-banner p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      {/* 1. CLEAN PAGE HEADER */}
+      <div className="flex flex-wrap gap-4 justify-between items-center border-b border-border-subtle pb-5">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-3">
-            <User className="h-7 w-7 text-accent shrink-0" /> Admin Profile Credentials
-          </h1>
-          <p className="mt-1 text-sm text-purple-100 font-semibold max-w-2xl">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-primary-50 border border-primary-100 text-primary-600">
+              <User className="h-5 w-5" />
+            </div>
+            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-gray-900">Admin Profile Credentials</h1>
+          </div>
+          <p className="mt-1 text-xs sm:text-sm text-zinc-600 font-medium">
             View and manage your personal account credentials, security access, and system privileges.
           </p>
         </div>
 
         <Button
           onClick={() => setIsEditProfileOpen(true)}
-          className="bg-white text-primary-800 font-black hover:bg-primary-50 rounded-xl text-sm px-4 h-10 shadow-md flex items-center gap-2 cursor-pointer btn-modern shrink-0"
+          className="bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-xl text-xs sm:text-sm px-4 h-10 shadow-xs flex items-center gap-2 cursor-pointer btn-modern shrink-0"
         >
-          <Pencil className="h-4 w-4 text-primary-600" /> Edit Profile
+          <Pencil className="h-4 w-4" /> Edit Profile
         </Button>
       </div>
 

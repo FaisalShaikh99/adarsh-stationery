@@ -702,42 +702,89 @@ export default function ProductManagementPage() {
   return (
     <div className="w-full max-w-full min-h-screen text-gray-900 p-2 sm:p-4 space-y-6 font-sans overflow-x-hidden">
  
-      {/* 1. UNIQUE HAZED PURPLE GRADIENT TOP CONTAINER UI */}
-      <div className="hazed-purple-banner p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      {/* 1. CLEAN PAGE HEADER */}
+      <div className="flex flex-wrap gap-4 justify-between items-center border-b border-border-subtle pb-5">
         <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-3">
-              <Package className="h-7 w-7 text-accent shrink-0" /> Products Catalog
-            </h1>
-            <span className="text-xs bg-white/20 text-white px-3 py-1 rounded-lg border border-white/30 font-bold capitalize">{viewMode} view</span>
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-primary-50 border border-primary-100 text-primary-600">
+              <Package className="h-5 w-5" />
+            </div>
+            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-gray-900">Products Catalog</h1>
+            <span className="text-xs bg-primary-50 text-primary-700 px-3 py-1 rounded-lg border border-primary-200 font-bold capitalize">{viewMode} view</span>
           </div>
-          <p className="mt-1 text-sm text-purple-100 font-semibold max-w-2xl">
+          <p className="mt-1 text-xs sm:text-sm text-zinc-600 font-medium">
             Manage product inventory, pricing, stock levels, and catalog items for Adarsh Stationery.
           </p>
         </div>
         <div className="flex items-center gap-3 shrink-0">
-          <Button onClick={handleCsvExport} variant="outline" className="border-white/40 bg-white/20 text-white hover:bg-white hover:text-primary-800 text-sm font-extrabold px-4 h-10 cursor-pointer shadow-xs btn-modern">
-            <Download className="w-4 h-4 mr-2" /> Export CSV
+          <Button onClick={handleCsvExport} variant="outline" className="border-border-subtle bg-bg-surface text-gray-900 hover:bg-primary-50 text-xs sm:text-sm font-semibold rounded-xl h-10 px-4 cursor-pointer shadow-xs btn-modern">
+            <Download className="w-4 h-4 mr-2 text-primary-600" /> Export CSV
           </Button>
-          <Button onClick={openCreateModal} className="bg-white text-primary-800 font-black hover:bg-primary-50 rounded-xl px-4 h-10 text-sm shadow-md cursor-pointer btn-modern">
-            <Plus className="w-4 h-4 mr-2 text-primary-600" /> Add New Product
+          <Button onClick={openCreateModal} className="bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-xl px-4 h-10 text-xs sm:text-sm shadow-xs cursor-pointer btn-modern">
+            <Plus className="w-4 h-4 mr-2" /> Add New Product
           </Button>
         </div>
       </div>
  
       {/* 2. STATS CARDS GRID ROW */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {metrics.map((metric, i) => (
-          <div key={i} className="bg-bg-surface border border-border-subtle p-5 rounded-2xl shadow-xs flex flex-col justify-between min-h-[105px]">
-            <div>
-              <p className="text-xs text-zinc-500 uppercase tracking-wider font-bold">{metric.title}</p>
-              <p className="text-2xl font-bold mt-2 font-mono tracking-tight text-gray-900">{metric.value}</p>
+        {/* Card 1: Product Counter (Custom #9B66D4 to #D8A5E9 Gradient) */}
+        <div className="p-5 rounded-2xl bg-[linear-gradient(135deg,#9B66D4_0%,#B882E4_50%,#D8A5E9_100%)] text-white border border-purple-300/40 shadow-sm flex flex-col justify-between min-h-[110px]">
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-purple-100 uppercase tracking-wider font-extrabold">Product Counter</p>
+            <div className="p-2 rounded-xl bg-white/20 border border-white/30 text-white">
+              <Package className="h-4.5 w-4.5" />
             </div>
-            {metric.subtext && (
-              <span className="text-[10px] text-zinc-500 mt-1.5 block italic">{metric.subtext}</span>
-            )}
           </div>
-        ))}
+          <div>
+            <p className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-white mt-2">
+              {String(products.length).padStart(2, "0")}
+            </p>
+          </div>
+        </div>
+
+        {/* Card 2: Revenue (White Surface with Pink/Purple Icon) */}
+        <div className="p-5 rounded-2xl bg-bg-surface border border-border-subtle shadow-xs flex flex-col justify-between min-h-[110px]">
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-zinc-500 uppercase tracking-wider font-extrabold">Revenue</p>
+            <div className="p-2 rounded-xl bg-pink-50 border border-pink-200 text-pink-600">
+              <Sparkles className="h-4.5 w-4.5" />
+            </div>
+          </div>
+          <div>
+            <p className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-gray-900 mt-2">₹0</p>
+            <span className="text-[10px] text-zinc-500 mt-1 block italic">Available after Orders module</span>
+          </div>
+        </div>
+
+        {/* Card 3: Total Sold (White Surface with Purple Icon) */}
+        <div className="p-5 rounded-2xl bg-bg-surface border border-border-subtle shadow-xs flex flex-col justify-between min-h-[110px]">
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-zinc-500 uppercase tracking-wider font-extrabold">Total Sold</p>
+            <div className="p-2 rounded-xl bg-purple-50 border border-purple-200 text-purple-600">
+              <Wand2 className="h-4.5 w-4.5" />
+            </div>
+          </div>
+          <div>
+            <p className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-gray-900 mt-2">0</p>
+            <span className="text-[10px] text-zinc-500 mt-1 block italic">Available after Orders module</span>
+          </div>
+        </div>
+
+        {/* Card 4: Active Catalog (White Surface with Blue Icon) */}
+        <div className="p-5 rounded-2xl bg-bg-surface border border-border-subtle shadow-xs flex flex-col justify-between min-h-[110px]">
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-zinc-500 uppercase tracking-wider font-extrabold">Active Catalog</p>
+            <div className="p-2 rounded-xl bg-blue-50 border border-blue-200 text-blue-600">
+              <Plus className="h-4.5 w-4.5" />
+            </div>
+          </div>
+          <div>
+            <p className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-gray-900 mt-2">
+              {String(products.filter(p => p.isVisible !== false).length).padStart(2, "0")}
+            </p>
+          </div>
+        </div>
       </div>
  
       {/* 3. SEARCH & REFRESH WORKSPACE LAYER */}
@@ -959,45 +1006,77 @@ export default function ProductManagementPage() {
                     }
 
                     return (
-                      <TableRow key={p._id} className="border-b border-border-subtle hover:bg-primary-50/40 transition-colors text-gray-900 bg-white/70">
-                        <TableCell className="font-mono text-zinc-600 py-2.5 font-bold">{(currentPage - 1) * itemsPerPage + index + 1}</TableCell>
-                        <TableCell className="font-extrabold text-gray-900 py-2.5">{p.name}</TableCell>
-                        <TableCell className="py-2.5">
-                          <span className="bg-primary-50 text-primary-700 border border-primary-200 px-2 py-0.5 rounded text-[10px] font-bold">
+                      <TableRow key={p._id} className="border-b border-border-subtle hover:bg-primary-50/50 transition-colors text-gray-900 bg-white/80">
+                        <TableCell className="font-mono text-zinc-600 py-3 font-bold text-xs">{(currentPage - 1) * itemsPerPage + index + 1}</TableCell>
+                        
+                        {/* Product Name with Thumbnail */}
+                        <TableCell className="py-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-white border border-border-subtle p-1 flex items-center justify-center shrink-0 shadow-2xs">
+                              {p.images?.[0] ? (
+                                <img 
+                                  src={p.images[0]} 
+                                  alt={p.name} 
+                                  className="w-full h-full object-contain rounded-lg"
+                                  referrerPolicy="no-referrer"
+                                />
+                              ) : (
+                                <Package className="w-5 h-5 text-zinc-400" />
+                              )}
+                            </div>
+                            <span className="font-extrabold text-gray-900 text-xs sm:text-sm tracking-tight">{p.name}</span>
+                          </div>
+                        </TableCell>
+
+                        {/* Category Tag */}
+                        <TableCell className="py-3">
+                          <span className="bg-primary-50 text-primary-700 border border-primary-200 px-2.5 py-1 rounded-lg text-xs font-black uppercase">
                             {p.category?.name || "Uncategorized"}
                           </span>
                         </TableCell>
-                        <TableCell className="py-2.5 text-zinc-700 font-semibold">{p.company?.name || "—"}</TableCell>
-                        <TableCell className="py-2.5 font-mono font-bold text-emerald-600">{p.stock} {p.stockUnit}</TableCell>
-                        <TableCell className="font-mono text-xs py-2.5 text-zinc-600">₹{cost}/-</TableCell>
-                        <TableCell className="font-mono text-xs py-2.5 text-gray-900 font-extrabold">₹{selling}/-</TableCell>
-                        <TableCell className="font-mono text-xs py-2.5">
-                          <span className={`inline-flex flex-col px-2 py-0.5 rounded-lg border text-[11px] ${colorClass}`}>
-                            <span className="font-bold">₹{profit}/-</span>
-                            <span className="text-[9px] font-normal opacity-80">({marginPercent}%)</span>
+
+                        {/* Brand with Logo */}
+                        <TableCell className="py-3">
+                          <div className="flex items-center gap-2">
+                            {p.company?.logo ? (
+                              <div className="w-7 h-7 rounded-lg bg-white border border-border-subtle p-0.5 flex items-center justify-center shrink-0 shadow-2xs">
+                                <img src={p.company.logo} alt="" className="w-full h-full object-contain rounded" referrerPolicy="no-referrer" />
+                              </div>
+                            ) : null}
+                            <span className="font-extrabold text-gray-900 text-xs sm:text-sm">{p.company?.name || "—"}</span>
+                          </div>
+                        </TableCell>
+
+                        <TableCell className="py-3 font-mono font-black text-emerald-600 text-xs sm:text-sm">{p.stock} {p.stockUnit}</TableCell>
+                        <TableCell className="font-mono text-xs sm:text-sm py-3 text-zinc-600 font-bold">₹{cost}/-</TableCell>
+                        <TableCell className="font-mono text-xs sm:text-sm py-3 text-gray-900 font-black">₹{selling}/-</TableCell>
+                        <TableCell className="font-mono text-xs py-3">
+                          <span className={`inline-flex flex-col px-2.5 py-1 rounded-xl border text-xs ${colorClass}`}>
+                            <span className="font-black">₹{profit}/-</span>
+                            <span className="text-[10px] font-bold opacity-90">({marginPercent}%)</span>
                           </span>
                         </TableCell>
-                        <TableCell className="py-2.5">
+                        <TableCell className="py-3">
                           <div className="flex items-center gap-2">
                             <Switch 
                               checked={p.isVisible !== false}
                               onCheckedChange={() => toggleVisibilityMutation.mutate(p._id)}
-                              className="data-[state=checked]:bg-emerald-600 scale-75 cursor-pointer"
+                              className="data-[state=checked]:bg-emerald-600 scale-90 cursor-pointer"
                             />
-                            <span className={`text-[9px] font-bold uppercase min-w-[50px] ${p.isVisible !== false ? "text-emerald-600" : "text-zinc-500"}`}>
+                            <span className={`text-xs font-black uppercase min-w-[55px] ${p.isVisible !== false ? "text-emerald-600" : "text-zinc-500"}`}>
                               {p.isVisible !== false ? "Visible" : "Hidden"}
                             </span>
                           </div>
                         </TableCell>
-                        <TableCell className="font-mono text-[11px] text-zinc-500 py-2.5">
+                        <TableCell className="font-mono text-xs text-zinc-600 py-3 font-bold">
                           {p.createdAt ? (
                             new Date(p.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
                           ) : "—"}
                         </TableCell>
-                        <TableCell className="text-center py-2.5">
-                          <div className="flex justify-center gap-3">
-                            <Button onClick={() => openEditModal(p)} variant="ghost" className="p-1 h-auto text-zinc-600 hover:text-gray-900 hover:bg-primary-50 rounded-lg cursor-pointer"><Edit2 className="w-3.5 h-3.5" /></Button>
-                            <Button onClick={() => { setPendingDeleteId(p._id); setDeleteDialogOpen(true); }} variant="ghost" className="p-1 h-auto text-rose-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg cursor-pointer"><Trash2 className="w-3.5 h-3.5" /></Button>
+                        <TableCell className="text-center py-3">
+                          <div className="flex justify-center gap-2">
+                            <Button onClick={() => openEditModal(p)} variant="outline" className="h-8 px-2.5 border-border-subtle bg-bg-surface text-gray-900 hover:text-primary-700 hover:bg-primary-50 rounded-xl text-xs font-bold gap-1 cursor-pointer"><Edit2 className="w-3.5 h-3.5 text-primary-600" /> Edit</Button>
+                            <Button onClick={() => { setPendingDeleteId(p._id); setDeleteDialogOpen(true); }} variant="ghost" className="h-8 w-8 p-0 text-rose-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl cursor-pointer"><Trash2 className="w-3.5 h-3.5" /></Button>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -1104,33 +1183,33 @@ export default function ProductManagementPage() {
                         </div>
 
                         {/* Visibility Switch */}
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-semibold text-zinc-400">Store Visibility</span>
-                          <div className="flex items-center gap-1.5">
+                        <div className="flex items-center justify-between pt-1">
+                          <span className="text-xs font-black text-gray-900">Store Visibility</span>
+                          <div className="flex items-center gap-2">
                             <Switch 
                               checked={p.isVisible !== false}
                               onCheckedChange={() => toggleVisibilityMutation.mutate(p._id)}
-                              className="data-[state=checked]:bg-emerald-600 scale-90"
+                              className="data-[state=checked]:bg-emerald-600 cursor-pointer"
                             />
-                            <span className={`text-[9px] font-bold uppercase ${p.isVisible !== false ? "text-emerald-400" : "text-zinc-500"}`}>
+                            <span className={`text-xs font-black uppercase min-w-[50px] ${p.isVisible !== false ? "text-emerald-600" : "text-zinc-500"}`}>
                               {p.isVisible !== false ? "Visible" : "Hidden"}
                             </span>
                           </div>
                         </div>
 
                         {/* Actions */}
-                        <div className="flex items-center justify-end gap-2 border-t border-zinc-800/50 pt-2.5">
+                        <div className="flex items-center justify-end gap-2 border-t border-border-subtle pt-3 mt-1">
                           <Button 
                             onClick={() => openEditModal(p)} 
                             variant="outline" 
-                            className="h-8 px-2.5 border-zinc-800 bg-zinc-950 text-zinc-400 hover:text-white rounded-lg text-xs"
+                            className="h-8 px-3 border-border-subtle bg-bg-surface text-gray-900 hover:text-primary-700 hover:bg-primary-50 rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer shadow-2xs btn-modern"
                           >
-                            <Edit2 className="w-3.5 h-3.5 mr-1" /> Edit
+                            <Edit2 className="w-3.5 h-3.5 text-primary-600" /> Edit
                           </Button>
                           <Button 
                             onClick={() => { setPendingDeleteId(p._id); setDeleteDialogOpen(true); }} 
                             variant="ghost" 
-                            className="h-8 px-2.5 text-zinc-500 hover:text-rose-400 hover:bg-rose-950/10 rounded-lg text-xs"
+                            className="h-8 w-8 p-0 text-rose-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all cursor-pointer"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </Button>
@@ -1179,7 +1258,6 @@ export default function ProductManagementPage() {
                 );
               })}
 
-              {/* Next Page */}
               <button
                 type="button"
                 disabled={currentPage === totalPages}
@@ -1192,17 +1270,17 @@ export default function ProductManagementPage() {
           </div>
         )}
       </div>
- 
-      {/* 5. ADD / EDIT PRODUCT MODAL */}
+
+      {/* 5. ADD / EDIT PRODUCT MODAL (LIGHT SAAS PURPLE THEME) */}
       <Dialog open={isModalOpen} onOpenChange={(val) => !val && closeModal()}>
-        <DialogContent className="max-w-[88vw] w-full sm:max-w-6xl bg-slate-950/95 border border-slate-800 text-white rounded-[32px] overflow-hidden shadow-[0_40px_120px_rgba(15,23,42,0.35)] flex flex-col max-h-[88vh]">
+        <DialogContent className="max-w-[88vw] w-full sm:max-w-6xl bg-white/95 backdrop-blur-2xl border border-border-subtle text-gray-900 rounded-[28px] overflow-hidden shadow-2xl flex flex-col max-h-[88vh] p-0 font-sans">
  
           {/* Header */}
-          <DialogHeader className="flex items-center justify-between gap-4 p-5 border-b border-slate-800 bg-slate-950/95 shrink-0">
-            <div className="flex items-center gap-2">
-              <Sparkles className="text-blue-400 w-4 h-4" />
-              <DialogTitle className="text-lg font-semibold text-white tracking-wide">
-                {editingProduct ? "Edit Product" : "Add Product"}
+          <DialogHeader className="flex items-center justify-between gap-4 p-5 border-b border-border-subtle bg-primary-50/80 shrink-0">
+            <div className="flex items-center gap-2.5">
+              <Sparkles className="text-primary-600 w-5 h-5" />
+              <DialogTitle className="text-xl font-black text-gray-900 tracking-tight">
+                {editingProduct ? "Edit Product Profile" : "Add New Product"}
               </DialogTitle>
             </div>
           </DialogHeader>
@@ -1210,170 +1288,170 @@ export default function ProductManagementPage() {
           <form onSubmit={handleFormSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0">
             <div className="flex flex-col lg:flex-row flex-1 min-h-0">
               <div className="lg:w-[58%] min-h-0 overflow-y-auto p-6 space-y-6">
-                <div className="rounded-[28px] border border-slate-800/80 bg-slate-900/95 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.16)]">
+                <div className="rounded-[24px] border border-border-subtle bg-bg-surface p-6 shadow-xs">
                   <div className="mb-5">
-                    <p className="text-xs uppercase tracking-[0.3em] font-semibold text-slate-500">Product details</p>
-                    <h2 className="mt-2 text-2xl font-semibold text-white">Basic product information</h2>
+                    <p className="text-xs uppercase tracking-wider font-black text-primary-700">Product details</p>
+                    <h2 className="mt-1 text-xl font-black text-gray-900">Basic product information</h2>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {/* Name */}
                     <div className="space-y-2 sm:col-span-2">
-                      <Label className="text-sm text-slate-300 font-semibold">Product Name</Label>
+                      <Label className="text-xs text-gray-900 font-black">Product Name</Label>
                       <Input
                         type="text"
                         placeholder="Enter Product Name"
                         {...register("name")}
-                        className="bg-slate-950 border border-slate-800 rounded-3xl h-12 text-slate-200 placeholder-slate-500 focus-visible:ring-1 focus-visible:ring-blue-500/20 focus-visible:border-blue-500/60 transition-all"
+                        className="bg-white border border-border-subtle rounded-2xl h-11 text-gray-900 text-xs font-semibold placeholder-zinc-400 focus-visible:ring-1 focus-visible:ring-primary-400 focus-visible:border-primary-400 transition-all shadow-2xs"
                       />
-                      {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name.message}</p>}
+                      {errors.name && <p className="text-xs text-rose-600 font-bold mt-1">{errors.name.message}</p>}
                     </div>
 
                     {/* Category */}
                     <div className="space-y-2">
-                      <Label className="text-sm text-slate-300 font-semibold">Select Category</Label>
+                      <Label className="text-xs text-gray-900 font-black">Select Category</Label>
                       <select
                         {...register("category")}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-3xl h-12 px-4 text-sm text-slate-200 focus:outline-none focus:border-blue-500/70 focus:ring-1 focus:ring-blue-500/20 transition-all appearance-none cursor-pointer"
+                        className="w-full bg-white border border-border-subtle rounded-2xl h-11 px-4 text-xs font-bold text-gray-900 focus:outline-none focus:border-primary-400 focus:ring-1 focus:ring-primary-400 transition-all appearance-none cursor-pointer shadow-2xs"
                         style={{
-                          backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>")`,
+                          backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>")`,
                           backgroundRepeat: 'no-repeat',
                           backgroundPosition: 'right 16px center',
                           backgroundSize: '14px'
                         }}
                       >
-                        <option value="" className="bg-slate-950 text-slate-500">-- Choose Option --</option>
+                        <option value="" className="bg-white text-zinc-500">-- Choose Option --</option>
                         {categories.map(opt => (
-                          <option key={opt._id} value={opt._id} className="bg-slate-950 text-slate-200">
+                          <option key={opt._id} value={opt._id} className="bg-white text-gray-900 font-bold">
                             {opt.name}
                           </option>
                         ))}
                       </select>
-                      {errors.category && <p className="text-xs text-red-500 mt-1">{errors.category.message}</p>}
+                      {errors.category && <p className="text-xs text-rose-600 font-bold mt-1">{errors.category.message}</p>}
                     </div>
 
                     {/* Brand */}
                     <div className="space-y-2">
-                      <Label className="text-sm text-slate-300 font-semibold">Select Brand/Company</Label>
+                      <Label className="text-xs text-gray-900 font-black">Select Brand/Company</Label>
                       <select
                         {...register("company")}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-3xl h-12 px-4 text-sm text-slate-200 focus:outline-none focus:border-blue-500/70 focus:ring-1 focus:ring-blue-500/20 transition-all appearance-none cursor-pointer"
+                        className="w-full bg-white border border-border-subtle rounded-2xl h-11 px-4 text-xs font-bold text-gray-900 focus:outline-none focus:border-primary-400 focus:ring-1 focus:ring-primary-400 transition-all appearance-none cursor-pointer shadow-2xs"
                         style={{
-                          backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>")`,
+                          backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>")`,
                           backgroundRepeat: 'no-repeat',
                           backgroundPosition: 'right 16px center',
                           backgroundSize: '14px'
                         }}
                       >
-                        <option value="" className="bg-slate-950 text-slate-500">-- Choose Option --</option>
+                        <option value="" className="bg-white text-zinc-500">-- Choose Option --</option>
                         {brands.map(opt => (
-                          <option key={opt._id} value={opt._id} className="bg-slate-950 text-slate-200">
+                          <option key={opt._id} value={opt._id} className="bg-white text-gray-900 font-bold">
                             {opt.name}
                           </option>
                         ))}
                       </select>
-                      {errors.company && <p className="text-xs text-red-500 mt-1">{errors.company.message}</p>}
+                      {errors.company && <p className="text-xs text-rose-600 font-bold mt-1">{errors.company.message}</p>}
                     </div>
 
                     {/* Stock */}
                     <div className="space-y-2">
-                      <Label className="text-sm text-slate-300 font-semibold">Enter Stock</Label>
+                      <Label className="text-xs text-gray-900 font-black">Enter Stock</Label>
                       <Input
                         type="number"
                         placeholder="0"
                         {...register("stock")}
-                        className="bg-slate-950 border border-slate-800 rounded-3xl h-12 text-slate-200 placeholder-slate-500 focus-visible:ring-1 focus-visible:ring-blue-500/20 focus-visible:border-blue-500/60 transition-all"
+                        className="bg-white border border-border-subtle rounded-2xl h-11 text-gray-900 text-xs font-semibold placeholder-zinc-400 focus-visible:ring-1 focus-visible:ring-primary-400 focus-visible:border-primary-400 transition-all shadow-2xs"
                       />
-                      {errors.stock && <p className="text-xs text-red-500 mt-1">{errors.stock.message}</p>}
+                      {errors.stock && <p className="text-xs text-rose-600 font-bold mt-1">{errors.stock.message}</p>}
                     </div>
 
                     {/* Units */}
                     <div className="space-y-2">
-                      <Label className="text-sm text-slate-300 font-semibold">Select Units</Label>
+                      <Label className="text-xs text-gray-900 font-black">Select Units</Label>
                       <select
                         {...register("stockUnit")}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-3xl h-12 px-4 text-sm text-slate-200 focus:outline-none focus:border-blue-500/70 focus:ring-1 focus:ring-blue-500/20 transition-all appearance-none cursor-pointer"
+                        className="w-full bg-white border border-border-subtle rounded-2xl h-11 px-4 text-xs font-bold text-gray-900 focus:outline-none focus:border-primary-400 focus:ring-1 focus:ring-primary-400 transition-all appearance-none cursor-pointer shadow-2xs"
                         style={{
-                          backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>")`,
+                          backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>")`,
                           backgroundRepeat: 'no-repeat',
                           backgroundPosition: 'right 16px center',
                           backgroundSize: '14px'
                         }}
                       >
-                        <option value="Pcs" className="bg-slate-950 text-slate-200">Pcs</option>
-                        <option value="Boxes" className="bg-slate-950 text-slate-200">Boxes</option>
+                        <option value="Pcs" className="bg-white text-gray-900 font-bold">Pcs</option>
+                        <option value="Boxes" className="bg-white text-gray-900 font-bold">Boxes</option>
                       </select>
-                      {errors.stockUnit && <p className="text-xs text-red-500 mt-1">{errors.stockUnit.message}</p>}
+                      {errors.stockUnit && <p className="text-xs text-rose-600 font-bold mt-1">{errors.stockUnit.message}</p>}
                     </div>
 
                     {/* Cost Price */}
                     <div className="space-y-2">
-                      <Label className="text-sm text-slate-300 font-semibold">Cost Price</Label>
+                      <Label className="text-xs text-gray-900 font-black">Cost Price (₹)</Label>
                       <Input
                         type="number"
                         step="0.01"
                         placeholder="0.00"
                         {...register("costPrice")}
-                        className="bg-slate-950 border border-slate-800 rounded-3xl h-12 text-slate-200 placeholder-slate-500 focus-visible:ring-1 focus-visible:ring-blue-500/20 focus-visible:border-blue-500/60 transition-all"
+                        className="bg-white border border-border-subtle rounded-2xl h-11 text-gray-900 text-xs font-semibold placeholder-zinc-400 focus-visible:ring-1 focus-visible:ring-primary-400 focus-visible:border-primary-400 transition-all shadow-2xs"
                       />
-                      {errors.costPrice && <p className="text-xs text-red-500 mt-1">{errors.costPrice.message}</p>}
+                      {errors.costPrice && <p className="text-xs text-rose-600 font-bold mt-1">{errors.costPrice.message}</p>}
                     </div>
 
                     {/* Selling Price */}
                     <div className="space-y-2">
-                      <Label className="text-sm text-slate-300 font-semibold">Selling Price</Label>
+                      <Label className="text-xs text-gray-900 font-black">Selling Price (₹)</Label>
                       <Input
                         type="number"
                         step="0.01"
                         placeholder="0.00"
                         {...register("sellingPrice")}
-                        className="bg-slate-950 border border-slate-800 rounded-3xl h-12 text-slate-200 placeholder-slate-500 focus-visible:ring-1 focus-visible:ring-blue-500/20 focus-visible:border-blue-500/60 transition-all"
+                        className="bg-white border border-border-subtle rounded-2xl h-11 text-gray-900 text-xs font-semibold placeholder-zinc-400 focus-visible:ring-1 focus-visible:ring-primary-400 focus-visible:border-primary-400 transition-all shadow-2xs"
                       />
-                      {errors.sellingPrice && <p className="text-xs text-red-500 mt-1">{errors.sellingPrice.message}</p>}
+                      {errors.sellingPrice && <p className="text-xs text-rose-600 font-bold mt-1">{errors.sellingPrice.message}</p>}
                     </div>
 
                     {/* Min Stock Threshold */}
                     <div className="space-y-2">
-                      <Label className="text-sm text-slate-300 font-semibold">Min Stock Threshold</Label>
+                      <Label className="text-xs text-gray-900 font-black">Min Stock Threshold</Label>
                       <Input
                         type="number"
                         placeholder="10"
                         {...register("minStock")}
-                        className="bg-slate-950 border border-slate-800 rounded-3xl h-12 text-slate-200 placeholder-slate-500 focus-visible:ring-1 focus-visible:ring-blue-500/20 focus-visible:border-blue-500/60 transition-all"
+                        className="bg-white border border-border-subtle rounded-2xl h-11 text-gray-900 text-xs font-semibold placeholder-zinc-400 focus-visible:ring-1 focus-visible:ring-primary-400 focus-visible:border-primary-400 transition-all shadow-2xs"
                       />
-                      {errors.minStock && <p className="text-xs text-red-500 mt-1">{errors.minStock.message}</p>}
+                      {errors.minStock && <p className="text-xs text-rose-600 font-bold mt-1">{errors.minStock.message}</p>}
                     </div>
 
                     {/* Supplier / Vendor */}
                     <div className="space-y-2">
-                      <Label className="text-sm text-slate-300 font-semibold">Supplier / Vendor</Label>
+                      <Label className="text-xs text-gray-900 font-black">Supplier / Vendor</Label>
                       <Input
                         type="text"
                         placeholder="e.g. Navneet Supplies"
                         {...register("supplier")}
-                        className="bg-slate-950 border border-slate-800 rounded-3xl h-12 text-slate-200 placeholder-slate-500 focus-visible:ring-1 focus-visible:ring-blue-500/20 focus-visible:border-blue-500/60 transition-all"
+                        className="bg-white border border-border-subtle rounded-2xl h-11 text-gray-900 text-xs font-semibold placeholder-zinc-400 focus-visible:ring-1 focus-visible:ring-primary-400 focus-visible:border-primary-400 transition-all shadow-2xs"
                       />
-                      {errors.supplier && <p className="text-xs text-red-500 mt-1">{errors.supplier.message}</p>}
+                      {errors.supplier && <p className="text-xs text-rose-600 font-bold mt-1">{errors.supplier.message}</p>}
                     </div>
                   </div>
                 </div>
               </div>
  
               <div className="lg:w-[42%] min-h-0 overflow-y-auto p-6 space-y-6">
-                <div className="rounded-[28px] border border-slate-800/80 bg-slate-900/95 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.16)]">
+                <div className="rounded-[24px] border border-border-subtle bg-bg-surface p-6 shadow-xs">
                   <div className="flex items-center justify-between gap-3 mb-4">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.3em] font-semibold text-slate-500">Product images</p>
-                      <h3 className="mt-2 text-lg font-semibold text-white">Upload gallery</h3>
+                      <p className="text-xs uppercase tracking-wider font-black text-primary-700">Product images</p>
+                      <h3 className="mt-1 text-lg font-black text-gray-900">Upload gallery</h3>
                     </div>
-                    <span className="rounded-full bg-blue-500/10 px-3 py-1 text-xs font-semibold text-blue-200">Enhance</span>
+                    <span className="rounded-full bg-primary-50 border border-primary-200 px-3 py-1 text-xs font-bold text-primary-700">Studio Enhancer</span>
                   </div>
-                                {/* Bulk Add URL Box */}
-                  <div className="flex gap-2 items-center bg-slate-950 p-2.5 rounded-2xl border border-slate-800/80 mb-4">
+                  {/* Bulk Add URL Box */}
+                  <div className="flex gap-2 items-center bg-white p-2.5 rounded-2xl border border-border-subtle mb-4 shadow-2xs">
                     <Input 
                       type="text" 
                       id="bulk-url-input"
                       placeholder="Paste image address (Google / URL)..." 
-                      className="h-10 text-xs rounded-xl bg-slate-900 border-slate-800 text-slate-200 placeholder-slate-500 focus-visible:ring-1 focus-visible:ring-blue-500"
+                      className="h-9 text-xs rounded-xl bg-white border border-border-subtle text-gray-900 placeholder-zinc-400 focus-visible:ring-1 focus-visible:ring-primary-400"
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
                           e.preventDefault();
@@ -1389,7 +1467,7 @@ export default function ProductManagementPage() {
                     />
                     <Button
                       type="button"
-                      className="h-10 px-3 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 shrink-0 flex items-center gap-1.5"
+                      className="h-9 px-3 bg-primary-600 text-white rounded-xl text-xs font-bold hover:bg-primary-700 shrink-0 flex items-center gap-1.5 cursor-pointer shadow-xs"
                       onClick={() => {
                         const inputEl = document.getElementById("bulk-url-input");
                         const url = inputEl?.value?.trim();
@@ -1410,7 +1488,7 @@ export default function ProductManagementPage() {
                   {/* Grid layout of image slots */}
                   <div className="grid grid-cols-2 gap-3">
                     {watchImages.map((img, i) => (
-                      <div key={i} className="relative aspect-square rounded-3xl border border-dashed border-slate-700 bg-slate-950 hover:bg-slate-900/60 overflow-hidden flex flex-col items-center justify-center p-2.5 transition-all">
+                      <div key={i} className="relative aspect-square rounded-2xl border-2 border-dashed border-border-subtle bg-white hover:border-primary-400 overflow-hidden flex flex-col items-center justify-center p-2.5 transition-all shadow-2xs">
                         <input
                           ref={(el) => (fileInputRefs.current[i] = el)}
                           type="file"
@@ -1420,11 +1498,11 @@ export default function ProductManagementPage() {
                         />
                         {img ? (
                           <>
-                            <img src={img} className="h-full w-full object-contain rounded-2xl" alt="Product" />
+                            <img src={img} className="h-full w-full object-contain rounded-xl" alt="Product" />
                             <button
                               type="button"
                               onClick={(e) => handleRemoveImage(i, e)}
-                              className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-950/90 text-white shadow-lg border border-slate-800 hover:text-rose-400 hover:scale-105 transition-all"
+                              className="absolute right-2.5 top-2.5 inline-flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-gray-900 shadow-md border border-border-subtle hover:text-rose-600 hover:scale-105 transition-all cursor-pointer"
                             >
                               <X className="h-4 w-4" />
                             </button>
@@ -1436,18 +1514,18 @@ export default function ProductManagementPage() {
                               onClick={() => triggerFilePicker(i)}
                               className="flex flex-col items-center gap-1 cursor-pointer w-full group py-2"
                             >
-                              <UploadCloud className="h-6 w-6 text-slate-500 group-hover:text-blue-400 group-hover:scale-105 transition-all" />
-                              <p className="text-xs font-semibold text-slate-400">Upload File</p>
-                              <p className="text-[10px] text-slate-600">Slot {i + 1}</p>
+                              <UploadCloud className="h-6 w-6 text-zinc-400 group-hover:text-primary-600 group-hover:scale-105 transition-all" />
+                              <p className="text-xs font-bold text-gray-900">Upload File</p>
+                              <p className="text-[10px] text-zinc-500 font-mono">Slot {i + 1}</p>
                             </div>
 
                             {/* Paste URL for this Slot */}
-                            <div className="w-full flex items-center gap-1 bg-slate-900 border border-slate-800 rounded-xl p-1 mt-1" onClick={(e) => e.stopPropagation()}>
+                            <div className="w-full flex items-center gap-1 bg-primary-50/60 border border-border-subtle rounded-xl p-1 mt-1" onClick={(e) => e.stopPropagation()}>
                               <Input 
                                 type="text" 
                                 id={`slot-url-input-${i}`}
-                                placeholder="Paste slot URL..." 
-                                className="h-6 text-[9px] rounded-lg bg-slate-950 border-none text-slate-200 placeholder-slate-500 w-full px-2 focus-visible:ring-0 focus-visible:ring-offset-0"
+                                placeholder="Paste URL..." 
+                                className="h-6 text-[9px] rounded-lg bg-white border border-border-subtle text-gray-900 placeholder-zinc-400 w-full px-2 focus-visible:ring-0 focus-visible:ring-offset-0"
                                 onKeyDown={(e) => {
                                   if (e.key === "Enter") {
                                     e.preventDefault();
@@ -1464,7 +1542,7 @@ export default function ProductManagementPage() {
                               <Button
                                 type="button"
                                 size="sm"
-                                className="h-6 px-2 bg-blue-600 text-white rounded-lg text-[9px] font-bold hover:bg-blue-700 shrink-0"
+                                className="h-6 px-2 bg-primary-600 text-white rounded-lg text-[9px] font-bold hover:bg-primary-700 shrink-0 cursor-pointer"
                                 onClick={() => {
                                   const inputEl = document.getElementById(`slot-url-input-${i}`);
                                   const url = inputEl?.value?.trim();
@@ -1492,51 +1570,51 @@ export default function ProductManagementPage() {
                         const updated = [...watchImages, ""];
                         setValue("images", updated);
                       }}
-                      className="relative aspect-square border border-dashed border-slate-700 bg-slate-950 hover:bg-slate-900/60 hover:border-blue-500/80 rounded-3xl flex flex-col items-center justify-center cursor-pointer group transition-all"
+                      className="relative aspect-square border-2 border-dashed border-border-subtle bg-white hover:bg-primary-50/50 hover:border-primary-400 rounded-2xl flex flex-col items-center justify-center cursor-pointer group transition-all shadow-2xs"
                     >
-                      <Plus className="h-6 w-6 text-slate-500 group-hover:text-blue-400 group-hover:scale-110 transition-all" />
-                      <p className="text-xs font-semibold text-slate-450 mt-1.5 group-hover:text-slate-350">Add Slot</p>
+                      <Plus className="h-6 w-6 text-zinc-400 group-hover:text-primary-600 group-hover:scale-110 transition-all" />
+                      <p className="text-xs font-bold text-gray-900 mt-1.5">Add Slot</p>
                     </div>
                   </div>
-                  {errors.images && <p className="text-xs text-red-500 mt-2">{errors.images.message}</p>}
+                  {errors.images && <p className="text-xs text-rose-600 font-bold mt-2">{errors.images.message}</p>}
                   <Button
                     type="button"
-                    variant="secondary"
+                    variant="outline"
                     onClick={handleImageEnhancement}
                     disabled={isEnhancingImage}
-                    className="mt-4 w-full h-11 rounded-3xl border border-blue-700/50 bg-slate-950 text-sm text-blue-200 hover:bg-slate-900"
+                    className="mt-4 w-full h-11 rounded-2xl border-border-subtle bg-white text-xs font-bold text-primary-700 hover:bg-primary-50 cursor-pointer btn-modern"
                   >
                     {isEnhancingImage ? (
                       <Loader2 className="h-4 w-4 mr-2 animate-spin inline" />
                     ) : (
-                      <Wand2 className="h-4 w-4 mr-2 inline" />
+                      <Wand2 className="h-4 w-4 mr-2 inline text-primary-600" />
                     )}
                     {isEnhancingImage ? "Generating mockup..." : "Enhance product image"}
                   </Button>
                 </div>
  
-                <div className="rounded-[28px] border border-slate-800/80 bg-slate-900/95 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.16)]">
+                <div className="rounded-[24px] border border-border-subtle bg-bg-surface p-6 shadow-xs">
                   <div className="mb-4">
-                    <p className="text-xs uppercase tracking-[0.3em] font-semibold text-slate-500">Description</p>
-                    <h3 className="mt-2 text-lg font-semibold text-white">Product summary</h3>
+                    <p className="text-xs uppercase tracking-wider font-black text-primary-700">Description</p>
+                    <h3 className="mt-1 text-lg font-black text-gray-900">Product summary</h3>
                   </div>
                   <Textarea
                     {...register("description")}
                     placeholder="Write a short product description..."
-                    className="min-h-[210px] w-full rounded-3xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-slate-200 placeholder-slate-500 focus-visible:border-blue-500/70 focus-visible:ring-1 focus-visible:ring-blue-500/20 resize-none"
+                    className="min-h-[180px] w-full rounded-2xl border border-border-subtle bg-white px-4 py-3 text-xs text-gray-900 placeholder-zinc-400 focus-visible:border-primary-400 focus-visible:ring-1 focus-visible:ring-primary-400 resize-none font-medium shadow-2xs"
                   />
                   <Button
                     type="button"
                     onClick={handleAiDescriptionGeneration}
                     disabled={aiLoading}
-                    className="mt-4 w-full h-11 rounded-3xl bg-blue-950 text-sm font-semibold text-blue-100 hover:bg-blue-900"
+                    className="mt-4 w-full h-11 rounded-2xl bg-primary-600 text-xs font-bold text-white hover:bg-primary-700 cursor-pointer shadow-xs btn-modern"
                   >
                     {aiLoading ? (
                       <Loader2 className="h-4 w-4 mr-2 animate-spin inline" />
                     ) : (
                       <Sparkles className="h-4 w-4 mr-2 inline" />
                     )}
-                    {aiLoading ? "Generating..." : "Generate description"}
+                    {aiLoading ? "Generating..." : "Generate AI description"}
                   </Button>
                   {aiDescriptions.length > 0 && (
                     <div className="mt-4 space-y-3">
@@ -1544,7 +1622,7 @@ export default function ProductManagementPage() {
                         <div
                           key={idx}
                           onClick={() => setValue("description", desc)}
-                          className="cursor-pointer rounded-3xl border border-slate-800/70 bg-slate-950 p-4 text-sm text-slate-300 transition hover:border-blue-500/60 hover:bg-slate-900"
+                          className="cursor-pointer rounded-2xl border border-border-subtle bg-white p-3.5 text-xs text-gray-900 transition hover:border-primary-400 hover:bg-primary-50/60 shadow-2xs font-medium leading-relaxed"
                         >
                           {desc}
                         </div>
@@ -1555,28 +1633,28 @@ export default function ProductManagementPage() {
               </div>
             </div>
  
-            <div className="shrink-0 border-t border-slate-800 bg-slate-950/95 p-4 flex items-center justify-end gap-3">
+            <div className="shrink-0 border-t border-border-subtle bg-white/90 backdrop-blur-xl p-4 flex items-center justify-end gap-3">
               {editingProduct && (
                 <Button
                   type="button"
                   onClick={handleOpenNotifyModal}
-                  className="mr-auto rounded-2xl bg-amber-600 hover:bg-amber-700 text-white font-semibold text-sm px-4 py-2 flex items-center gap-1.5 shadow-lg shadow-amber-950/20"
+                  className="mr-auto rounded-2xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-4.5 h-11 flex items-center gap-2 cursor-pointer shadow-xs"
                 >
                   <Bell className="w-4 h-4" /> Notify Customers
                 </Button>
               )}
               <Button
                 type="button"
-                variant="ghost"
+                variant="outline"
                 onClick={closeModal}
-                className="rounded-2xl border border-slate-800 bg-slate-900/80 px-4 py-2 text-sm font-semibold text-slate-350 hover:bg-slate-800"
+                className="rounded-2xl border border-border-subtle bg-white px-5 h-11 text-xs font-bold text-gray-900 hover:bg-primary-50 cursor-pointer shadow-2xs"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={productFormMutation.isPending}
-                className="rounded-2xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-950/30 hover:bg-blue-700"
+                className="rounded-2xl bg-primary-600 px-6 h-11 text-xs font-black text-white shadow-md hover:bg-primary-700 cursor-pointer btn-modern"
               >
                 {productFormMutation.isPending ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -1779,4 +1857,3 @@ export default function ProductManagementPage() {
     </div>
   );
 }
- 

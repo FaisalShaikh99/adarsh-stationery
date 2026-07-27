@@ -377,13 +377,16 @@ export default function PaymentsPage() {
     <div className="w-full max-w-full space-y-6 font-sans pb-12 text-gray-900 overflow-x-hidden">
       
       {/* HEADER SECTION */}
-      {/* 1. UNIQUE HAZED PURPLE GRADIENT TOP CONTAINER UI */}
-      <div className="hazed-purple-banner p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      {/* 1. CLEAN PAGE HEADER */}
+      <div className="flex flex-wrap gap-4 justify-between items-center border-b border-border-subtle pb-5">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-3">
-            <CreditCard className="h-7 w-7 text-accent shrink-0" /> Payments & Financial Accounting
-          </h1>
-          <p className="mt-1 text-sm text-purple-100 font-semibold max-w-2xl">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-primary-50 border border-primary-100 text-primary-600">
+              <CreditCard className="h-5 w-5" />
+            </div>
+            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-gray-900">Payments & Financial Accounting</h1>
+          </div>
+          <p className="mt-1 text-xs sm:text-sm text-zinc-600 font-medium">
             Real-time transaction reconciliation, P&L cash flow, expense tracking, and settlements.
           </p>
         </div>
@@ -391,35 +394,35 @@ export default function PaymentsPage() {
           {activeTab === "expenses" && (
             <Button 
               onClick={handleOpenCreateExpense}
-              className="bg-white text-emerald-800 font-black hover:bg-emerald-50 h-10 rounded-xl text-sm px-4 flex items-center gap-2 cursor-pointer shadow-md btn-modern"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-10 rounded-xl text-xs sm:text-sm px-4 flex items-center gap-2 cursor-pointer shadow-xs btn-modern"
             >
-              <Plus className="w-4 h-4 text-emerald-600" /> Add Expense
+              <Plus className="w-4 h-4" /> Add Expense
             </Button>
           )}
           {activeTab === "refunds" && (
             <Button 
               onClick={() => setShowRefundModal(true)}
-              className="bg-white text-primary-800 font-black hover:bg-primary-50 h-10 rounded-xl text-sm px-4 flex items-center gap-2 cursor-pointer shadow-md btn-modern"
+              className="bg-primary-600 hover:bg-primary-700 text-white font-bold h-10 rounded-xl text-xs sm:text-sm px-4 flex items-center gap-2 cursor-pointer shadow-xs btn-modern"
             >
-              <Plus className="w-4 h-4 text-primary-600" /> Record Refund
+              <Plus className="w-4 h-4" /> Record Refund
             </Button>
           )}
           {activeTab === "settlements" && (
             <Button 
               onClick={() => setShowSettlementModal(true)}
-              className="bg-white text-primary-800 font-black hover:bg-primary-50 h-10 rounded-xl text-sm px-4 flex items-center gap-2 cursor-pointer shadow-md btn-modern"
+              className="bg-primary-600 hover:bg-primary-700 text-white font-bold h-10 rounded-xl text-xs sm:text-sm px-4 flex items-center gap-2 cursor-pointer shadow-xs btn-modern"
             >
-              <Plus className="w-4 h-4 text-primary-600" /> Record Settlement
+              <Plus className="w-4 h-4" /> Record Settlement
             </Button>
           )}
           <Button 
             onClick={handleRefresh} 
             disabled={isPaymentsFetching} 
             variant="outline" 
-            className="rounded-xl border-white/40 bg-white/20 text-white hover:bg-white hover:text-primary-800 text-sm font-extrabold px-4 h-10 cursor-pointer shadow-xs btn-modern shrink-0"
+            className="rounded-xl border-border-subtle bg-bg-surface text-gray-900 hover:bg-primary-50 text-xs sm:text-sm font-semibold h-10 px-4 cursor-pointer shadow-xs btn-modern shrink-0"
             title="Sync Ledger"
           >
-            <RefreshCw className={`mr-2 h-4 w-4 ${isPaymentsFetching ? "animate-spin" : ""}`} />
+            <RefreshCw className={`mr-2 h-4 w-4 text-primary-600 ${isPaymentsFetching ? "animate-spin" : ""}`} />
             <span>Sync Ledger</span>
           </Button>
         </div>

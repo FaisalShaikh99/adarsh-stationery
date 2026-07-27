@@ -8,7 +8,7 @@ export default function BrandGrid({ brands, isLoading, onEdit, onDelete, onAddCl
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 py-10">
         {[1, 2, 3].map((n) => (
-          <div key={n} className="bg-bg-surface border border-border-subtle rounded-2xl p-6 space-y-4 animate-pulse">
+          <div key={n} className="bg-white border border-border-subtle rounded-[24px] p-6 space-y-4 animate-pulse">
             <div className="w-20 h-20 bg-primary-50 rounded-2xl mx-auto" />
             <div className="h-6 bg-primary-50 rounded-md w-3/4 mx-auto" />
             <div className="h-4 bg-primary-50 rounded-md w-1/2 mx-auto" />
@@ -21,18 +21,18 @@ export default function BrandGrid({ brands, isLoading, onEdit, onDelete, onAddCl
 
   if (!brands || brands.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center text-center p-12 border border-dashed border-border-subtle bg-bg-surface rounded-2xl space-y-4 min-h-[300px]">
-        <div className="w-12 h-12 rounded-full bg-primary-50 flex items-center justify-center border border-primary-200 text-primary-600">
+      <div className="flex flex-col items-center justify-center text-center p-12 border-2 border-dashed border-border-subtle bg-white rounded-[24px] space-y-4 min-h-[300px]">
+        <div className="w-14 h-14 rounded-2xl bg-primary-50 flex items-center justify-center border border-primary-200 text-primary-600 shadow-2xs">
           <Layers className="w-6 h-6" />
         </div>
         <div className="space-y-1">
-          <h3 className="text-sm font-bold text-gray-900">No brand profiles registered</h3>
-          <p className="text-xs text-zinc-500 max-w-sm">No brands match your filter or search query. Create a new brand profile registry to associate catalog assets.</p>
+          <h3 className="text-base font-black text-gray-900">No brand profiles registered</h3>
+          <p className="text-xs text-zinc-600 max-w-sm font-medium">No brands match your filter or search query. Create a new brand profile registry to associate catalog assets.</p>
         </div>
         {onAddClick && (
           <Button 
             onClick={onAddClick}
-            className="bg-primary-600 text-white font-semibold hover:bg-primary-700 rounded-xl px-4 h-9 text-xs cursor-pointer shadow-xs btn-modern"
+            className="bg-primary-600 text-white font-black hover:bg-primary-700 rounded-2xl px-5 h-10 text-xs cursor-pointer shadow-md btn-modern"
           >
             <Plus className="w-4 h-4 mr-1.5" /> Add New Brand
           </Button>
@@ -46,7 +46,7 @@ export default function BrandGrid({ brands, isLoading, onEdit, onDelete, onAddCl
       {brands.map((b) => (
         <div 
           key={b._id} 
-          className="bg-bg-surface border border-border-subtle rounded-2xl p-4 flex flex-col justify-between hover:border-primary-300 transition-all duration-300 group shadow-xs"
+          className="bg-white border border-border-subtle hover:border-primary-400 rounded-[24px] p-5 flex flex-col justify-between transition-all duration-300 group shadow-2xs hover:shadow-md text-gray-900"
         >
           <div className="space-y-3">
             {/* Logo Container */}
@@ -56,93 +56,65 @@ export default function BrandGrid({ brands, isLoading, onEdit, onDelete, onAddCl
                 alt={b.name} 
                 className="h-full w-full object-contain"
                 referrerPolicy="no-referrer"
+                onError={(e) => { e.target.src = "https://placehold.co/100"; }}
               />
             </div>
 
             {/* Info Section */}
             <div className="text-center space-y-1">
-              <h3 className="font-extrabold text-gray-900 text-sm capitalize tracking-tight line-clamp-1">{b.name}</h3>
+              <h3 className="font-black text-gray-900 text-sm capitalize tracking-tight line-clamp-1">{b.name}</h3>
               {b.description ? (
-                <p className="text-[11px] text-zinc-500 line-clamp-2 px-1 min-h-[28px] leading-snug">{b.description}</p>
+                <p className="text-xs text-zinc-600 font-medium line-clamp-2 px-1 min-h-[32px] leading-snug">{b.description}</p>
               ) : (
-                <p className="text-[11px] text-zinc-400 italic px-1 min-h-[28px]">No description registered for this profile.</p>
+                <p className="text-xs text-zinc-400 italic font-medium px-1 min-h-[32px]">No description registered for this profile.</p>
               )}
             </div>
 
             {/* Product Count Pill */}
             <div className="flex justify-center">
-              <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 text-[10px] font-semibold font-mono">
-                <Package className="w-3 h-3 shrink-0" />
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-black shadow-2xs">
+                <Package className="w-3.5 h-3.5 shrink-0 text-emerald-600" />
                 <span>{b.productCount || 0} Products</span>
               </div>
             </div>
 
             {/* Associated Categories */}
-            <div className="border-t border-border-subtle pt-2.5 space-y-1">
-              <p className="text-[9px] text-zinc-500 uppercase tracking-wider font-bold flex items-center gap-1">
-                <Layers className="w-3 h-3 text-zinc-400" /> Associated Categories
+            <div className="border-t border-border-subtle pt-3 space-y-1.5">
+              <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold flex items-center gap-1">
+                <Layers className="w-3.5 h-3.5 text-zinc-400" /> Associated Categories
               </p>
-              <div className="flex flex-wrap gap-1 max-h-[80px] overflow-y-auto custom-scrollbar p-0.5">
+              <div className="flex flex-wrap gap-1.5 max-h-[85px] overflow-y-auto custom-scrollbar p-0.5">
                 {b.categories?.map((cat) => (
                   <span 
                     key={cat._id} 
-                    className="text-[9px] bg-primary-50 text-primary-700 border border-primary-200 px-1.5 py-0.5 rounded font-medium capitalize"
+                    className="text-xs bg-primary-50 text-primary-700 border border-primary-200 px-2 py-0.5 rounded-lg font-bold capitalize shadow-2xs"
                   >
                     {cat.name}
                   </span>
                 ))}
                 {(!b.categories || b.categories.length === 0) && (
-                  <span className="text-[9px] text-zinc-400 italic">No categories mapped</span>
+                  <span className="text-xs text-zinc-400 italic font-medium">No categories mapped</span>
                 )}
               </div>
             </div>
           </div>
 
-          {/* Bottom Channels & Actions */}
-          <div className="border-t border-border-subtle pt-3 mt-4 space-y-2.5">
-            {/* Phone/URL Metadatas */}
-            <div className="flex items-center justify-between text-[11px] px-0.5">
-              {b.primaryContact ? (
-                <span className="flex items-center gap-1 text-zinc-600 font-mono">
-                  <PhoneCall className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
-                  {b.primaryContact}
-                </span>
-              ) : (
-                <span className="text-zinc-400 italic text-[10px]">No contact info</span>
-              )}
-
-              {b.websiteURL ? (
-                <a 
-                  href={b.websiteURL} 
-                  target="_blank" 
-                  rel="noreferrer" 
-                  className="flex items-center gap-1 text-primary-600 hover:text-primary-700 transition-colors hover:underline"
-                >
-                  <Globe className="w-3 h-3 shrink-0" />
-                  Web Profile
-                </a>
-              ) : (
-                <span className="text-zinc-400 italic text-[10px]">No website URL</span>
-              )}
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex items-center gap-1.5 border-t border-border-subtle/80 pt-2.5">
-              <Button 
-                onClick={() => onEdit(b)} 
-                variant="outline" 
-                className="flex-1 h-8 border-border-subtle bg-bg-surface text-gray-900 hover:text-primary-600 hover:bg-primary-50 rounded-lg text-xs font-semibold gap-1 btn-modern cursor-pointer"
-              >
-                <Edit2 className="w-3 h-3 text-primary-600" /> Edit
-              </Button>
-              <Button 
-                onClick={() => onDelete(b._id)} 
-                variant="ghost" 
-                className="h-8 w-8 p-0 text-rose-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer"
-              >
-                <Trash2 className="w-3 h-3" />
-              </Button>
-            </div>
+          {/* Card Footer Actions */}
+          <div className="flex items-center justify-end gap-2 border-t border-border-subtle pt-3 mt-4">
+            <Button 
+              onClick={() => onEdit(b)} 
+              variant="outline" 
+              className="h-8 px-3 border-border-subtle bg-bg-surface text-gray-900 hover:text-primary-700 hover:bg-primary-50 rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer shadow-2xs btn-modern"
+            >
+              <Edit2 className="w-3.5 h-3.5 text-primary-600" /> Edit
+            </Button>
+            <Button 
+              onClick={() => onDelete(b._id)} 
+              variant="ghost" 
+              className="h-8 w-8 p-0 text-rose-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all cursor-pointer"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </Button>
           </div>
         </div>
       ))}

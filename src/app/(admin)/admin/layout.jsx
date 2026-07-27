@@ -23,15 +23,15 @@ export default function AdminLayout({ children }) {
   return (
     <div className="min-h-screen text-gray-900 flex flex-col">
       
-      {/* 🌟 Purple & Light Yellow SaaS Admin Sidebar */}
+      {/* 🌟 Slim Circular Icon Rail Sidebar */}
       <AdminSidebar 
         isMobileOpen={isMobileOpen}
         setIsMobileOpen={setIsMobileOpen}
       />
 
-      {/* Main Content & Header Container (Offset by w-64 on desktop) */}
-      <div className="flex-1 flex flex-col min-h-screen transition-all duration-300 ease-in-out lg:pl-64">
-        {/* Sticky Glass Header */}
+      {/* Main Content & Floating Header Container (Offset with gap on desktop) */}
+      <div className="flex-1 flex flex-col min-h-screen transition-all duration-300 ease-in-out lg:pl-24">
+        {/* Floating Glass Header with Fully Rounded Borders */}
         <AdminHeader 
           onToggleMobileDrawer={() => setIsMobileOpen(!isMobileOpen)}
         />

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -13,8 +13,6 @@ import {
   User, 
   Settings, 
   LogOut, 
-  Shield, 
-  Sparkles,
   Package,
   FolderTree,
   Tag,
@@ -155,25 +153,25 @@ export default function AdminHeader({ onToggleMobileDrawer }) {
   const breadcrumbs = getBreadcrumbs();
 
   return (
-    <header className="sticky top-0 z-20 w-full bg-white/60 backdrop-blur-xl border-b border-white/60 px-4 md:px-6 py-3 transition-all duration-300 shadow-xs">
+    <header className="sticky top-3 z-30 mx-3 sm:mx-6 my-2 bg-white/85 backdrop-blur-2xl border border-border-subtle rounded-[26px] px-4 md:px-6 py-2.5 transition-all duration-300 shadow-md">
       <div className="flex items-center justify-between gap-4">
         
-        {/* Left Side: Mobile Drawer Trigger + Breadcrumbs & HD Logo */}
+        {/* Left Side: Mobile Drawer Trigger + Breadcrumbs */}
         <div className="flex items-center gap-3">
           <button
             onClick={onToggleMobileDrawer}
-            className="lg:hidden p-2 rounded-xl text-zinc-700 hover:text-gray-900 hover:bg-primary-50 border border-border-subtle transition-colors cursor-pointer"
+            className="lg:hidden p-2 rounded-full text-zinc-700 hover:text-gray-900 hover:bg-primary-50 border border-border-subtle transition-colors cursor-pointer"
             aria-label="Toggle Navigation Drawer"
           >
-            <Menu className="h-6 w-6" />
+            <Menu className="h-5 w-5" />
           </button>
 
-          {/* Breadcrumb Trail with Scaled Text */}
-          <nav className="flex items-center gap-2 text-sm text-zinc-600 font-bold">
+          {/* Breadcrumb Trail */}
+          <nav className="flex items-center gap-2 text-sm text-zinc-600 font-bold bg-white/90 border border-border-subtle px-4 py-1.5 rounded-full shadow-2xs">
             {breadcrumbs.map((crumb, idx) => (
               <React.Fragment key={crumb.href}>
                 {idx > 0 && <ChevronRight className="h-4 w-4 text-zinc-400 shrink-0" />}
-                <span className={crumb.isLast ? "text-gray-900 font-black text-sm sm:text-base" : "hover:text-gray-900 transition-colors"}>
+                <span className={crumb.isLast ? "text-gray-900 font-black text-xs sm:text-sm" : "hover:text-gray-900 transition-colors text-xs"}>
                   {crumb.label}
                 </span>
               </React.Fragment>
@@ -181,36 +179,37 @@ export default function AdminHeader({ onToggleMobileDrawer }) {
           </nav>
         </div>
 
-        {/* Right Side: Quick Search, Quick Add, Notifications, Admin Profile */}
-        <div className="flex items-center gap-3 sm:gap-4">
+        {/* Right Side: Pill-Styled Interactive Controls */}
+        <div className="flex items-center gap-3">
           
+          {/* Search Pill */}
           <button 
             onClick={() => setCommandPaletteOpen(true)}
-            className="hidden md:flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-white/90 border border-border-subtle text-zinc-600 text-sm font-semibold hover:border-primary-400 transition-colors cursor-pointer shadow-xs"
+            className="hidden md:flex items-center gap-2.5 px-4 h-10 rounded-full bg-white border border-border-subtle text-zinc-600 text-xs sm:text-sm font-semibold hover:border-primary-400 transition-all cursor-pointer shadow-2xs btn-modern"
             title="Press Ctrl+K to search"
           >
-            <Search className="h-4 w-4 text-primary-600" />
-            <span className="text-zinc-600">Search store...</span>
-            <kbd className="ml-2 px-2 py-0.5 text-xs font-black text-primary-700 bg-primary-50 border border-primary-200 rounded-md">⌘K</kbd>
+            <Search className="h-4 w-4 text-primary-600 shrink-0" />
+            <span className="text-zinc-600 font-medium">Search store...</span>
+            <kbd className="ml-2 px-2 py-0.5 text-xs font-black text-primary-700 bg-primary-50 border border-primary-200 rounded-full">⌘K</kbd>
           </button>
           
           <button 
             onClick={() => setCommandPaletteOpen(true)}
-            className="md:hidden p-2.5 rounded-xl text-zinc-700 hover:text-gray-900 hover:bg-primary-50 border border-border-subtle transition-colors cursor-pointer"
+            className="md:hidden w-10 h-10 rounded-full bg-white border border-border-subtle flex items-center justify-center text-zinc-700 hover:text-gray-900 hover:bg-primary-50 transition-all cursor-pointer shadow-2xs"
             title="Search store"
             aria-label="Search store"
           >
-            <Search className="h-5 w-5" />
+            <Search className="h-4.5 w-4.5 text-primary-600" />
           </button>
 
-          {/* "+ Quick Add" Dropdown Menu */}
+          {/* "+ Quick Add" Pill */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button 
-                className="bg-primary-600 hover:bg-primary-700 text-white text-xs sm:text-sm font-extrabold px-4 py-2 rounded-xl flex items-center gap-2 cursor-pointer shadow-xs btn-modern outline-none"
+                className="bg-primary-600 hover:bg-primary-700 text-white text-xs sm:text-sm font-black px-4.5 h-10 rounded-full flex items-center gap-2 cursor-pointer shadow-sm btn-modern outline-none"
                 title="Quick Add Actions"
               >
-                <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+                <Plus className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
                 <span className="hidden sm:inline">Quick Add</span>
               </button>
             </DropdownMenuTrigger>
@@ -247,17 +246,17 @@ export default function AdminHeader({ onToggleMobileDrawer }) {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Real Notification Bell */}
+          {/* Notification Bell Pill */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button 
                 onClick={() => refetchNotifications()}
-                className="relative p-2.5 rounded-xl text-zinc-700 hover:text-gray-900 hover:bg-primary-50 border border-border-subtle transition-colors cursor-pointer outline-none" 
+                className="relative w-10 h-10 rounded-full bg-white border border-border-subtle flex items-center justify-center text-zinc-700 hover:text-gray-900 hover:bg-primary-50 transition-all cursor-pointer shadow-2xs outline-none" 
                 title="Notifications"
               >
-                <Bell className="h-5 w-5 text-primary-600" />
+                <Bell className="h-4.5 w-4.5 text-primary-600" />
                 {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 min-w-[20px] h-[20px] px-1 rounded-full bg-rose-600 text-white font-mono text-xs font-black flex items-center justify-center ring-2 ring-white animate-pulse">
+                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-600 text-white font-mono text-[10px] font-black flex items-center justify-center ring-2 ring-white animate-pulse">
                     {unreadCount > 99 ? "99+" : unreadCount}
                   </span>
                 )}
@@ -340,34 +339,32 @@ export default function AdminHeader({ onToggleMobileDrawer }) {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <div className="h-6 w-[1px] bg-border-subtle hidden sm:block" />
-
-          {/* User Profile Dropdown Menu */}
+          {/* User Profile Pill */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex items-center gap-3 pl-1 p-1 rounded-2xl hover:bg-primary-50 transition-colors outline-none cursor-pointer group text-left">
+              <button className="flex items-center gap-2.5 px-2.5 h-10 rounded-full bg-white border border-border-subtle hover:bg-primary-50 transition-all outline-none cursor-pointer group text-left shadow-2xs">
                 <div className="relative shrink-0">
                   {session?.user?.image ? (
                     <img 
                       src={session.user.image} 
                       alt="Profile" 
-                      className="w-10 h-10 rounded-full border border-border-subtle object-cover shadow-xs"
+                      className="w-7 h-7 rounded-full border border-border-subtle object-cover shadow-2xs"
                       referrerPolicy="no-referrer"
                     />
                   ) : (
-                    <div className="w-10 h-10 rounded-full bg-primary-600 flex items-center justify-center text-sm font-black text-white shadow-xs">
+                    <div className="w-7 h-7 rounded-full bg-primary-600 flex items-center justify-center text-[10px] font-black text-white shadow-2xs">
                       {session?.user?.name ? session.user.name[0].toUpperCase() : "A"}
                     </div>
                   )}
-                  <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-white" />
+                  <span className="absolute bottom-0 right-0 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-white" />
                 </div>
 
                 <div className="hidden sm:flex flex-col text-left">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-sm font-black text-gray-900 truncate max-w-[140px]">
+                    <span className="text-xs font-black text-gray-900 truncate max-w-[130px]">
                       {session?.user?.name || "Admin User"}
                     </span>
-                    <span className={`px-2 py-0.5 text-[10px] font-black uppercase tracking-wider rounded-md border ${
+                    <span className={`px-2 py-0.5 text-[9px] font-black uppercase tracking-wider rounded-full border ${
                       session?.user?.role === "superadmin"
                         ? "bg-amber-500/10 text-amber-700 border-amber-500/25"
                         : "bg-primary-50 text-primary-700 border-primary-200"
@@ -375,9 +372,6 @@ export default function AdminHeader({ onToggleMobileDrawer }) {
                       {session?.user?.role || "Staff"}
                     </span>
                   </div>
-                  <span className="text-xs text-zinc-600 font-mono truncate max-w-[160px]">
-                    {session?.user?.email || "admin@adarsh.com"}
-                  </span>
                 </div>
               </button>
             </DropdownMenuTrigger>

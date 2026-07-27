@@ -2,19 +2,14 @@
 
 import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
-import { Loader2, Trash2, Edit2, Sparkles, UploadCloud, Search, FolderTree, Plus } from "lucide-react";
+import { 
+  Loader2, Trash2, Edit2, Sparkles, UploadCloud, Search, FolderTree, Plus, 
+  Package, Layers, BarChart3, CheckCircle2, ArrowUpRight, Tag, Activity
+} from "lucide-react";
 import IconLibraryPicker from "@/components/admin/IconLibraryPicker";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 // Shadcn UI Components
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -53,14 +48,15 @@ export default function CategoryManagementPage() {
 
   // States
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeFilter, setActiveFilter] = useState("all"); // 'all', 'active', 'disabled'
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
   
   const [uploadMode, setUploadMode] = useState("manual");
-
   const [editingCategory, setEditingCategory] = useState(null); // null = add mode, object = edit mode
+  const [selectedInspectCategory, setSelectedInspectCategory] = useState(null); // For detail preview modal
 
   useEffect(() => {
     if (searchParams.get("action") === "new") {
@@ -83,13 +79,11 @@ export default function CategoryManagementPage() {
   });
 
   const selectedImage = watch("imageUrl");
-  const categoryName = watch("name");
 
   // React Query Fetch categories
   const { 
     data: categoriesData, 
     isLoading: categoriesLoading, 
-    refetch: refetchCategories 
   } = useQuery({
     queryKey: ["categories"],
     queryFn: async () => {
@@ -253,18 +247,30 @@ export default function CategoryManagementPage() {
     }
   };
 
-  const { results: filteredCategories, suggestion: spellingSuggestion } = useFuzzySearch(
+  const { results: fuzzyCategories, suggestion: spellingSuggestion } = useFuzzySearch(
     categories,
     searchQuery,
     "name"
   );
 
+  // Filter based on status chips
+  const filteredCategories = fuzzyCategories.filter(cat => {
+    if (activeFilter === "active") return cat.isActive !== false;
+    if (activeFilter === "disabled") return cat.isActive === false;
+    return true;
+  });
 
+  // Calculate Metrics
+  const totalCategoryCount = categories.length;
+  const activeCount = categories.filter(c => c.isActive !== false).length;
+  const disabledCount = totalCategoryCount - activeCount;
+  const totalProductsAssigned = categories.reduce((sum, c) => sum + (c.totalProducts || 0), 0);
+  const maxProductsInCategory = Math.max(...categories.map(c => c.totalProducts || 0), 1);
 
   if (categoriesLoading) {
     return (
       <div className="flex h-[70vh] items-center justify-center">
-        <LoadingSpinner size={240} label="Loading categories catalog..." />
+        <LoadingSpinner size={240} label="Loading category taxonomy matrix..." />
       </div>
     );
   }
@@ -272,193 +278,315 @@ export default function CategoryManagementPage() {
   return (
     <div className="w-full max-w-full min-h-screen text-gray-900 p-2 sm:p-4 space-y-6 font-sans overflow-x-hidden">
       
-      {/* 1. UNIQUE HAZED PURPLE GRADIENT TOP CONTAINER UI */}
-      <div className="hazed-purple-banner p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      {/* 1. TOP HEADER RIBBON */}
+      <div className="flex flex-wrap gap-4 justify-between items-center border-b border-border-subtle pb-5">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-3">
-            <FolderTree className="h-7 w-7 text-accent shrink-0" /> Categories Matrix
-          </h1>
-          <p className="mt-1 text-sm text-purple-100 font-semibold max-w-2xl">
-            Organize stationery product taxonomies ({String(categories.length).padStart(2, "0")} active categories).
-          </p>
+          <div className="flex items-center gap-2.5">
+            <div className="p-2.5 rounded-2xl bg-primary-600 text-white shadow-md ring-4 ring-primary-100">
+              <FolderTree className="h-5 w-5" />
+            </div>
+            <div>
+              <h1 className="text-xl sm:text-2xl font-black tracking-tight text-gray-900">Category Flow Matrix</h1>
+              <p className="text-xs sm:text-sm text-zinc-600 font-medium">
+                Visual taxonomy ecosystem ({String(totalCategoryCount).padStart(2, "0")} active categories)
+              </p>
+            </div>
+          </div>
         </div>
+
         <Button
           onClick={openCreateModal}
-          className="bg-white text-primary-800 font-black hover:bg-primary-50 rounded-xl px-4 h-10 text-sm shadow-md cursor-pointer btn-modern shrink-0"
+          className="bg-primary-600 hover:bg-primary-700 text-white font-black rounded-2xl px-5 h-11 text-xs sm:text-sm shadow-md cursor-pointer btn-modern shrink-0 flex items-center gap-2"
         >
-          <Plus className="w-4 h-4 mr-2 text-primary-600" /> Add New Category
+          <Plus className="w-4.5 h-4.5" /> Add Category
         </Button>
       </div>
 
-      {/* Workspace Area Table Arena */}
-      <div className="bg-bg-surface border border-border-subtle rounded-2xl p-4 sm:p-6 space-y-4 shadow-xs">
-        
-        {/* Wireframe Input Search Box */}
-        <div className="flex flex-col items-center justify-center w-full space-y-2">
-          <div className="flex items-center w-full max-w-md bg-bg-surface border border-border-subtle rounded-xl px-3.5 transition-all gap-2 h-11 focus-within:border-primary-400 focus-within:ring-1 focus-within:ring-primary-400">
+      {/* 2. STATS KPI MESH GRID */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* KPI 1: Purple Gradient Base (#9B66D4 -> #D8A5E9) */}
+        <div className="rounded-[24px] bg-gradient-to-br from-[#9B66D4] via-[#B885E2] to-[#D8A5E9] p-5 text-white shadow-md relative overflow-hidden flex flex-col justify-between group">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-black uppercase tracking-wider text-purple-100">Total Categories</span>
+            <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-white shadow-xs">
+              <Layers className="w-5 h-5" />
+            </div>
+          </div>
+          <div className="mt-4">
+            <h3 className="text-3xl font-black font-mono tracking-tight text-white">{String(totalCategoryCount).padStart(2, '0')}</h3>
+            <p className="text-xs text-purple-100 font-medium mt-1">Taxonomy Nodes Active</p>
+          </div>
+        </div>
+
+        {/* KPI 2: Active Store Catalogs */}
+        <div className="rounded-[24px] bg-bg-surface border border-border-subtle p-5 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-black uppercase tracking-wider text-zinc-500">Live Status</span>
+            <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 shadow-2xs">
+              <CheckCircle2 className="w-5 h-5" />
+            </div>
+          </div>
+          <div className="mt-4">
+            <h3 className="text-3xl font-black font-mono tracking-tight text-gray-900">{String(activeCount).padStart(2, '0')}</h3>
+            <p className="text-xs text-emerald-600 font-bold mt-1">
+              {totalCategoryCount > 0 ? Math.round((activeCount / totalCategoryCount) * 100) : 0}% Active Coverage
+            </p>
+          </div>
+        </div>
+
+        {/* KPI 3: Total Products Assigned */}
+        <div className="rounded-[24px] bg-bg-surface border border-border-subtle p-5 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-black uppercase tracking-wider text-zinc-500">Total Products</span>
+            <div className="w-10 h-10 rounded-2xl bg-primary-50 border border-primary-200 flex items-center justify-center text-primary-600 shadow-2xs">
+              <Package className="w-5 h-5" />
+            </div>
+          </div>
+          <div className="mt-4">
+            <h3 className="text-3xl font-black font-mono tracking-tight text-gray-900">{totalProductsAssigned}</h3>
+            <p className="text-xs text-primary-700 font-bold mt-1">Catalog items linked</p>
+          </div>
+        </div>
+
+        {/* KPI 4: Catalog Density */}
+        <div className="rounded-[24px] bg-bg-surface border border-border-subtle p-5 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-black uppercase tracking-wider text-zinc-500">Avg Density</span>
+            <div className="w-10 h-10 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 shadow-2xs">
+              <BarChart3 className="w-5 h-5" />
+            </div>
+          </div>
+          <div className="mt-4">
+            <h3 className="text-3xl font-black font-mono tracking-tight text-gray-900">
+              {totalCategoryCount > 0 ? (totalProductsAssigned / totalCategoryCount).toFixed(1) : 0}
+            </h3>
+            <p className="text-xs text-amber-700 font-bold mt-1">Items / Category avg</p>
+          </div>
+        </div>
+      </div>
+
+      {/* 3. SEARCH & CONTROL CHIPS BAR */}
+      <div className="bg-bg-surface border border-border-subtle rounded-[26px] p-4 space-y-4 shadow-xs">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+          
+          {/* Search Box */}
+          <div className="flex items-center w-full md:max-w-md bg-white border border-border-subtle rounded-2xl px-4 transition-all gap-2.5 h-11 focus-within:border-primary-400 focus-within:ring-1 focus-within:ring-primary-400 shadow-2xs">
             <Search className="h-4 w-4 text-zinc-400 shrink-0" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search..."
-              className="flex-1 bg-transparent border-none text-xs text-gray-900 placeholder-zinc-400 focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-full py-0 shadow-none"
+              placeholder="Search category taxonomy..."
+              className="flex-1 bg-transparent border-none text-xs font-bold text-gray-900 placeholder-zinc-400 focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-full py-0 shadow-none"
             />
             <VoiceSearchButton 
               onResult={(text) => setSearchQuery(text)} 
-              className="shrink-0 h-8 w-8 text-primary-600"
+              className="shrink-0 h-7 w-7 text-primary-600"
             />
           </div>
 
-          {/* ✨ Smart Did You Mean Ribbon Suggestion Box */}
-          {spellingSuggestion && (
-            <div className="text-xs text-zinc-400 bg-blue-500/10 border border-blue-500/20 px-3 py-1.5 rounded-lg">
-              Did you mean:{" "}
-              <button
-                type="button"
-                onClick={() => setSearchQuery(spellingSuggestion)}
-                className="text-blue-400 font-semibold hover:underline capitalize"
-              >
-                {spellingSuggestion}
-              </button>
-              {" "}?
-            </div>
-          )}
-        </div>
-        {/* 📊 CATEGORY VISUAL WORKSPACE CARDS */}
-        {categoriesLoading ? (
-          <div className="flex h-48 items-center justify-center bg-[#0c0c0e]/30 border border-zinc-800 rounded-2xl">
-            <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
+          {/* Filter Status Chips */}
+          <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
+            <button
+              onClick={() => setActiveFilter("all")}
+              className={`px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer shrink-0 border ${
+                activeFilter === "all"
+                  ? "bg-primary-600 text-white border-primary-600 shadow-xs"
+                  : "bg-white text-zinc-600 border-border-subtle hover:border-primary-300"
+              }`}
+            >
+              All Categories ({totalCategoryCount})
+            </button>
+            <button
+              onClick={() => setActiveFilter("active")}
+              className={`px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer shrink-0 border ${
+                activeFilter === "active"
+                  ? "bg-emerald-600 text-white border-emerald-600 shadow-xs"
+                  : "bg-white text-zinc-600 border-border-subtle hover:border-emerald-300"
+              }`}
+            >
+              Active ({activeCount})
+            </button>
+            <button
+              onClick={() => setActiveFilter("disabled")}
+              className={`px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer shrink-0 border ${
+                activeFilter === "disabled"
+                  ? "bg-rose-600 text-white border-rose-600 shadow-xs"
+                  : "bg-white text-zinc-600 border-border-subtle hover:border-rose-300"
+              }`}
+            >
+              Disabled ({disabledCount})
+            </button>
           </div>
-        ) : filteredCategories.length === 0 ? (
-          <div className="flex flex-col items-center justify-center text-center p-12 border border-dashed border-zinc-800 bg-[#0c0c0e]/30 rounded-2xl space-y-3 min-h-[200px]">
-            <p className="text-sm font-semibold text-zinc-400">No categories found matching search criteria.</p>
+        </div>
+
+        {/* Smart Fuzzy Suggestion */}
+        {spellingSuggestion && (
+          <div className="text-xs text-primary-700 bg-primary-50 border border-primary-200 px-3.5 py-2 rounded-xl font-medium flex items-center gap-2">
+            <span>Did you mean:</span>
+            <button
+              type="button"
+              onClick={() => setSearchQuery(spellingSuggestion)}
+              className="text-primary-800 font-black underline capitalize cursor-pointer hover:text-primary-900"
+            >
+              {spellingSuggestion}
+            </button>
+          </div>
+        )}
+
+        {/* 4. MODULAR CATEGORY NODE FLOW MATRIX */}
+        {filteredCategories.length === 0 ? (
+          <div className="flex flex-col items-center justify-center text-center p-12 border-2 border-dashed border-border-subtle bg-white rounded-2xl space-y-3 min-h-[220px]">
+            <FolderTree className="w-10 h-10 text-zinc-300" />
+            <p className="text-sm font-bold text-gray-900">No categories found matching your search.</p>
             <Button
               onClick={openCreateModal}
-              className="bg-white text-black font-semibold hover:bg-zinc-200 rounded-xl px-4 h-9 text-xs cursor-pointer shadow-md"
+              className="bg-primary-600 text-white font-black hover:bg-primary-700 rounded-2xl px-5 h-10 text-xs cursor-pointer shadow-md btn-modern"
             >
-              + Add New Category
+              + Create Category Node
             </Button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {filteredCategories.map((category) => (
-              <div 
-                key={category._id}
-                className={`bg-zinc-900/40 border border-zinc-800 hover:border-zinc-700 rounded-2xl p-5 transition-all duration-300 relative group flex flex-col justify-between ${
-                  !category.isActive ? "opacity-60 bg-zinc-950/20" : ""
-                }`}
-              >
-                {/* Status Switch & Actions */}
-                <div className="flex justify-between items-center mb-4">
-                  <div className="flex items-center gap-2">
-                    {((statusToggleMutation.isPending && statusToggleMutation.variables === category._id) || (deleteMutation.isPending && deleteMutation.variables === category._id)) ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-500" />
-                    ) : (
-                      <>
-                        <Switch 
-                          checked={category.isActive}
-                          onCheckedChange={() => handleStatusToggle(category._id)}
-                          className="data-[state=checked]:bg-emerald-600 scale-75"
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pt-2">
+            {filteredCategories.map((category) => {
+              const productCount = category.totalProducts || 0;
+              const fillPercentage = Math.min(Math.round((productCount / maxProductsInCategory) * 100), 100);
+
+              return (
+                <div 
+                  key={category._id}
+                  className={`bg-white border border-border-subtle hover:border-primary-400 rounded-[24px] p-5 transition-all duration-300 relative group flex flex-col justify-between shadow-2xs hover:shadow-md ${
+                    !category.isActive ? "opacity-60 bg-zinc-50/80" : ""
+                  }`}
+                >
+                  {/* Top Header: Toggle & Actions */}
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      {((statusToggleMutation.isPending && statusToggleMutation.variables === category._id) || (deleteMutation.isPending && deleteMutation.variables === category._id)) ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-primary-600" />
+                      ) : (
+                        <>
+                          <Switch 
+                            checked={category.isActive !== false}
+                            onCheckedChange={() => handleStatusToggle(category._id)}
+                            className="data-[state=checked]:bg-emerald-600 cursor-pointer scale-90"
+                          />
+                          <span className={`text-[11px] font-black uppercase tracking-wider ${category.isActive !== false ? "text-emerald-600" : "text-zinc-500"}`}>
+                            {category.isActive !== false ? "Active" : "Disabled"}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                    
+                    <div className="flex items-center gap-1 opacity-90 group-hover:opacity-100 transition-opacity">
+                      <button 
+                        onClick={() => openEditModal(category)}
+                        className="text-zinc-600 hover:text-primary-700 transition-colors p-1.5 hover:bg-primary-50 rounded-xl cursor-pointer"
+                        title="Edit Category"
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </button>
+                      <button 
+                        onClick={() => triggerDeleteCheck(category._id)}
+                        className="text-zinc-600 hover:text-rose-600 transition-colors p-1.5 hover:bg-rose-50 rounded-xl cursor-pointer"
+                        title="Delete Category"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Main Visual Node Box */}
+                  <div 
+                    onClick={() => setSelectedInspectCategory(category)}
+                    className="flex flex-col items-center text-center space-y-3 py-3 cursor-pointer group/node"
+                  >
+                    <div className="w-16 h-16 rounded-2xl bg-primary-50/70 border border-primary-100 p-2.5 flex items-center justify-center shadow-xs overflow-hidden shrink-0 group-hover/node:scale-105 transition-transform">
+                      {category.image ? (
+                        <img 
+                          src={category.image} 
+                          alt="" 
+                          className="w-full h-full object-contain" 
+                          referrerPolicy="no-referrer"
                         />
-                        <span className={`text-[9px] font-bold uppercase ${category.isActive ? "text-emerald-400" : "text-zinc-500"}`}>
-                          {category.isActive ? "Active" : "Disabled"}
-                        </span>
-                      </>
-                    )}
-                  </div>
-                  
-                  <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
-                    <button 
-                      onClick={() => openEditModal(category)}
-                      className="text-zinc-400 hover:text-white transition-colors p-1.5 hover:bg-zinc-800 rounded-lg cursor-pointer"
-                      title="Edit Category"
-                    >
-                      <Edit2 className="h-3 w-3" />
-                    </button>
-                    <button 
-                      onClick={() => triggerDeleteCheck(category._id)}
-                      className="text-zinc-550 text-zinc-500 hover:text-rose-400 transition-colors p-1.5 hover:bg-zinc-800 rounded-lg cursor-pointer"
-                      title="Delete Category"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </button>
-                  </div>
-                </div>
+                      ) : (
+                        <Tag className="w-8 h-8 text-primary-600" />
+                      )}
+                    </div>
 
-                {/* Center Content: Icon & Name */}
-                <div className="flex flex-col items-center text-center space-y-3 py-2">
-                  <div className="w-12 h-12 rounded-2xl bg-white border border-zinc-800 p-1 flex items-center justify-center shadow-inner overflow-hidden shrink-0">
-                    <img 
-                      src={category.image} 
-                      alt="" 
-                      className="w-full h-full object-contain" 
-                      referrerPolicy="no-referrer"
-                    />
+                    <div className="space-y-1">
+                      <h3 className="font-black text-sm text-gray-900 capitalize tracking-tight group-hover/node:text-primary-700 transition-colors">
+                        {category.name}
+                      </h3>
+                      <p className="text-[11px] text-zinc-500 font-mono font-semibold">
+                        Added {new Date(category.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+                      </p>
+                    </div>
                   </div>
-                  <div className="space-y-1">
-                    <h3 className="font-bold tracking-tight text-xs text-zinc-100 capitalize hover:text-white transition-colors">
-                      {category.name}
-                    </h3>
-                    <p className="text-[10px] text-zinc-550 text-zinc-550 text-zinc-500 font-mono">
-                      {new Date(category.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-                    </p>
-                  </div>
-                </div>
 
-                {/* Bottom Stats: Product count */}
-                <div className="mt-4 border-t border-zinc-900 pt-3 flex justify-center">
-                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono tracking-wide ${category.totalProducts > 0 ? "bg-blue-500/10 text-blue-400 border border-blue-500/15" : "bg-zinc-800/80 text-zinc-500 border border-zinc-800"}`}>
-                    {String(category.totalProducts).padStart(2, '0')} Products
-                  </span>
+                  {/* Dynamic Product Density Progress Bar */}
+                  <div className="mt-3 border-t border-border-subtle pt-3 space-y-1.5">
+                    <div className="flex items-center justify-between text-[11px] font-mono">
+                      <span className="text-zinc-500 font-bold">Catalog Items</span>
+                      <span className="font-black text-primary-700">{productCount} pcs</span>
+                    </div>
+                    <div className="w-full h-2 rounded-full bg-primary-50 border border-primary-100 overflow-hidden">
+                      <div 
+                        className="h-full bg-gradient-to-r from-primary-500 to-[#9B66D4] rounded-full transition-all duration-500" 
+                        style={{ width: `${fillPercentage}%` }}
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
 
-      {/* 🔲 COMPOSITE MULTI-OPERATIONAL DIALOG BOX FORMS */}
+      {/* 5. ADD / EDIT CATEGORY FORM MODAL (LIGHT SAAS PURPLE THEME) */}
       <Dialog open={isModalOpen} onOpenChange={(val) => !val && closeAndResetModal()}>
-        <DialogContent className="w-full max-w-md border border-zinc-800 bg-zinc-900 p-6 text-white rounded-2xl shadow-2xl">
-          <DialogHeader className="border-b border-zinc-800 pb-4 mb-4">
-            <DialogTitle className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-blue-400" /> {editingCategory ? "Edit Category Details" : "New Category"}
+        <DialogContent className="w-full max-w-md border border-border-subtle bg-white/95 backdrop-blur-2xl p-0 text-gray-900 rounded-[28px] shadow-2xl overflow-hidden font-sans">
+          <DialogHeader className="p-6 border-b border-border-subtle bg-primary-50/80 shrink-0">
+            <DialogTitle className="text-xl font-black tracking-tight text-gray-900 flex items-center gap-2.5">
+              <Sparkles className="h-5 w-5 text-primary-600" /> 
+              {editingCategory ? "Edit Category Profile" : "Create Category Node"}
             </DialogTitle>
           </DialogHeader>
 
-          <form onSubmit={handleFormSubmit(onSubmit)} className="space-y-5">
+          <form onSubmit={handleFormSubmit(onSubmit)} className="p-6 space-y-5">
+            {/* Category Name Input */}
             <div className="space-y-2">
-              <Label htmlFor="categoryName" className="text-zinc-400 text-xs font-semibold tracking-wider uppercase">Category Name</Label>
+              <Label htmlFor="categoryName" className="text-xs text-gray-900 font-black">Category Name</Label>
               <Input
                 id="categoryName"
                 type="text"
-                placeholder="Enter Category name"
+                placeholder="e.g. Premium Notebooks & Journals"
                 {...register("name")}
-                className="bg-zinc-950 border-zinc-800 text-white rounded-xl focus-visible:ring-blue-500 w-full"
+                className="bg-white border border-border-subtle text-gray-900 text-xs font-semibold rounded-2xl h-11 focus-visible:ring-1 focus-visible:ring-primary-400 focus-visible:border-primary-400 w-full shadow-2xs"
               />
-              {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name.message}</p>}
+              {errors.name && <p className="text-xs text-rose-600 font-bold mt-1">{errors.name.message}</p>}
             </div>
 
-            {/* Unified Preview Container - ALWAYS renders based on selectedImage (imageUrl) */}
+            {/* Icon Preview */}
             {selectedImage && (
               <div className="space-y-2">
-                <Label className="text-zinc-400 text-xs font-semibold tracking-wider uppercase">Current Icon Preview</Label>
-                <div className="flex items-center gap-3 p-3 bg-zinc-950/40 border border-zinc-800 rounded-xl w-fit">
+                <Label className="text-xs text-gray-900 font-black">Category Icon Preview</Label>
+                <div className="flex items-center gap-3 p-3 bg-primary-50/50 border border-primary-100 rounded-2xl shadow-2xs">
                   <img 
                     src={selectedImage} 
                     alt="Selected category preview" 
-                    className="w-10 h-10 rounded-xl object-contain bg-white border border-zinc-800 p-0.5"
+                    className="w-12 h-12 rounded-xl object-contain bg-white border border-border-subtle p-1 shadow-xs"
                     referrerPolicy="no-referrer"
                   />
-                  <div>
-                    <p className="text-[10px] text-zinc-400 font-semibold uppercase tracking-wider font-mono truncate max-w-[180px]">
-                      {selectedImage.includes("api.iconify.design") ? "Library Icon (SVG)" : selectedImage.startsWith("data:") ? "Manual Upload (Base64)" : "Saved Icon URL"}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] text-primary-800 font-black uppercase tracking-wider font-mono truncate">
+                      {selectedImage.includes("api.iconify.design") ? "Library Vector Icon" : selectedImage.startsWith("data:") ? "Local File Upload" : "Saved Icon URL"}
                     </p>
                     <button
                       type="button"
                       onClick={() => setValue("imageUrl", "")}
-                      className="text-[10px] text-rose-400 hover:text-rose-300 font-semibold underline mt-0.5 block text-left"
+                      className="text-[11px] text-rose-600 hover:text-rose-700 font-bold underline mt-0.5 block text-left cursor-pointer"
                     >
                       Remove Icon
                     </button>
@@ -467,9 +595,10 @@ export default function CategoryManagementPage() {
               </div>
             )}
 
+            {/* Manual File Upload */}
             {uploadMode === "manual" && (
               <div className="space-y-2">
-                <Label className="text-zinc-400 text-xs font-semibold tracking-wider uppercase">Local Device Storage Uploader</Label>
+                <Label className="text-xs text-gray-900 font-black">Icon Uploader</Label>
                 <input 
                   type="file"
                   ref={fileInputRef}
@@ -479,26 +608,28 @@ export default function CategoryManagementPage() {
                 />
                 <div 
                   onClick={() => fileInputRef.current.click()}
-                  className="border border-dashed border-zinc-700 rounded-xl p-5 bg-zinc-950/40 text-center flex flex-col items-center justify-center gap-2 hover:bg-zinc-950/80 transition-all cursor-pointer min-h-[100px]"
+                  className="border-2 border-dashed border-border-subtle rounded-2xl p-6 bg-white text-center flex flex-col items-center justify-center gap-2 hover:bg-primary-50/40 hover:border-primary-400 transition-all cursor-pointer min-h-[110px] shadow-2xs"
                 >
-                  <UploadCloud className="h-5 w-5 text-zinc-500" />
-                  <span className="text-xs text-zinc-400">
-                    {selectedImage ? "Click to replace file manually" : "Click to upload manual icon file"}
+                  <UploadCloud className="h-6 w-6 text-zinc-400" />
+                  <span className="text-xs font-bold text-gray-900">
+                    {selectedImage ? "Click to replace icon image" : "Click to upload image file"}
                   </span>
+                  <span className="text-[10px] text-zinc-500 font-mono">PNG, SVG, JPG or WebP</span>
                 </div>
                 
                 <div className="pt-1 text-center">
                   <button
                     type="button"
                     onClick={() => setUploadMode("picker")}
-                    className="text-xs text-blue-400 hover:text-blue-300 transition-colors underline"
+                    className="text-xs text-primary-600 hover:text-primary-700 font-bold transition-colors underline cursor-pointer"
                   >
-                    Or browse icon library instead
+                    Or select from Icon Library
                   </button>
                 </div>
               </div>
             )}
 
+            {/* Icon Library Picker */}
             {uploadMode === "picker" && (
               <div className="space-y-2">
                 <IconLibraryPicker
@@ -511,41 +642,99 @@ export default function CategoryManagementPage() {
               </div>
             )}
 
-            <Button 
-              type="submit" 
-              disabled={categoryFormMutation.isPending} 
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl h-11 shadow-lg shadow-blue-600/10"
-            >
-              {categoryFormMutation.isPending ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Transmitting Document...</>
-              ) : editingCategory ? (
-                "Save Operational Changes"
-              ) : (
-                "Add Category"
-              )}
-            </Button>
+            {/* Action Buttons */}
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-border-subtle">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={closeAndResetModal}
+                className="rounded-2xl border border-border-subtle bg-white px-5 h-11 text-xs font-bold text-gray-900 hover:bg-primary-50 cursor-pointer shadow-2xs"
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="submit" 
+                disabled={categoryFormMutation.isPending} 
+                className="bg-primary-600 hover:bg-primary-700 text-white font-black rounded-2xl h-11 px-6 text-xs shadow-md cursor-pointer btn-modern"
+              >
+                {categoryFormMutation.isPending ? (
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin inline" /> Saving...</>
+                ) : editingCategory ? (
+                  "Save changes"
+                ) : (
+                  "Add Category"
+                )}
+              </Button>
+            </div>
           </form>
         </DialogContent>
       </Dialog>
 
-      {/* 🛡️ STRICT PRODUCT BLOCK GUARD SHIELD */}
+      {/* 6. CATEGORY INSPECT DETAIL MODAL */}
+      <Dialog open={!!selectedInspectCategory} onOpenChange={(open) => !open && setSelectedInspectCategory(null)}>
+        {selectedInspectCategory && (
+          <DialogContent className="w-full max-w-sm border border-border-subtle bg-white/95 backdrop-blur-2xl p-6 text-gray-900 rounded-[28px] shadow-2xl space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-14 h-14 rounded-2xl bg-primary-50 border border-primary-200 p-2 flex items-center justify-center shrink-0 shadow-xs">
+                {selectedInspectCategory.image ? (
+                  <img src={selectedInspectCategory.image} alt="" className="w-full h-full object-contain" />
+                ) : (
+                  <Tag className="w-6 h-6 text-primary-600" />
+                )}
+              </div>
+              <div>
+                <h3 className="font-black text-lg text-gray-900 capitalize">{selectedInspectCategory.name}</h3>
+                <span className={`text-xs font-black uppercase ${selectedInspectCategory.isActive !== false ? "text-emerald-600" : "text-zinc-500"}`}>
+                  {selectedInspectCategory.isActive !== false ? "Active Store Category" : "Disabled Category"}
+                </span>
+              </div>
+            </div>
+
+            <div className="bg-bg-surface border border-border-subtle p-3.5 rounded-2xl space-y-2 text-xs font-mono">
+              <div className="flex justify-between">
+                <span className="text-zinc-500">Products Count:</span>
+                <span className="font-black text-primary-700">{selectedInspectCategory.totalProducts || 0} items</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-zinc-500">Created Date:</span>
+                <span className="font-bold text-gray-900">{new Date(selectedInspectCategory.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 pt-2">
+              <Button
+                onClick={() => {
+                  const cat = selectedInspectCategory;
+                  setSelectedInspectCategory(null);
+                  openEditModal(cat);
+                }}
+                className="flex-1 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-2xl h-10 text-xs cursor-pointer shadow-xs btn-modern"
+              >
+                <Edit2 className="w-3.5 h-3.5 mr-1" /> Edit Category
+              </Button>
+            </div>
+          </DialogContent>
+        )}
+      </Dialog>
+
+      {/* 7. DELETE CONFIRMATION DIALOG */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent className="bg-zinc-900 border border-zinc-800 text-white rounded-2xl">
+        <AlertDialogContent className="bg-white border border-border-subtle text-gray-900 rounded-[28px] p-6 shadow-2xl">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-zinc-100">Confirm Asset Removal</AlertDialogTitle>
-            <AlertDialogDescription className="text-zinc-400">
-              Are you absolutely sure you want to drop this category item? System rules prevent deletion if live stationery items are linked to this record node.
+            <AlertDialogTitle className="text-lg font-black text-gray-900">Confirm Category Deletion</AlertDialogTitle>
+            <AlertDialogDescription className="text-xs text-zinc-600 font-medium">
+              Are you sure you want to delete this category? If there are active stationery products assigned to this category, deletion will be blocked by system safety rules.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="bg-zinc-800 text-zinc-300 border-zinc-700 hover:bg-zinc-700 rounded-xl">
+          <AlertDialogFooter className="mt-4 gap-2">
+            <AlertDialogCancel className="bg-white text-gray-900 border border-border-subtle hover:bg-primary-50 rounded-2xl text-xs font-bold px-4 h-10 cursor-pointer shadow-2xs">
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction 
               onClick={executeDeleteNode} 
-              className="rounded-xl bg-rose-600 hover:bg-rose-700 font-bold text-white"
+              className="rounded-2xl bg-rose-600 hover:bg-rose-700 font-black text-white text-xs px-5 h-10 cursor-pointer shadow-xs"
             >
-              Destroy Record
+              Delete Category
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

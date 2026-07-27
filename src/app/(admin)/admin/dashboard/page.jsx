@@ -266,85 +266,85 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* 3. Top Summary KPI Cards (Responsive Grid: 1 col on mobile, 2 sm, 3 md, 5 xl) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
+      {/* 3. Top Summary KPI Cards (Colorful Mesh Gradient UI Inspired by Reference) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
         {/* KPI 1: Total Revenue */}
-        <div className="p-4 rounded-2xl bg-bg-surface border border-border-subtle space-y-2 relative overflow-hidden transition-all hover:border-primary-300">
+        <div className="p-5 sm:p-6 rounded-[28px] bg-[linear-gradient(135deg,#F4ECFF_0%,#FFD9EC_50%,#FFE4D6_100%)] border border-purple-200/70 space-y-3 relative overflow-hidden transition-all hover:scale-[1.02] shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">Total Revenue</span>
-            <div className="p-2 rounded-xl bg-badge-1-bg text-badge-1-icon">
-              <IndianRupee className="h-4 w-4" />
+            <span className="text-xs font-black uppercase tracking-wider text-purple-900">Total Revenue</span>
+            <div className="p-2.5 rounded-2xl bg-white/80 border border-white text-purple-700 shadow-2xs">
+              <IndianRupee className="h-5 w-5" />
             </div>
           </div>
           <div>
-            <h3 className="text-xl sm:text-2xl font-extrabold text-gray-900 tracking-tight">
+            <h3 className="text-2xl sm:text-3xl xl:text-4xl font-black text-gray-900 tracking-tight font-mono">
               ₹{kpis.totalRevenue.toLocaleString("en-IN")}
             </h3>
-            <p className="text-[10px] text-emerald-600 font-bold mt-0.5">Paid Orders Net</p>
+            <p className="text-xs text-emerald-700 font-extrabold mt-1">Paid Orders Net</p>
           </div>
         </div>
 
         {/* KPI 2: Total Orders */}
-        <Link href="/admin/orders" className="p-4 rounded-2xl bg-bg-surface border border-border-subtle space-y-2 relative overflow-hidden transition-all hover:border-primary-300 block">
+        <Link href="/admin/orders" className="p-5 sm:p-6 rounded-[28px] bg-[linear-gradient(135deg,#D6F6FF_0%,#E3E8FF_50%,#F3E8FF_100%)] border border-blue-200/70 space-y-3 relative overflow-hidden transition-all hover:scale-[1.02] shadow-xs block">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">Total Orders</span>
-            <div className="p-2 rounded-xl bg-badge-2-bg text-badge-2-icon">
-              <ShoppingBag className="h-4 w-4" />
+            <span className="text-xs font-black uppercase tracking-wider text-blue-900">Total Orders</span>
+            <div className="p-2.5 rounded-2xl bg-white/80 border border-white text-blue-700 shadow-2xs">
+              <ShoppingBag className="h-5 w-5" />
             </div>
           </div>
           <div>
-            <h3 className="text-xl sm:text-2xl font-extrabold text-gray-900 tracking-tight">
+            <h3 className="text-2xl sm:text-3xl xl:text-4xl font-black text-gray-900 tracking-tight font-mono">
               {kpis.totalOrders}
             </h3>
-            <p className="text-[10px] text-primary-600 font-bold mt-0.5">Lifetime Orders</p>
+            <p className="text-xs text-blue-700 font-extrabold mt-1">Lifetime Orders</p>
           </div>
         </Link>
 
         {/* KPI 3: Total Customers */}
-        <Link href="/admin/customers" className="p-4 rounded-2xl bg-bg-surface border border-border-subtle space-y-2 relative overflow-hidden transition-all hover:border-primary-300 block">
+        <Link href="/admin/customers" className="p-5 sm:p-6 rounded-[28px] bg-[linear-gradient(135deg,#ECFDF5_0%,#D1FAE5_50%,#FEF3C7_100%)] border border-emerald-200/70 space-y-3 relative overflow-hidden transition-all hover:scale-[1.02] shadow-xs block">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">Customers</span>
-            <div className="p-2 rounded-xl bg-badge-3-bg text-badge-3-icon">
-              <Users className="h-4 w-4" />
+            <span className="text-xs font-black uppercase tracking-wider text-emerald-900">Customers</span>
+            <div className="p-2.5 rounded-2xl bg-white/80 border border-white text-emerald-700 shadow-2xs">
+              <Users className="h-5 w-5" />
             </div>
           </div>
           <div>
-            <h3 className="text-xl sm:text-2xl font-extrabold text-gray-900 tracking-tight">
+            <h3 className="text-2xl sm:text-3xl xl:text-4xl font-black text-gray-900 tracking-tight font-mono">
               {kpis.totalCustomers}
             </h3>
-            <p className="text-[10px] text-primary-600 font-bold mt-0.5">Registered Profiles</p>
+            <p className="text-xs text-emerald-700 font-extrabold mt-1">Registered Profiles</p>
           </div>
         </Link>
 
         {/* KPI 4: Total Products */}
-        <Link href="/admin/products" className="p-4 rounded-2xl bg-bg-surface border border-border-subtle space-y-2 relative overflow-hidden transition-all hover:border-primary-300 block">
+        <Link href="/admin/products" className="p-5 sm:p-6 rounded-[28px] bg-[linear-gradient(135deg,#F3E8FF_0%,#FEF3C7_50%,#FDE68A_100%)] border border-amber-200/70 space-y-3 relative overflow-hidden transition-all hover:scale-[1.02] shadow-xs block">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">Catalog Products</span>
-            <div className="p-2 rounded-xl bg-badge-1-bg text-badge-1-icon">
-              <Package className="h-4 w-4" />
+            <span className="text-xs font-black uppercase tracking-wider text-purple-900">Catalog Products</span>
+            <div className="p-2.5 rounded-2xl bg-white/80 border border-white text-purple-700 shadow-2xs">
+              <Package className="h-5 w-5" />
             </div>
           </div>
           <div>
-            <h3 className="text-xl sm:text-2xl font-extrabold text-gray-900 tracking-tight">
+            <h3 className="text-2xl sm:text-3xl xl:text-4xl font-black text-gray-900 tracking-tight font-mono">
               {kpis.totalProducts}
             </h3>
-            <p className="text-[10px] text-primary-600 font-bold mt-0.5">Active SKUs</p>
+            <p className="text-xs text-purple-700 font-extrabold mt-1">Active SKUs</p>
           </div>
         </Link>
 
         {/* KPI 5: Pending Fulfillment */}
-        <Link href="/admin/orders" className="p-4 rounded-2xl bg-bg-surface border border-border-subtle space-y-2 relative overflow-hidden transition-all hover:border-accent/60 block">
+        <Link href="/admin/orders" className="p-5 sm:p-6 rounded-[28px] bg-[linear-gradient(135deg,#FEF3C7_0%,#FEE2E2_50%,#FFEDD5_100%)] border border-amber-200/70 space-y-3 relative overflow-hidden transition-all hover:scale-[1.02] shadow-xs block">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">Pending Action</span>
-            <div className="p-2 rounded-xl bg-accent/20 border border-accent/40 text-accent font-bold">
-              <Clock className="h-4 w-4" />
+            <span className="text-xs font-black uppercase tracking-wider text-amber-900">Pending Action</span>
+            <div className="p-2.5 rounded-2xl bg-white/80 border border-white text-amber-700 shadow-2xs">
+              <Clock className="h-5 w-5" />
             </div>
           </div>
           <div>
-            <h3 className="text-xl sm:text-2xl font-extrabold text-gray-900 tracking-tight">
+            <h3 className="text-2xl sm:text-3xl xl:text-4xl font-black text-amber-950 tracking-tight font-mono">
               {kpis.pendingFulfillment}
             </h3>
-            <p className="text-[10px] text-accent font-extrabold mt-0.5">Confirmed Orders</p>
+            <p className="text-xs text-amber-800 font-extrabold mt-1">Confirmed Orders</p>
           </div>
         </Link>
       </div>
@@ -761,42 +761,44 @@ export default function DashboardPage() {
       {/* 7. Recently Sold Products & Recently Acquired Customers */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
 
-        {/* Recently Sold Products Card */}
-        <div className="p-4 sm:p-6 rounded-2xl bg-bg-surface border border-border-subtle space-y-4">
-          <div className="flex items-center justify-between border-b border-border-subtle pb-3">
+        {/* Recently Sold Products Card (Custom #9B66D4 to #D8A5E9 Gradient UI) */}
+        <div className="p-5 sm:p-6 rounded-[28px] bg-[linear-gradient(135deg,#9B66D4_0%,#B882E4_50%,#D8A5E9_100%)] text-[#2E0B52] shadow-md space-y-4 border border-purple-300/40">
+          <div className="flex items-center justify-between border-b border-purple-900/15 pb-3">
             <div>
-              <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
-                <Clock className="h-4 w-4 text-primary-600 shrink-0" /> Recently Sold Items
+              <h2 className="text-lg sm:text-xl font-black text-[#2E0B52] flex items-center gap-2.5">
+                <Clock className="h-5 w-5 text-[#3B1260] shrink-0" /> Recently Sold Items
               </h2>
-              <p className="text-xs text-zinc-500 mt-0.5">Latest item transactions from completed orders.</p>
+              <p className="text-xs text-[#4A1D7A] mt-0.5 font-extrabold">Latest item transactions from completed orders.</p>
             </div>
-            <Link href="/admin/orders" className="text-xs text-primary-600 hover:text-primary-700 font-semibold flex items-center gap-1 shrink-0">
-              Orders <ArrowRight className="h-3 w-3" />
+            <Link href="/admin/orders" className="text-xs text-[#2E0B52] hover:text-black font-black flex items-center gap-1 shrink-0 bg-white/80 hover:bg-white px-3.5 py-1.5 rounded-full border border-white/80 transition-colors shadow-2xs">
+              Orders <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             {recentlySoldProducts.length > 0 ? (
               recentlySoldProducts.map((item, idx) => (
                 <div
                   key={`${item.orderId}-${idx}`}
-                  className="flex items-center justify-between p-3 rounded-xl bg-bg-page border border-border-subtle text-xs"
+                  className="flex items-center justify-between p-3.5 sm:p-4 rounded-2xl bg-white/80 backdrop-blur-xl border border-white/90 text-[#2E0B52] shadow-2xs hover:bg-white transition-all"
                 >
-                  <div className="min-w-0 pr-2">
-                    <h4 className="font-semibold text-gray-900 truncate">{item.productName}</h4>
-                    <p className="text-[10px] text-zinc-500 mt-0.5 truncate">
-                      Buyer: <span className="text-gray-900 font-medium">{item.customerName}</span> • {new Date(item.date).toLocaleDateString("en-IN")}
+                  <div className="min-w-0 pr-3">
+                    <h4 className="font-black text-[#2E0B52] truncate text-sm sm:text-base tracking-tight">{item.productName}</h4>
+                    <p className="text-xs text-[#5C2B90] mt-0.5 truncate font-semibold">
+                      Buyer: <span className="text-[#2E0B52] font-black">{item.customerName}</span> • {new Date(item.date).toLocaleDateString("en-IN")}
                     </p>
                   </div>
 
-                  <div className="text-right shrink-0">
-                    <span className="font-bold text-gray-900">{item.quantity} qty</span>
-                    <p className="text-[10px] text-emerald-600 font-mono font-semibold">₹{item.subtotal}</p>
+                  <div className="text-right shrink-0 flex flex-col items-end gap-1">
+                    <span className="text-xs font-black text-[#3B1260] bg-purple-100/90 px-2.5 py-0.5 rounded-md border border-purple-200">{item.quantity} qty</span>
+                    <p className="text-sm sm:text-base font-black font-mono text-[#2E0B52] bg-white px-3 py-1 rounded-xl border border-purple-200/80 shadow-2xs">
+                      ₹{item.subtotal}
+                    </p>
                   </div>
                 </div>
               ))
             ) : (
-              <p className="text-xs text-zinc-500 text-center py-6">No recent sales records.</p>
+              <p className="text-xs text-[#4A1D7A] font-extrabold text-center py-6">No recent sales records.</p>
             )}
           </div>
         </div>

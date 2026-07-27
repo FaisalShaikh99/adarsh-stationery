@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import axios from "axios";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ChevronLeft, ChevronRight, Loader2, RefreshCw, Search, Eye, AlertTriangle, Check, X, ShieldAlert } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, RefreshCw, Search, Eye, AlertTriangle, Check, X, ShieldAlert, Users } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -87,13 +87,16 @@ export default function CustomersPage() {
   return (
     <div className="w-full max-w-full space-y-6 text-gray-900 overflow-x-hidden">
       
-      {/* 1. UNIQUE HAZED PURPLE GRADIENT TOP CONTAINER UI */}
-      <div className="hazed-purple-banner p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      {/* 1. CLEAN PAGE HEADER */}
+      <div className="flex flex-wrap gap-4 justify-between items-center border-b border-border-subtle pb-5">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-3">
-            <Users className="h-7 w-7 text-accent shrink-0" /> Customer Directory & CRM
-          </h1>
-          <p className="mt-1 text-sm text-purple-100 font-semibold max-w-2xl">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-primary-50 border border-primary-100 text-primary-600">
+              <Users className="h-5 w-5" />
+            </div>
+            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-gray-900">Customer Directory & CRM</h1>
+          </div>
+          <p className="mt-1 text-xs sm:text-sm text-zinc-600 font-medium">
             Manage buyer profiles, customer segmentation, order history, and account access.
           </p>
         </div>
@@ -101,10 +104,10 @@ export default function CustomersPage() {
           onClick={() => refetch()} 
           disabled={isFetching} 
           variant="outline" 
-          className="rounded-xl border-white/40 bg-white/20 text-white hover:bg-white hover:text-primary-800 text-sm font-extrabold px-4 h-10 cursor-pointer shadow-xs btn-modern shrink-0"
+          className="rounded-xl border-border-subtle bg-bg-surface text-gray-900 hover:bg-primary-50 text-xs sm:text-sm font-semibold h-10 px-4 cursor-pointer shadow-xs btn-modern shrink-0"
           title="Refresh customers list"
         >
-          <RefreshCw className={`mr-2 h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
+          <RefreshCw className={`mr-2 h-4 w-4 text-primary-600 ${isFetching ? "animate-spin" : ""}`} />
           <span>Refresh Directory</span>
         </Button>
       </div>

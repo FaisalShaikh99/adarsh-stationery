@@ -461,49 +461,51 @@ export default function InventoryManagementPage() {
   return (
     <div className="w-full max-w-full min-h-screen text-gray-900 p-2 sm:p-4 space-y-6 font-sans overflow-x-hidden">
  
-      {/* 1. UNIQUE HAZED PURPLE GRADIENT TOP CONTAINER UI */}
-      <div className="hazed-purple-banner p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      {/* 1. CLEAN PAGE HEADER */}
+      <div className="flex flex-wrap gap-4 justify-between items-center border-b border-border-subtle pb-5">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-3">
-            <Package className="h-7 w-7 text-accent shrink-0" /> Inventory Control Center
-          </h1>
-          <p className="mt-1 text-sm text-purple-100 font-semibold max-w-2xl">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-primary-50 border border-primary-100 text-primary-600">
+              <Package className="h-5 w-5" />
+            </div>
+            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-gray-900">Inventory Control Center</h1>
+          </div>
+          <p className="mt-1 text-xs sm:text-sm text-zinc-600 font-medium">
             Reconcile live stock levels, reserved allocation, reorder points, and supplier valuations.
           </p>
         </div>
         <div className="flex items-center gap-3 shrink-0">
-          <Button onClick={handleCsvExport} variant="outline" className="border-white/40 bg-white/20 text-white hover:bg-white hover:text-primary-800 text-sm font-extrabold px-4 h-10 cursor-pointer shadow-xs btn-modern">
-            <Download className="w-4 h-4 mr-2" /> Export Inventory CSV
+          <Button onClick={handleCsvExport} variant="outline" className="border-border-subtle bg-bg-surface text-gray-900 hover:bg-primary-50 text-xs sm:text-sm font-semibold rounded-xl h-10 px-4 cursor-pointer shadow-xs btn-modern">
+            <Download className="w-4 h-4 mr-2 text-primary-600" /> Export Inventory CSV
           </Button>
         </div>
       </div>
  
       {/* 2. SUMMARY DASHBOARD CARDS ROW */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        {/* Card 1: Total Products */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4"        {/* Card 1: Total Products */}
         <div 
           onClick={() => setSelectedStockStatus("All")}
-          className={`bg-[#0c0c0e] border p-4.5 rounded-2xl flex flex-col justify-between min-h-[105px] cursor-pointer transition-all duration-200 select-none ${
-            selectedStockStatus === "All" ? "border-blue-500 bg-blue-950/10 shadow-[0_0_15px_rgba(59,130,246,0.15)]" : "border-zinc-850 hover:border-zinc-700"
+          className={`bg-bg-surface border p-4.5 rounded-2xl flex flex-col justify-between min-h-[105px] cursor-pointer transition-all duration-200 select-none shadow-xs ${
+            selectedStockStatus === "All" ? "border-primary-500 bg-primary-50/40" : "border-border-subtle hover:border-primary-300"
           }`}
         >
           <div className="flex justify-between items-start">
-            <span className="text-[10px] text-zinc-550 font-bold uppercase tracking-wider">Total Items</span>
-            <Package className="w-4 h-4 text-zinc-500" />
+            <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">Total Items</span>
+            <Package className="w-4 h-4 text-primary-600" />
           </div>
           <div className="mt-2.5">
-            <p className="text-2xl font-bold font-mono tracking-tight text-white">{summaryMetrics.totalProducts}</p>
-            <div className="flex items-center gap-1 text-[9px] text-emerald-400 font-semibold mt-1">
+            <p className="text-2xl font-bold font-mono tracking-tight text-gray-900">{summaryMetrics.totalProducts}</p>
+            <div className="flex items-center gap-1 text-[9px] text-primary-600 font-semibold mt-1">
               <TrendingUp className="w-3 h-3" /> Catalogue items
             </div>
           </div>
         </div>
- 
+
         {/* Card 2: Total Inventory Value */}
-        <div className="bg-[#0c0c0e] border border-zinc-850 p-4.5 rounded-2xl flex flex-col justify-between min-h-[105px] select-none">
+        <div className="bg-bg-surface border border-border-subtle p-4.5 rounded-2xl flex flex-col justify-between min-h-[105px] select-none shadow-xs">
           <div className="flex justify-between items-start">
-            <span className="text-[10px] text-zinc-550 font-bold uppercase tracking-wider">Asset Value</span>
-            <Coins className="w-4 h-4 text-zinc-500" />
+            <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">Asset Value</span>
+            <Coins className="w-4 h-4 text-primary-600" />
           </div>
           <div className="mt-2.5">
             <p className="text-xl font-bold font-mono tracking-tight text-gray-900 truncate">{formatCurrency(summaryMetrics.totalValue)}</p>
@@ -511,7 +513,7 @@ export default function InventoryManagementPage() {
               <TrendingUp className="w-3 h-3" /> Cost basis valuation
             </div>
           </div>
-        </div>
+        </div>v>
  
         {/* Card 3: In Stock Products */}
         <div 
@@ -722,11 +724,11 @@ export default function InventoryManagementPage() {
         )}
  
         {/* Horizontal Category-wise View Tab Selection */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none border-b border-zinc-800/60">
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none border-b border-border-subtle">
           <button
             type="button"
             onClick={() => setSelectedCategoryFilter("All")}
-            className={`px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all border cursor-pointer ${selectedCategoryFilter === "All" ? "bg-white text-black border-white shadow-md scale-[1.02]" : "bg-zinc-900/50 text-zinc-450 border-zinc-800 hover:text-zinc-200"}`}
+            className={`px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all border cursor-pointer ${selectedCategoryFilter === "All" ? "bg-primary-600 text-white border-primary-600 shadow-xs" : "bg-white text-gray-900 border-border-subtle hover:bg-primary-50"}`}
           >
             All Categories ({products.length})
           </button>
@@ -737,7 +739,7 @@ export default function InventoryManagementPage() {
                 key={cat._id}
                 type="button"
                 onClick={() => setSelectedCategoryFilter(cat._id)}
-                className={`px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all border cursor-pointer ${selectedCategoryFilter === cat._id ? "bg-white text-black border-white shadow-md scale-[1.02]" : "bg-zinc-900/50 text-zinc-450 border-zinc-800 hover:text-zinc-200"}`}
+                className={`px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all border cursor-pointer ${selectedCategoryFilter === cat._id ? "bg-primary-600 text-white border-primary-600 shadow-xs" : "bg-white text-gray-900 border-border-subtle hover:bg-primary-50"}`}
               >
                 <span className="capitalize">{cat.name}</span> ({count})
               </button>
@@ -747,33 +749,33 @@ export default function InventoryManagementPage() {
  
         {/* 4. INVENTORY DATA TABLE */}
         {sortedProducts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center text-center p-12 border border-dashed border-zinc-800 bg-[#0c0c0e]/30 rounded-2xl space-y-4 min-h-[300px]">
-            <div className="w-12 h-12 rounded-full bg-zinc-900 flex items-center justify-center border border-zinc-800 text-zinc-500">
+          <div className="flex flex-col items-center justify-center text-center p-12 border border-dashed border-border-subtle bg-bg-surface rounded-2xl space-y-4 min-h-[300px]">
+            <div className="w-12 h-12 rounded-full bg-primary-50 flex items-center justify-center border border-primary-100 text-primary-600">
               <Package className="w-6 h-6" />
             </div>
             <div className="space-y-1">
-              <h3 className="text-sm font-bold text-zinc-200">No inventory products found</h3>
+              <h3 className="text-sm font-bold text-gray-900">No inventory products found</h3>
               <p className="text-xs text-zinc-500 max-w-sm">No items match your search filters or catalog selection.</p>
             </div>
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-zinc-800 bg-zinc-900/10">
+          <div className="overflow-x-auto rounded-2xl border border-border-subtle bg-bg-surface shadow-xs">
             <Table className="min-w-[1300px]">
-              <TableHeader className="bg-zinc-900/60 sticky top-0 z-10 backdrop-blur-md">
-                <TableRow className="border-b border-zinc-800 text-[11px] uppercase tracking-wider text-zinc-400">
-                  <TableHead className="font-semibold py-3 text-zinc-400 text-left min-w-[200px]">Product</TableHead>
-                  <TableHead className="font-semibold py-3 text-zinc-400 text-left w-28">SKU</TableHead>
-                  <TableHead className="font-semibold py-3 text-zinc-400 text-right w-36">Current Stock</TableHead>
-                  <TableHead className="font-semibold py-3 text-zinc-400 text-right w-32">Reserved Stock</TableHead>
-                  <TableHead className="font-semibold py-3 text-zinc-400 text-right w-32">Available Stock</TableHead>
-                  <TableHead className="font-semibold py-3 text-zinc-400 text-right w-24">Min Stock</TableHead>
-                  <TableHead className="font-semibold py-3 text-zinc-400 text-right w-28">Cost Price</TableHead>
-                  <TableHead className="font-semibold py-3 text-zinc-400 text-right w-28">Selling Price</TableHead>
-                  <TableHead className="font-semibold py-3 text-zinc-400 text-right w-32">Inventory Value</TableHead>
-                  <TableHead className="font-semibold py-3 text-zinc-400 text-left w-32">Supplier</TableHead>
-                  <TableHead className="font-semibold py-3 text-zinc-400 text-center w-28">Status</TableHead>
-                  <TableHead className="font-semibold py-3 text-zinc-400 text-center w-32">Last Restocked</TableHead>
-                  <TableHead className="font-semibold py-3 text-zinc-400 text-right w-24">Actions</TableHead>
+              <TableHeader className="bg-primary-50/80 sticky top-0 z-10 backdrop-blur-md">
+                <TableRow className="border-b border-border-subtle text-xs uppercase tracking-wider text-primary-900">
+                  <TableHead className="font-extrabold py-3.5 text-primary-900 text-left min-w-[200px]">Product</TableHead>
+                  <TableHead className="font-extrabold py-3.5 text-primary-900 text-left w-28">SKU</TableHead>
+                  <TableHead className="font-extrabold py-3.5 text-primary-900 text-right w-36">Current Stock</TableHead>
+                  <TableHead className="font-extrabold py-3.5 text-primary-900 text-right w-32">Reserved Stock</TableHead>
+                  <TableHead className="font-extrabold py-3.5 text-primary-900 text-right w-32">Available Stock</TableHead>
+                  <TableHead className="font-extrabold py-3.5 text-primary-900 text-right w-24">Min Stock</TableHead>
+                  <TableHead className="font-extrabold py-3.5 text-primary-900 text-right w-28">Cost Price</TableHead>
+                  <TableHead className="font-extrabold py-3.5 text-primary-900 text-right w-28">Selling Price</TableHead>
+                  <TableHead className="font-extrabold py-3.5 text-primary-900 text-right w-32">Inventory Value</TableHead>
+                  <TableHead className="font-extrabold py-3.5 text-primary-900 text-left w-32">Supplier</TableHead>
+                  <TableHead className="font-extrabold py-3.5 text-primary-900 text-center w-28">Status</TableHead>
+                  <TableHead className="font-extrabold py-3.5 text-primary-900 text-center w-32">Last Restocked</TableHead>
+                  <TableHead className="font-extrabold py-3.5 text-primary-900 text-right w-24">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -795,11 +797,11 @@ export default function InventoryManagementPage() {
                     : "—";
 
                   return (
-                    <TableRow key={p._id} className="border-b border-zinc-800/60 hover:bg-zinc-900/20 transition-colors text-xs">
+                    <TableRow key={p._id} className="border-b border-border-subtle hover:bg-primary-50/40 transition-colors text-xs text-gray-900">
                       {/* Product */}
                       <TableCell className="py-3 text-left min-w-[200px]">
                         <div className="flex items-center gap-3">
-                          <div className="relative w-10 h-10 rounded-lg bg-white border border-zinc-800 p-0.5 shrink-0 flex items-center justify-center overflow-hidden">
+                          <div className="relative w-10 h-10 rounded-xl bg-white border border-border-subtle p-0.5 shrink-0 flex items-center justify-center overflow-hidden shadow-2xs">
                             {p.images?.[0] ? (
                               <img 
                                 src={p.images[0]} 
@@ -812,19 +814,19 @@ export default function InventoryManagementPage() {
                             )}
                           </div>
                           <div className="min-w-0">
-                            <span className="font-bold text-zinc-100 block truncate capitalize hover:text-white transition-colors cursor-pointer" onClick={() => { setSelectedDetailProduct(p); setIsDrawerOpen(true); }}>
+                            <span className="font-extrabold text-gray-900 block truncate capitalize hover:text-primary-700 transition-colors cursor-pointer" onClick={() => { setSelectedDetailProduct(p); setIsDrawerOpen(true); }}>
                               {p.name}
                             </span>
                             <div className="flex items-center gap-1.5 mt-0.5">
-                              <span className={`w-1.5 h-1.5 rounded-full ${p.isVisible !== false ? "bg-emerald-400" : "bg-zinc-650"}`} />
-                              <span className="text-[10px] text-zinc-500">{p.isVisible !== false ? "Visible" : "Hidden"}</span>
+                              <span className={`w-1.5 h-1.5 rounded-full ${p.isVisible !== false ? "bg-emerald-500" : "bg-zinc-400"}`} />
+                              <span className="text-[10px] text-zinc-500 font-semibold">{p.isVisible !== false ? "Visible" : "Hidden"}</span>
                             </div>
                           </div>
                         </div>
                       </TableCell>
 
                       {/* SKU */}
-                      <TableCell className="font-mono font-bold text-zinc-400 py-3 text-left w-28">{sku}</TableCell>
+                      <TableCell className="font-mono font-bold text-zinc-600 py-3 text-left w-28">{sku}</TableCell>
                       
                       {/* Current Stock */}
                       <TableCell className="font-mono font-bold py-3 text-right w-36" onClick={(e) => e.stopPropagation()}>
@@ -834,7 +836,7 @@ export default function InventoryManagementPage() {
                               type="number"
                               value={editValue}
                               onChange={(e) => setEditValue(e.target.value)}
-                              className="w-16 h-7 bg-zinc-950 border border-zinc-700 rounded text-center text-xs font-mono font-bold text-white focus:outline-none focus:border-blue-500 shadow-inner"
+                              className="w-16 h-7 bg-white border border-primary-400 rounded-lg text-center text-xs font-mono font-bold text-gray-900 focus:outline-none focus:ring-1 focus:ring-primary-400 shadow-2xs"
                               autoFocus
                               onKeyDown={(e) => {
                                 if (e.key === "Enter") {
@@ -851,7 +853,7 @@ export default function InventoryManagementPage() {
                             <>
                               <button 
                                 onClick={() => handleOptimisticAdjust(p, 1, "subtract")}
-                                className="w-5 h-5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white flex items-center justify-center border border-zinc-700 active:scale-95 text-[10px] font-bold cursor-pointer"
+                                className="w-6 h-6 rounded-lg bg-primary-50 hover:bg-primary-100 text-primary-700 flex items-center justify-center border border-primary-200 active:scale-95 text-xs font-black cursor-pointer shadow-2xs"
                                 title="Reduce by 1"
                               >
                                 -
@@ -861,55 +863,55 @@ export default function InventoryManagementPage() {
                                   setEditingProductId(p._id);
                                   setEditValue(String(stockVal));
                                 }}
-                                className={`w-8 text-center font-extrabold cursor-pointer hover:underline ${stockVal === 0 ? "text-rose-400" : stockVal <= minStockVal ? "text-amber-400" : "text-emerald-400"}`}
+                                className={`w-8 text-center font-black cursor-pointer hover:underline ${stockVal === 0 ? "text-rose-600" : stockVal <= minStockVal ? "text-amber-600" : "text-emerald-600"}`}
                                 title="Click to type value"
                               >
                                 {stockVal}
                               </span>
                               <button 
                                 onClick={() => handleOptimisticAdjust(p, 1, "add")}
-                                className="w-5 h-5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white flex items-center justify-center border border-zinc-700 active:scale-95 text-[10px] font-bold cursor-pointer"
+                                className="w-6 h-6 rounded-lg bg-primary-50 hover:bg-primary-100 text-primary-700 flex items-center justify-center border border-primary-200 active:scale-95 text-xs font-black cursor-pointer shadow-2xs"
                                 title="Increase by 1"
                               >
                                 +
                               </button>
                             </>
                           )}
-                          <span className="text-zinc-500 font-normal text-[10px] w-6 text-left ml-0.5">{p.stockUnit || "Pcs"}</span>
+                          <span className="text-zinc-500 font-semibold text-[10px] w-6 text-left ml-0.5">{p.stockUnit || "Pcs"}</span>
                         </div>
                       </TableCell>
 
                       {/* Reserved Stock */}
-                      <TableCell className="font-mono text-amber-400 text-right py-3 font-semibold w-32">
-                        {reservedVal} <span className="text-[10px] text-zinc-600">{p.stockUnit || "Pcs"}</span>
+                      <TableCell className="font-mono text-amber-600 text-right py-3 font-extrabold w-32">
+                        {reservedVal} <span className="text-[10px] text-zinc-500">{p.stockUnit || "Pcs"}</span>
                       </TableCell>
 
                       {/* Available Stock */}
-                      <TableCell className="font-mono text-emerald-400 text-right py-3 font-bold w-32">
+                      <TableCell className="font-mono text-emerald-600 text-right py-3 font-black w-32">
                         {availableVal} <span className="text-[10px] text-zinc-500">{p.stockUnit || "Pcs"}</span>
                       </TableCell>
                       
                       {/* Min Stock */}
-                      <TableCell className="font-mono text-zinc-400 text-right py-3 w-24">{minStockVal}</TableCell>
+                      <TableCell className="font-mono text-zinc-600 text-right py-3 w-24 font-bold">{minStockVal}</TableCell>
                       
                       {/* Prices & Value */}
-                      <TableCell className="font-mono text-zinc-400 text-right py-3 w-28">₹{costVal}</TableCell>
-                      <TableCell className="font-mono text-zinc-100 font-semibold text-right py-3 w-28">₹{sellVal}</TableCell>
-                      <TableCell className="font-mono text-zinc-200 font-bold text-right py-3 w-32">{formatCurrency(invVal)}</TableCell>
+                      <TableCell className="font-mono text-zinc-600 text-right py-3 w-28 font-medium">₹{costVal}</TableCell>
+                      <TableCell className="font-mono text-gray-900 font-bold text-right py-3 w-28">₹{sellVal}</TableCell>
+                      <TableCell className="font-mono text-gray-900 font-black text-right py-3 w-32">{formatCurrency(invVal)}</TableCell>
                       
                       {/* Supplier */}
-                      <TableCell className="text-zinc-300 capitalize py-3 truncate text-left w-32" title={supplier}>
+                      <TableCell className="text-zinc-700 font-semibold capitalize py-3 truncate text-left w-32" title={supplier}>
                         {supplier}
                       </TableCell>
 
                       {/* Status */}
                       <TableCell className="text-center py-3 w-28">
-                        <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold whitespace-nowrap inline-flex items-center gap-1.5 ${
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-extrabold whitespace-nowrap inline-flex items-center gap-1.5 ${
                           statusText === "Out of Stock" 
-                            ? "bg-rose-500/10 text-rose-400 border border-rose-500/25" 
+                            ? "bg-rose-50 text-rose-600 border border-rose-200" 
                             : statusText === "Low Stock" 
-                              ? "bg-amber-500/10 text-amber-400 border border-amber-500/25" 
-                              : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/25"
+                              ? "bg-amber-50 text-amber-600 border border-amber-200" 
+                              : "bg-emerald-50 text-emerald-600 border border-emerald-200"
                         }`}>
                           <span className={`w-1.5 h-1.5 rounded-full ${
                             statusText === "Out of Stock" 
@@ -923,7 +925,7 @@ export default function InventoryManagementPage() {
                       </TableCell>
 
                       {/* Last Restocked */}
-                      <TableCell className="font-mono text-[11px] text-zinc-400 text-center py-3 w-32">{restockedDateStr}</TableCell>
+                      <TableCell className="font-mono text-xs text-zinc-600 font-semibold text-center py-3 w-32">{restockedDateStr}</TableCell>
 
                       {/* Actions */}
                       <TableCell className="py-3 text-right w-24">

@@ -150,20 +150,23 @@ export default function TeamMembersPage() {
   return (
     <div className="w-full max-w-full min-h-screen text-gray-900 p-2 sm:p-4 space-y-6 font-sans overflow-x-hidden">
       
-      {/* 1. UNIQUE HAZED PURPLE GRADIENT TOP CONTAINER UI */}
-      <div className="hazed-purple-banner p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      {/* 1. CLEAN PAGE HEADER */}
+      <div className="flex flex-wrap gap-4 justify-between items-center border-b border-border-subtle pb-5">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-3">
-            <Shield className="h-7 w-7 text-accent shrink-0" /> Team Members & Roles
-          </h1>
-          <p className="mt-1 text-sm text-purple-100 font-semibold max-w-2xl">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-primary-50 border border-primary-100 text-primary-600">
+              <Shield className="h-5 w-5" />
+            </div>
+            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-gray-900">Team Members & Roles</h1>
+          </div>
+          <p className="mt-1 text-xs sm:text-sm text-zinc-600 font-medium">
             Manage admin staff accounts, system roles, and operational access ({String(team.length).padStart(2, '0')} active members).
           </p>
         </div>
 
         <div className="text-right flex flex-col md:flex-row items-end md:items-center gap-3 shrink-0">
           {session?.user?.role === "superadmin" && (
-            <Button className="bg-white text-primary-800 font-black hover:bg-primary-50 rounded-xl px-4 h-10 text-sm shadow-md cursor-pointer btn-modern" onClick={() => setIsOpen(true)}>
+            <Button className="bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-xl px-4 h-10 text-xs sm:text-sm shadow-xs cursor-pointer btn-modern" onClick={() => setIsOpen(true)}>
               + Invite New Member
             </Button>
           )}
