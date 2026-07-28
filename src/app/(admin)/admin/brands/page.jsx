@@ -16,13 +16,15 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import useFuzzySearch from "@/hooks/useFuzzySearch";
 import VoiceSearchButton from "@/components/ui/voice-search-button";
 
+import { Suspense } from "react";
+
 // Categories fetch helper
 const fetchCategories = async () => {
   const response = await axiosClient.get("/api/admin/categories");
   return response.data || [];
 };
 
-export default function BrandManagementPage() {
+function BrandManagementContent() {
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
 
@@ -440,5 +442,13 @@ export default function BrandManagementPage() {
       </AlertDialog>
 
     </div>
+  );
+}
+
+export default function BrandManagementPage() {
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      <BrandManagementContent />
+    </Suspense>
   );
 }

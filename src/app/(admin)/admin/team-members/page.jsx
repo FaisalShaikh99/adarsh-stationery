@@ -57,7 +57,9 @@ const formatLastLogin = (dateString) => {
   } catch { return "Never logged in"; }
 };
 
-export default function TeamMembersPage() {
+import { Suspense } from "react";
+
+function TeamMembersContent() {
   const searchParams = useSearchParams();
   const { data: session, status } = useSession();
   const queryClient = useQueryClient();
@@ -497,5 +499,13 @@ export default function TeamMembersPage() {
       )}
 
     </div>
+  );
+}
+
+export default function TeamMembersPage() {
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      <TeamMembersContent />
+    </Suspense>
   );
 }

@@ -36,12 +36,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
-import { categoryCreateSchema } from "@/schemas/category.schema";
-import { useSearchParams } from "next/navigation";
-import useFuzzySearch from "@/hooks/useFuzzySearch";
-import VoiceSearchButton from "@/components/ui/voice-search-button";
+import { Suspense } from "react";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
-export default function CategoryManagementPage() {
+function CategoryManagementContent() {
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const fileInputRef = useRef(null);
@@ -741,5 +739,13 @@ export default function CategoryManagementPage() {
       </AlertDialog>
 
     </div>
+  );
+}
+
+export default function CategoryManagementPage() {
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      <CategoryManagementContent />
+    </Suspense>
   );
 }

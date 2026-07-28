@@ -37,12 +37,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
-import { productSchema } from "@/schemas/products.schema";
-import { useSearchParams } from "next/navigation";
-import useFuzzySearch from "@/hooks/useFuzzySearch";
-import VoiceSearchButton from "@/components/ui/voice-search-button";
- 
-export default function ProductManagementPage() {
+import { Suspense } from "react";
+
+function ProductManagementContent() {
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const fileInputRefs = useRef([]);
@@ -1853,7 +1850,14 @@ export default function ProductManagementPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
- 
     </div>
+  );
+}
+
+export default function ProductManagementPage() {
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      <ProductManagementContent />
+    </Suspense>
   );
 }
