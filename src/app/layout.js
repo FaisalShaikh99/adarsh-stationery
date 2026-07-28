@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Adarsh Stationery Admin",
+  title: "Adarsh Stationery Mart Admin",
   description: "Next.js 15 Admin Dashboard",
 };
 

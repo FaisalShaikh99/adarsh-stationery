@@ -15,7 +15,7 @@ export default function AdminLoginPage() {
   const handleGoogleLogin = async () => {
     setLoading(true);
     try {
-      await signIn("google", { callbackUrl: "/admin/dashboard" });
+      await signIn("google", { callbackUrl: "/" });
     } catch (error) {
       console.error("Login Error:", error);
       toast.error("Something went wrong during Google Sign-In.");
