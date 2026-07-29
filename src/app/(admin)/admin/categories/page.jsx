@@ -7,8 +7,6 @@ import {
   Package, Layers, BarChart3, CheckCircle2, ArrowUpRight, Tag, Activity
 } from "lucide-react";
 import IconLibraryPicker from "@/components/admin/IconLibraryPicker";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
-
 // Shadcn UI Components
 import {
   Dialog,
@@ -33,11 +31,11 @@ import { Label } from "@/components/ui/label";
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { Suspense } from "react";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { useSearchParams } from "next/navigation";
 
 function CategoryManagementContent() {
   const searchParams = useSearchParams();

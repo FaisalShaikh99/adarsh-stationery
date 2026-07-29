@@ -1,7 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import { 
@@ -26,7 +28,9 @@ import {
   Download,
   Receipt,
   PieChart as PieIcon,
-  BarChart3
+  BarChart3,
+  Lock,
+  ShieldAlert
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -59,6 +63,9 @@ const STATUS_COLORS = {
 const CATEGORY_COLORS = ["#5B2C8F", "#6B3FA0", "#8A5FC0", "#4A056D", "#B995DE", "#D4B8ED", "#E8C547"];
 
 export default function DashboardPage() {
+  const { data: session, status: sessionStatus } = useSession();
+  const router = useRouter();
+
   const [lowStockThreshold, setLowStockThreshold] = useState(10);
   const [isReminderDismissed, setIsReminderDismissed] = useState(false);
   const [isWarningDismissed, setIsWarningDismissed] = useState(false);
@@ -77,7 +84,20 @@ export default function DashboardPage() {
     },
     staleTime: 60 * 1000,
     refetchOnWindowFocus: false,
+    retry: false,
   });
+
+  const isUnauthorized = 
+    sessionStatus === "unauthenticated" || 
+    error?.response?.status === 401 || 
+    error?.message?.includes("Unauthorized") || 
+    error?.message?.includes("401");
+
+  useEffect(() => {
+    if (sessionStatus === "unauthenticated") {
+      router.push("/admin/sign-in");
+    }
+  }, [sessionStatus, router]);
 
   // Drill-down Profit Breakdown Query
   const {
@@ -171,6 +191,27 @@ export default function DashboardPage() {
   }
 
   if (isError) {
+    if (isUnauthorized) {
+      return (
+        <div className="flex h-[65vh] flex-col items-center justify-center space-y-4 text-center px-4">
+          <div className="w-16 h-16 rounded-3xl bg-purple-100 border border-purple-200 flex items-center justify-center p-3 text-purple-700 shadow-sm animate-pulse">
+            <Lock className="h-8 w-8" />
+          </div>
+          <h2 className="text-xl font-black text-gray-900 tracking-tight">Admin Authentication Required</h2>
+          <p className="text-xs text-zinc-600 max-w-sm font-medium">
+            Your session has expired or you are not signed in. Redirecting to the secure sign-in panel...
+          </p>
+          <a
+            href="/admin/sign-in"
+            className="btn-pill-gradient h-11 px-6 rounded-full font-black text-xs text-white shadow-md hover:scale-105 transition-all cursor-pointer flex items-center gap-2 inline-flex"
+          >
+            <span>Sign In to Admin Portal</span>
+            <ArrowRight className="w-4 h-4" />
+          </a>
+        </div>
+      );
+    }
+
     return (
       <div className="flex h-[60vh] flex-col items-center justify-center space-y-4 text-center px-4">
         <AlertTriangle className="h-10 w-10 text-rose-500" />
@@ -278,7 +319,7 @@ export default function DashboardPage() {
           </div>
           <div>
             <h3 className="text-lg sm:text-2xl xl:text-3xl font-black text-gray-900 tracking-tight font-mono truncate">
-              ₹{kpis.totalRevenue.toLocaleString("en-IN")}
+              ₹{(kpis?.totalRevenue || 0).toLocaleString("en-IN")}
             </h3>
             <p className="text-[10px] sm:text-xs text-emerald-700 font-extrabold mt-0.5 sm:mt-1 truncate">Paid Orders Net</p>
           </div>
@@ -405,7 +446,7 @@ export default function DashboardPage() {
                 <span className="text-[10px] text-zinc-500 uppercase tracking-wider block font-bold">Gross Profit</span>
                 <div className="flex items-center gap-2">
                   <h4 className="text-base sm:text-lg font-extrabold text-gray-900">
-                    ₹{profitLoss.thisWeek.profit.toLocaleString("en-IN")}
+                    ₹{(profitLoss?.thisWeek?.profit || 0).toLocaleString("en-IN")}
                   </h4>
                   <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold border ${
                     profitLoss.thisWeek.percentageChange >= 0
@@ -425,8 +466,8 @@ export default function DashboardPage() {
               {/* Net Profit (after expenses) */}
               <div className="border-t border-border-subtle pt-2 space-y-0.5">
                 <span className="text-[10px] text-emerald-600 uppercase tracking-wider block font-bold">Net Profit (after exp)</span>
-                <h4 className={`text-sm sm:text-base font-bold font-mono ${profitLoss.thisWeek.netProfit >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-                  ₹{profitLoss.thisWeek.netProfit.toLocaleString("en-IN")}
+                <h4 className={`text-sm sm:text-base font-bold font-mono ${profitLoss?.thisWeek?.netProfit >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                  ₹{(profitLoss?.thisWeek?.netProfit || 0).toLocaleString("en-IN")}
                 </h4>
               </div>
             </div>
@@ -452,7 +493,7 @@ export default function DashboardPage() {
                 <span className="text-[10px] text-zinc-500 uppercase tracking-wider block font-bold">Gross Profit</span>
                 <div className="flex items-center gap-2">
                   <h4 className="text-base sm:text-lg font-extrabold text-gray-900">
-                    ₹{profitLoss.thisMonth.profit.toLocaleString("en-IN")}
+                    ₹{(profitLoss?.thisMonth?.profit || 0).toLocaleString("en-IN")}
                   </h4>
                   <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold border ${
                     profitLoss.thisMonth.percentageChange >= 0
@@ -472,8 +513,8 @@ export default function DashboardPage() {
               {/* Net Profit (after expenses) */}
               <div className="border-t border-border-subtle pt-2 space-y-0.5">
                 <span className="text-[10px] text-emerald-600 uppercase tracking-wider block font-bold">Net Profit (after exp)</span>
-                <h4 className={`text-sm sm:text-base font-bold font-mono ${profitLoss.thisMonth.netProfit >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-                  ₹{profitLoss.thisMonth.netProfit.toLocaleString("en-IN")}
+                <h4 className={`text-sm sm:text-base font-bold font-mono ${profitLoss?.thisMonth?.netProfit >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                  ₹{(profitLoss?.thisMonth?.netProfit || 0).toLocaleString("en-IN")}
                 </h4>
               </div>
             </div>
@@ -665,35 +706,40 @@ export default function DashboardPage() {
 
           <div className="space-y-2.5">
             {bestSellingProducts.length > 0 ? (
-              bestSellingProducts.map((prod) => (
-                <Link
-                  key={prod.id}
-                  href="/admin/products"
-                  className="flex items-center justify-between p-3 rounded-xl bg-bg-page border border-border-subtle hover:border-primary-300 transition-colors group"
-                >
-                  <div className="flex items-center gap-3 min-w-0 pr-2">
-                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-bg-surface border border-border-subtle overflow-hidden shrink-0 flex items-center justify-center">
-                      {prod.thumbnail ? (
-                        <img src={prod.thumbnail} alt={prod.name} className="w-full h-full object-cover" />
-                      ) : (
-                        <Package className="w-4 h-4 sm:w-5 sm:h-5 text-zinc-400" />
-                      )}
+              bestSellingProducts.map((prod, idx) => {
+                const pName = prod.productName || prod.name || "Stationery Item";
+                const pRevenue = prod.totalRevenueGenerated ?? prod.revenue ?? 0;
+                const pUnits = prod.totalUnitsSold ?? prod.quantitySold ?? 0;
+                return (
+                  <Link
+                    key={prod.productId || prod._id || idx}
+                    href="/admin/products"
+                    className="flex items-center justify-between p-3 rounded-xl bg-bg-page border border-border-subtle hover:border-primary-300 transition-colors group"
+                  >
+                    <div className="flex items-center gap-3 min-w-0 pr-2">
+                      <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-bg-surface border border-border-subtle overflow-hidden shrink-0 flex items-center justify-center">
+                        {prod.thumbnail ? (
+                          <img src={prod.thumbnail} alt={pName} className="w-full h-full object-cover" />
+                        ) : (
+                          <Package className="w-4 h-4 sm:w-5 sm:h-5 text-zinc-400" />
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="text-xs font-bold text-gray-900 truncate group-hover:text-primary-600 transition-colors">
+                          {pName}
+                        </h4>
+                        <p className="text-[10px] text-zinc-500 font-mono">
+                          ₹{pRevenue.toLocaleString("en-IN")} revenue
+                        </p>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <h4 className="text-xs font-bold text-gray-900 truncate group-hover:text-primary-600 transition-colors">
-                        {prod.name}
-                      </h4>
-                      <p className="text-[10px] text-zinc-500 font-mono">
-                        ₹{prod.revenue.toLocaleString("en-IN")} revenue
-                      </p>
-                    </div>
-                  </div>
 
-                  <span className="px-2.5 py-1 rounded-xl bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 text-xs font-bold shrink-0">
-                    {prod.quantitySold} sold
-                  </span>
-                </Link>
-              ))
+                    <span className="px-2.5 py-1 rounded-xl bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 text-xs font-bold shrink-0">
+                      {pUnits} sold
+                    </span>
+                  </Link>
+                );
+              })
             ) : (
               <p className="text-xs text-zinc-500 text-center py-6">No best-selling product data available.</p>
             )}
@@ -716,11 +762,13 @@ export default function DashboardPage() {
 
           <div className="space-y-2.5">
             {lowStockAlerts.length > 0 ? (
-              lowStockAlerts.map((prod) => {
-                const isCritical = prod.stock <= 3;
+              lowStockAlerts.map((prod, idx) => {
+                const currentStock = prod.stockQuantity ?? prod.stock ?? 0;
+                const isCritical = currentStock <= 3;
+                const pName = prod.productName || prod.name || "Stationery Item";
                 return (
                   <div
-                    key={prod.id}
+                    key={prod.productId || prod._id || prod.id || `lsa-${idx}`}
                     className="flex items-center justify-between p-3 rounded-xl bg-bg-page border border-border-subtle space-x-2 sm:space-x-3"
                   >
                     <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 pr-1">
@@ -729,11 +777,11 @@ export default function DashboardPage() {
                           ? "bg-rose-500/10 text-rose-600 border-rose-500/20"
                           : "bg-accent/20 text-accent border-accent/40"
                       }`}>
-                        {prod.stock} Left
+                        {currentStock} Left
                       </span>
                       <div className="min-w-0">
-                        <h4 className="text-xs font-bold text-gray-900 truncate">{prod.name}</h4>
-                        <p className="text-[10px] text-zinc-500">₹{prod.sellingPrice}</p>
+                        <h4 className="text-xs font-bold text-gray-900 truncate">{pName}</h4>
+                        <p className="text-[10px] text-zinc-500 font-mono">SKU: {prod.sku || "N/A"}</p>
                       </div>
                     </div>
 
@@ -761,7 +809,7 @@ export default function DashboardPage() {
       {/* 7. Recently Sold Products & Recently Acquired Customers */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
 
-        {/* Recently Sold Products Card (Custom #9B66D4 to #D8A5E9 Gradient UI) */}
+        {/* Recently Sold Products Card */}
         <div className="p-5 sm:p-6 rounded-[28px] bg-[linear-gradient(135deg,#9B66D4_0%,#B882E4_50%,#D8A5E9_100%)] text-[#2E0B52] shadow-md space-y-4 border border-purple-300/40">
           <div className="flex items-center justify-between border-b border-purple-900/15 pb-3">
             <div>
@@ -779,13 +827,13 @@ export default function DashboardPage() {
             {recentlySoldProducts.length > 0 ? (
               recentlySoldProducts.map((item, idx) => (
                 <div
-                  key={`${item.orderId}-${idx}`}
+                  key={item.orderId ? `${item.orderId}-${idx}` : `rsi-${idx}`}
                   className="flex items-center justify-between p-3.5 sm:p-4 rounded-2xl bg-white/80 backdrop-blur-xl border border-white/90 text-[#2E0B52] shadow-2xs hover:bg-white transition-all"
                 >
                   <div className="min-w-0 pr-3">
                     <h4 className="font-black text-[#2E0B52] truncate text-sm sm:text-base tracking-tight">{item.productName}</h4>
                     <p className="text-xs text-[#5C2B90] mt-0.5 truncate font-semibold">
-                      Buyer: <span className="text-[#2E0B52] font-black">{item.customerName}</span> • {new Date(item.date).toLocaleDateString("en-IN")}
+                      Buyer: <span className="text-[#2E0B52] font-black">{item.shippingName || "Customer"}</span> • {item.soldAt ? new Date(item.soldAt).toLocaleDateString("en-IN") : "Recent"}
                     </p>
                   </div>
 
@@ -819,27 +867,27 @@ export default function DashboardPage() {
 
           <div className="space-y-2">
             {recentlyNewCustomers.length > 0 ? (
-              recentlyNewCustomers.map((cust) => (
+              recentlyNewCustomers.map((customer, idx) => (
                 <div
-                  key={cust.id}
+                  key={customer._id || customer.id || `cust-${idx}`}
                   className="flex items-center justify-between p-3 rounded-xl bg-bg-page border border-border-subtle text-xs"
                 >
                   <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 pr-2">
                     <div className="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center text-xs font-bold text-white shrink-0">
-                      {cust.name[0].toUpperCase()}
+                      {customer.name[0].toUpperCase()}
                     </div>
                     <div className="min-w-0">
-                      <h4 className="font-semibold text-gray-900 truncate">{cust.name}</h4>
-                      <p className="text-[10px] text-zinc-500 font-mono mt-0.5">{cust.phone}</p>
+                      <h4 className="font-semibold text-gray-900 truncate">{customer.name}</h4>
+                      <p className="text-[10px] text-zinc-500 font-mono mt-0.5">{customer.phone}</p>
                     </div>
                   </div>
 
                   <div className="text-right shrink-0">
                     <span className="text-[10px] px-2 py-0.5 rounded-md bg-primary-50 text-primary-700 border border-primary-200 font-bold">
-                      {cust.orderCount} Orders
+                      {customer.orderCount} Orders
                     </span>
                     <p className="text-[10px] text-zinc-500 mt-0.5">
-                      Joined {new Date(cust.firstOrderDate).toLocaleDateString("en-IN")}
+                      Joined {new Date(customer.firstOrderDate).toLocaleDateString("en-IN")}
                     </p>
                   </div>
                 </div>
@@ -963,10 +1011,10 @@ export default function DashboardPage() {
                                 </span>
                               </TableCell>
                               <TableCell className="text-right font-mono py-3 text-gray-900 font-bold w-[130px] text-xs">
-                                ₹{item.totalSale.toLocaleString("en-IN")}
+                                ₹{(item?.totalSale || 0).toLocaleString("en-IN")}
                               </TableCell>
                               <TableCell className="text-right font-mono py-3 text-emerald-600 font-extrabold w-[130px] text-xs">
-                                ₹{item.totalProfit.toLocaleString("en-IN")}
+                                ₹{(item?.totalProfit || 0).toLocaleString("en-IN")}
                               </TableCell>
                             </TableRow>
                           ))}
@@ -1001,7 +1049,7 @@ export default function DashboardPage() {
                                 {exp.category}
                               </TableCell>
                               <TableCell className="py-3 text-right font-mono font-bold text-rose-600 text-xs">
-                                ₹{exp.amount.toLocaleString("en-IN")}
+                                ₹{(exp?.amount || 0).toLocaleString("en-IN")}
                               </TableCell>
                             </TableRow>
                           ))}
@@ -1026,18 +1074,18 @@ export default function DashboardPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 items-center">
                   <div className="bg-bg-surface border border-border-subtle p-3 rounded-xl">
                     <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold block">Gross Sales</span>
-                    <span className="font-mono text-base font-bold text-gray-900">₹{grandTotalSale.toLocaleString("en-IN")}</span>
+                    <span className="font-mono text-base font-bold text-gray-900">₹{(grandTotalSale || 0).toLocaleString("en-IN")}</span>
                   </div>
                   <div className="bg-bg-surface border border-border-subtle p-3 rounded-xl">
                     <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold block">Gross Profit</span>
                     <span className="font-mono text-base font-bold text-gray-900">
-                      ₹{grandTotalProfit.toLocaleString("en-IN")}
+                      ₹{(grandTotalProfit || 0).toLocaleString("en-IN")}
                     </span>
                   </div>
                   <div className="bg-rose-500/10 border border-rose-500/20 p-3 rounded-xl">
                     <span className="text-[10px] text-rose-600 uppercase tracking-wider font-bold block">Total Operating Expenses</span>
                     <span className="font-mono text-base font-bold text-rose-600">
-                      ₹{totalExpenses.toLocaleString("en-IN")}
+                      ₹{(totalExpenses || 0).toLocaleString("en-IN")}
                     </span>
                   </div>
                   <div className={`border p-3 rounded-xl ${netProfit >= 0 ? "bg-emerald-500/10 border-emerald-500/30" : "bg-rose-500/10 border-rose-500/30"}`}>
@@ -1045,7 +1093,7 @@ export default function DashboardPage() {
                       Grand Net Profit
                     </span>
                     <span className={`font-mono text-xl font-extrabold ${netProfit >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-                      ₹{netProfit.toLocaleString("en-IN")}
+                      ₹{(netProfit || 0).toLocaleString("en-IN")}
                     </span>
                   </div>
                 </div>

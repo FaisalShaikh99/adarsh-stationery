@@ -28,16 +28,19 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Textarea } from "@/components/ui/textarea.jsx";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Switch } from "@/components/ui/switch";
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import { productSchema } from "@/schemas/products.schema";
+import useFuzzySearch from "@/hooks/useFuzzySearch";
+import VoiceSearchButton from "@/components/ui/voice-search-button";
 
 function ProductManagementContent() {
   const searchParams = useSearchParams();

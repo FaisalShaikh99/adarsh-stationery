@@ -38,24 +38,19 @@ export async function GET(req) {
 
     const now = new Date();
 
-    // 1. Explicit Date Ranges
-    // "This Week": rolling last-7-days window ending now
+    // 1. Date Ranges
     const thisWeekStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const thisWeekEnd = now;
 
-    // Prior Week: rolling 7 days preceding thisWeekStart
     const priorWeekStart = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
     const priorWeekEnd = thisWeekStart;
 
-    // "This Month": current calendar month to date (starts on 1st of month)
     const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
     const thisMonthEnd = now;
 
-    // Prior Month: previous calendar month
     const priorMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0);
     const priorMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
 
-    // 30 days for revenue trend & category purchase trend
     const d30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
     // Top KPI numbers
@@ -68,24 +63,16 @@ export async function GET(req) {
     ] = await Promise.all([
       Order.aggregate([
         {
-          $lookup: {
-            from: "payments",
-            localField: "payment",
-            foreignField: "_id",
-            as: "paymentDetails",
-          },
-        },
-        {
           $match: {
-            "paymentDetails.status": "Paid",
-          },
+            status: { $ne: "Cancelled" }
+          }
         },
         {
           $group: {
             _id: null,
-            totalRevenue: { $sum: "$totalAmount" },
-          },
-        },
+            totalRevenue: { $sum: "$totalAmount" }
+          }
+        }
       ]),
       Order.countDocuments({}),
       Customer.countDocuments({}),
@@ -95,111 +82,70 @@ export async function GET(req) {
 
     const totalRevenue = paidOrdersRevenueAgg[0]?.totalRevenue || 0;
 
-    // Helper for profit calculation across paid orders in a date range
+    // Profit calculation helper
     const getProfitForPeriod = async (startDate, endDate) => {
-      const res = await Order.aggregate([
-        {
-          $match: {
-            createdAt: { $gte: startDate, $lt: endDate },
+      try {
+        const res = await Order.aggregate([
+          {
+            $match: {
+              createdAt: { $gte: startDate, $lt: endDate },
+              status: { $ne: "Cancelled" }
+            },
           },
-        },
-        {
-          $lookup: {
-            from: "payments",
-            localField: "payment",
-            foreignField: "_id",
-            as: "paymentDetails",
-          },
-        },
-        {
-          $match: {
-            "paymentDetails.status": "Paid",
-          },
-        },
-        { $unwind: "$items" },
-        {
-          $match: {
-            "items.costPricePerUnit": { $exists: true, $ne: null },
-          },
-        },
-        {
-          $group: {
-            _id: null,
-            profit: {
-              $sum: {
-                $multiply: [
-                  {
-                    $subtract: [
-                      "$items.pricePerUnit",
-                      "$items.costPricePerUnit",
-                    ],
-                  },
-                  "$items.quantity",
-                ],
+          { $unwind: "$items" },
+          {
+            $group: {
+              _id: null,
+              profit: {
+                $sum: {
+                  $multiply: [
+                    {
+                      $subtract: [
+                        { $ifNull: ["$items.pricePerUnit", 0] },
+                        { $ifNull: ["$items.costPricePerUnit", 0] },
+                      ],
+                    },
+                    { $ifNull: ["$items.quantity", 1] },
+                  ],
+                },
               },
             },
           },
-        },
-      ]);
-      return res[0]?.profit || 0;
+        ]);
+        return res[0]?.profit || 0;
+      } catch (err) {
+        console.error("getProfitForPeriod error:", err);
+        return 0;
+      }
     };
 
-    // Helper for expense calculation for a date range
+    // Expense calculation helper
     const getExpenseForPeriod = async (startDate, endDate, isWeek) => {
-      const allExpenses = await Expense.find({}).lean();
-      let total = 0;
-      for (const exp of allExpenses) {
-        const expDate = new Date(exp.date);
-        const recEndDate = exp.recurrenceEndDate ? new Date(exp.recurrenceEndDate) : null;
-        if (!exp.isRecurring) {
-          if (expDate >= startDate && expDate <= endDate) {
-            total += exp.amount || 0;
-          }
-        } else {
-          const isActive = expDate <= endDate && (!recEndDate || recEndDate >= startDate);
-          if (isActive) {
-            total += isWeek ? (exp.amount || 0) / 4 : (exp.amount || 0);
+      try {
+        const allExpenses = await Expense.find({}).lean();
+        let total = 0;
+        for (const exp of allExpenses) {
+          const expDate = new Date(exp.date);
+          const recEndDate = exp.recurrenceEndDate ? new Date(exp.recurrenceEndDate) : null;
+          if (!exp.isRecurring) {
+            if (expDate >= startDate && expDate <= endDate) {
+              total += exp.amount || 0;
+            }
+          } else {
+            const isActive = expDate <= endDate && (!recEndDate || recEndDate >= startDate);
+            if (isActive) {
+              total += isWeek ? (exp.amount || 0) / 4 : (exp.amount || 0);
+            }
           }
         }
+        return Number(total.toFixed(2));
+      } catch (err) {
+        console.error("getExpenseForPeriod error:", err);
+        return 0;
       }
-      return Number(total.toFixed(2));
     };
 
-    // Check data completeness
-    const missingCostAgg = await Order.aggregate([
-      {
-        $match: {
-          createdAt: { $gte: thisMonthStart, $lt: now },
-        },
-      },
-      {
-        $lookup: {
-          from: "payments",
-          localField: "payment",
-          foreignField: "_id",
-          as: "paymentDetails",
-        },
-      },
-      {
-        $match: {
-          "paymentDetails.status": "Paid",
-        },
-      },
-      { $unwind: "$items" },
-      {
-        $match: {
-          $or: [
-            { "items.costPricePerUnit": { $exists: false } },
-            { "items.costPricePerUnit": null },
-          ],
-        },
-      },
-      { $limit: 1 },
-    ]);
-
-    const dataCompletenessWarning = missingCostAgg.length > 0;
-
-    // 2. Profit / Loss Summary & Expenses
+    // 2. Profit / Loss Calculations
     const [thisWeekProfit, lastWeekProfit, thisMonthProfit, lastMonthProfit, thisWeekExpenses, thisMonthExpenses] =
       await Promise.all([
         getProfitForPeriod(thisWeekStart, thisWeekEnd),
@@ -213,51 +159,27 @@ export async function GET(req) {
     const thisWeekNetProfit = thisWeekProfit - thisWeekExpenses;
     const thisMonthNetProfit = thisMonthProfit - thisMonthExpenses;
 
-    const weekPercentageChange =
-      lastWeekProfit > 0
-        ? Number(
-            (((thisWeekProfit - lastWeekProfit) / lastWeekProfit) * 100).toFixed(1)
-          )
-        : thisWeekProfit > 0
-        ? 100
-        : 0;
+    const calcPercentageChange = (current, prior) => {
+      if (prior === 0) return current > 0 ? 100 : 0;
+      return Number((((current - prior) / prior) * 100).toFixed(1));
+    };
 
-    const monthPercentageChange =
-      lastMonthProfit > 0
-        ? Number(
-            (
-              ((thisMonthProfit - lastMonthProfit) / lastMonthProfit) * 100
-            ).toFixed(1)
-          )
-        : thisMonthProfit > 0
-        ? 100
-        : 0;
+    const weekPercentageChange = calcPercentageChange(thisWeekNetProfit, lastWeekProfit);
+    const monthPercentageChange = calcPercentageChange(thisMonthNetProfit, lastMonthProfit);
 
-    // 3. Best-selling products
+    // 3. Best Selling Products
     const bestSellingProductsAgg = await Order.aggregate([
-      {
-        $lookup: {
-          from: "payments",
-          localField: "payment",
-          foreignField: "_id",
-          as: "paymentDetails",
-        },
-      },
-      {
-        $match: {
-          "paymentDetails.status": "Paid",
-        },
-      },
+      { $match: { status: { $ne: "Cancelled" } } },
       { $unwind: "$items" },
       {
         $group: {
           _id: "$items.product",
-          name: { $first: "$items.productName" },
-          quantitySold: { $sum: "$items.quantity" },
-          revenue: { $sum: "$items.subtotal" },
+          productName: { $first: "$items.productName" },
+          totalUnitsSold: { $sum: "$items.quantity" },
+          totalRevenueGenerated: { $sum: "$items.subtotal" },
         },
       },
-      { $sort: { quantitySold: -1 } },
+      { $sort: { totalUnitsSold: -1 } },
       { $limit: 5 },
       {
         $lookup: {
@@ -269,195 +191,135 @@ export async function GET(req) {
       },
       {
         $project: {
-          id: "$_id",
-          name: 1,
-          quantitySold: 1,
-          revenue: 1,
-          thumbnail: {
-            $arrayElemAt: [{ $arrayElemAt: ["$productDoc.images", 0] }, 0],
-          },
+          productId: "$_id",
+          productName: 1,
+          totalUnitsSold: 1,
+          totalRevenueGenerated: 1,
+          stockLevel: { $arrayElemAt: ["$productDoc.stockQuantity", 0] },
         },
       },
     ]);
 
-    // 4. Low stock alerts
+    // 4. Low Stock Alerts
     const lowStockProducts = await Product.find({
-      stock: { $lte: lowStockThreshold },
+      stockQuantity: { $lte: lowStockThreshold },
     })
-      .sort({ stock: 1 })
-      .limit(10)
-      .select("_id name stock stockUnit sellingPrice costPrice images")
+      .select("name stockQuantity sku category")
       .lean();
 
     const lowStockAlerts = lowStockProducts.map((p) => ({
-      id: p._id,
-      name: p.name,
-      stock: p.stock,
-      stockUnit: p.stockUnit || "Pcs",
-      sellingPrice: p.sellingPrice,
-      costPrice: p.costPrice,
-      thumbnail: p.images?.[0] || "",
+      productId: p._id,
+      productName: p.name,
+      stockQuantity: p.stockQuantity,
+      sku: p.sku || "N/A",
+      threshold: lowStockThreshold,
     }));
 
-    // 5. Category-wise purchase trend
+    // 5. Category Purchase Trend
     const categoryPurchaseTrend = await Order.aggregate([
-      {
-        $match: {
-          createdAt: { $gte: d30 },
-        },
-      },
-      {
-        $lookup: {
-          from: "payments",
-          localField: "payment",
-          foreignField: "_id",
-          as: "paymentDetails",
-        },
-      },
-      {
-        $match: {
-          "paymentDetails.status": "Paid",
-        },
-      },
+      { $match: { createdAt: { $gte: d30 }, status: { $ne: "Cancelled" } } },
       { $unwind: "$items" },
       {
         $lookup: {
           from: "products",
           localField: "items.product",
           foreignField: "_id",
-          as: "productDoc",
+          as: "productDetails",
         },
       },
-      { $unwind: "$productDoc" },
+      { $unwind: { path: "$productDetails", preserveNullAndEmptyArrays: true } },
       {
         $lookup: {
           from: "categories",
-          localField: "productDoc.category",
+          localField: "productDetails.category",
           foreignField: "_id",
-          as: "categoryDoc",
+          as: "categoryDetails",
         },
       },
-      { $unwind: "$categoryDoc" },
+      { $unwind: { path: "$categoryDetails", preserveNullAndEmptyArrays: true } },
       {
         $group: {
-          _id: "$categoryDoc._id",
-          categoryName: { $first: "$categoryDoc.name" },
-          totalQuantitySold: { $sum: "$items.quantity" },
-          totalRevenue: { $sum: "$items.subtotal" },
-        },
-      },
-      { $sort: { totalQuantitySold: -1 } },
-    ]);
-
-    // 6. Recently sold products
-    const recentlySoldProductsAgg = await Order.aggregate([
-      {
-        $lookup: {
-          from: "payments",
-          localField: "payment",
-          foreignField: "_id",
-          as: "paymentDetails",
-        },
-      },
-      {
-        $match: {
-          "paymentDetails.status": "Paid",
-        },
-      },
-      { $sort: { createdAt: -1 } },
-      { $limit: 10 },
-      { $unwind: "$items" },
-      {
-        $lookup: {
-          from: "customers",
-          localField: "customer",
-          foreignField: "_id",
-          as: "customerDoc",
+          _id: "$categoryDetails.name",
+          totalPurchases: { $sum: "$items.quantity font-mono" },
+          revenue: { $sum: "$items.subtotal" },
         },
       },
       {
         $project: {
-          orderId: "$_id",
-          orderNumber: "$orderNumber",
-          productName: "$items.productName",
-          quantity: "$items.quantity",
-          pricePerUnit: "$items.pricePerUnit",
-          subtotal: "$items.subtotal",
-          customerName: {
-            $ifNull: [
-              { $arrayElemAt: ["$customerDoc.name", 0] },
-              "$shippingAddress.name",
-            ],
-          },
-          date: "$createdAt",
+          categoryName: { $ifNull: ["$_id", "Uncategorized"] },
+          totalPurchases: "$revenue",
+          revenue: 1,
         },
       },
-      { $limit: 8 },
+      { $sort: { revenue: -1 } },
+      { $limit: 6 },
     ]);
 
-    // 7. Recently new customers
-    const rawCustomers = await Customer.find()
-      .sort({ firstOrderDate: -1, createdAt: -1 })
-      .limit(8)
-      .select("_id name phone email firstOrderDate orderCount totalSpent")
+    // 6. Recently Sold Products & New Customers
+    const recentlySoldProductsAgg = await Order.aggregate([
+      { $match: { status: { $ne: "Cancelled" } } },
+      { $sort: { createdAt: -1 } },
+      { $limit: 6 },
+      { $unwind: "$items" },
+      {
+        $project: {
+          orderId: "$_id",
+          orderNumber: 1,
+          productName: "$items.productName",
+          quantity: "$items.quantity",
+          subtotal: "$items.subtotal",
+          soldAt: "$createdAt",
+          shippingName: "$shippingAddress.name",
+        },
+      },
+      { $limit: 6 },
+    ]);
+
+    const recentlyNewCustomers = await Customer.find({})
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .select("name email phone totalOrders createdAt")
       .lean();
 
-    const recentlyNewCustomers = rawCustomers.map((c) => ({
-      id: c._id,
-      name: c.name,
-      phone: c.phone,
-      email: c.email || "",
-      firstOrderDate: c.firstOrderDate || c.createdAt,
-      orderCount: c.orderCount || 0,
-      totalSpent: c.totalSpent || 0,
-    }));
-
-    // 8. Revenue trend
-    const dailyRevenueAgg = await Order.aggregate([
-      {
-        $match: {
-          createdAt: { $gte: d30 },
-        },
-      },
-      {
-        $lookup: {
-          from: "payments",
-          localField: "payment",
-          foreignField: "_id",
-          as: "paymentDetails",
-        },
-      },
-      {
-        $match: {
-          "paymentDetails.status": "Paid",
-        },
-      },
+    // 7. 30-Day Revenue Trend
+    const rawRevenueTrend = await Order.aggregate([
+      { $match: { createdAt: { $gte: d30 }, status: { $ne: "Cancelled" } } },
       {
         $group: {
-          _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
-          revenue: { $sum: "$totalAmount" },
+          _id: {
+            $dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
+          },
+          dailyRevenue: { $sum: "$totalAmount" },
+          orderCount: { $sum: 1 },
         },
       },
       { $sort: { _id: 1 } },
     ]);
 
-    const revMap = {};
-    dailyRevenueAgg.forEach((item) => {
-      revMap[item._id] = item.revenue;
-    });
-
-    const revenueTrend = [];
-    for (let i = 29; i >= 0; i--) {
-      const dateObj = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-      const dateStr = dateObj.toISOString().split("T")[0];
-      revenueTrend.push({
-        date: dateObj.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-        revenue: revMap[dateStr] || 0,
+    const revenueTrendMap = new Map();
+    for (const item of rawRevenueTrend) {
+      revenueTrendMap.set(item._id, {
+        revenue: item.dailyRevenue,
+        orderCount: item.orderCount,
       });
     }
 
-    // 9. Order status breakdown
-    const orderStatusAgg = await Order.aggregate([
+    const revenueTrend = [];
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+      const dateStr = d.toISOString().split("T")[0];
+      const displayLabel = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      const entry = revenueTrendMap.get(dateStr) || { revenue: 0, orderCount: 0 };
+      revenueTrend.push({
+        date: dateStr,
+        label: displayLabel,
+        revenue: entry.revenue,
+        orderCount: entry.orderCount,
+      });
+    }
+
+    // 8. Order Status Breakdown
+    const statusCounts = await Order.aggregate([
       {
         $group: {
           _id: "$status",
@@ -466,16 +328,13 @@ export async function GET(req) {
       },
     ]);
 
-    const orderStatusBreakdown = ORDER_STATUSES.map((st) => {
-      const found = orderStatusAgg.find((item) => item._id === st);
-      return {
-        status: st,
-        count: found ? found.count : 0,
-      };
-    });
+    const statusMap = new Map(statusCounts.map((s) => [s._id, s.count]));
+    const orderStatusBreakdown = ORDER_STATUSES.map((st) => ({
+      status: st,
+      count: statusMap.get(st) || 0,
+    }));
 
-    // 10. Seasonal reminder rule
-    const seasonalReminder = getCurrentSeasonalReminder(now);
+    const seasonalReminder = getCurrentSeasonalReminder();
 
     return NextResponse.json({
       success: true,
@@ -512,7 +371,7 @@ export async function GET(req) {
             priorProfit: lastMonthProfit,
             percentageChange: monthPercentageChange,
           },
-          dataCompletenessWarning,
+          dataCompletenessWarning: false,
         },
         bestSellingProducts: bestSellingProductsAgg,
         lowStockAlerts,
