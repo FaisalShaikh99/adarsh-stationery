@@ -3,12 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "node ./node_modules/next/dist/bin/next dev",
-    "build": "node ./node_modules/next/dist/bin/next build",
-    "start": "node ./node_modules/next/dist/bin/next start",
-    "lint": "node ./node_modules/next/dist/bin/next lint",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
     "seed:orders": "node scripts/seed-orders.mjs"
- },
+  },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
     "@google/genai": "^2.11.0",
@@ -34,6 +34,7 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-hook-form": "^7.77.0",
+    "react-pageflip": "^2.0.3",
     "recharts": "^3.10.0",
     "resend": "^6.12.4",
     "shadcn": "^4.11.0",
