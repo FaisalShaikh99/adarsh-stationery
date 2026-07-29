@@ -116,7 +116,7 @@ export default function AdminSidebar({
         <div className="space-y-6">
           <div className="flex items-center justify-between pb-4 border-b border-border-subtle">
             <Link 
-              href="/admin/dashboard" 
+              href="/" 
               onClick={() => setIsMobileOpen(false)} 
               className="w-[82%] rounded-2xl bg-gradient-to-b from-[#F8F9FE] to-[#ECEFFA] border border-purple-200/60 p-2 shadow-2xs overflow-hidden flex items-center justify-center hover:scale-102 transition-transform"
             >
@@ -186,7 +186,7 @@ export default function AdminSidebar({
       {/* 🌟 1. STANDALONE COMPANY LOGO CONTAINER (SEAMLESS HD MULTIPLY BLEND) */}
       <div className="hidden lg:flex fixed top-3.5 left-4 z-40">
         <Link 
-          href="/admin/dashboard" 
+          href="/" 
           className="w-14 h-14 sm:w-16 sm:h-16 rounded-[22px] bg-gradient-to-b from-[#F8F9FE] to-[#ECEFFA] border border-purple-200/60 shadow-xs flex items-center justify-center p-1 overflow-hidden hover:scale-105 hover:shadow-md transition-all duration-200 group cursor-pointer"
           title="Adarsh Stationery Mart"
         >
