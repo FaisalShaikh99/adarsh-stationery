@@ -36,6 +36,9 @@ import axios from "axios";
 import { Suspense } from "react";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useSearchParams } from "next/navigation";
+import { categoryCreateSchema } from "@/schemas/category.schema";
+import useFuzzySearch from "@/hooks/useFuzzySearch";
+import VoiceSearchButton from "@/components/ui/voice-search-button";
 
 function CategoryManagementContent() {
   const searchParams = useSearchParams();
