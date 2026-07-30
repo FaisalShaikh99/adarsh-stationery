@@ -111,19 +111,23 @@ export function CustomSelect({
             )}
           </div>
 
-          {/* "+ Add [typed value]" Quick Add Button */}
-          {onAddNew && searchTerm.trim().length > 0 && !exactMatchExists && (
-            <div className="pt-1 border-t border-border-subtle mt-1">
+          {/* PERMANENT "+ Add New [Category/Brand]" Quick Add Button */}
+          {onAddNew && (
+            <div className="pt-1.5 border-t border-border-subtle mt-1">
               <button
                 type="button"
                 onClick={() => {
                   onAddNew(searchTerm.trim());
                   setIsOpen(false);
                 }}
-                className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 text-xs font-black transition-all cursor-pointer shadow-2xs"
+                className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-black transition-all cursor-pointer shadow-sm hover:shadow-md"
               >
-                <Plus className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                <span className="truncate">Add "{searchTerm.trim()}"</span>
+                <Plus className="w-3.5 h-3.5 text-white shrink-0" />
+                <span className="truncate">
+                  {searchTerm.trim().length > 0
+                    ? `Add "${searchTerm.trim()}"`
+                    : `Add New ${addLabel}`}
+                </span>
               </button>
             </div>
           )}
