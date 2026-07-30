@@ -1,12 +1,12 @@
-
 import GoogleProvider from "next-auth/providers/google";
 import { dbConnect } from "./dbConnect";
 import { Admin } from "@/models/admin.model";
 import { AdminInvite } from "@/models/adminInvite.model";
 
 export const authOptions = {
-    providers : [
-    GoogleProvider({
+    secret: process.env.NEXTAUTH_SECRET,
+    providers: [
+        GoogleProvider({
             clientId: process.env.GOOGLE_CLIENT_ID,
             clientSecret: process.env.GOOGLE_CLIENT_SECRET
         })  
@@ -19,7 +19,7 @@ export const authOptions = {
 
                 await dbConnect();
 
-                //  SAFE EMAIL EXTLECTION: Profile se lo, agar undefined hai toh user object se lo!
+                // SAFE EMAIL EXTRACTION: Profile se lo, agar undefined hai toh user object se lo!
                 const userEmail = profile?.email || user?.email;
                 const userName = profile?.name || user?.name;
                 const userImage = profile?.picture || user?.image;
@@ -30,7 +30,6 @@ export const authOptions = {
                     return false;
                 }
 
-              
                 if (userEmail === process.env.SUPER_ADMIN_EMAIL) {
                     const superAdmin = await Admin.findOne({ email: userEmail });
 
@@ -53,11 +52,9 @@ export const authOptions = {
                     return true;
                 }
 
-          
                 const existingAdmin = await Admin.findOne({ email: userEmail });
                 
                 if (existingAdmin) {
-                    // 🟢 User jab bhi dubara login karega, status wapas Active (true) ho jayega!
                     await Admin.findOneAndUpdate(
                         { email: userEmail },
                         { 
@@ -69,7 +66,6 @@ export const authOptions = {
                     return true; 
                 }
 
-              
                 const invite = await AdminInvite.findOne({
                     email: userEmail,
                     isUsed: false,
@@ -106,6 +102,7 @@ export const authOptions = {
                 return false;
             }
         },
+
         async jwt({ token, profile, user }) { 
             try {
                 const targetEmail = profile?.email || user?.email || token?.email;
@@ -149,6 +146,6 @@ export const authOptions = {
         strategy: "jwt" 
     },
     pages: {
-    signIn: '/admin/sign-in'
-  }
-}
+        signIn: '/admin/sign-in'
+    }
+};
