@@ -29,7 +29,7 @@ export default function NewProductNotification({
   return (
     <Html lang="en" dir="ltr">
       <Head>
-        <title>{subject || "Exclusive New Product Launch!"}</title>
+        <title>{subject || "Exclusive Arrival - Adarsh Stationery"}</title>
         <Font
           fontFamily="Roboto"
           fallbackFontFamily="Verdana"
@@ -41,89 +41,104 @@ export default function NewProductNotification({
           fontStyle="normal"
         />
       </Head>
-      <Preview>{subject || "Check out our newest stationery arrival!"}</Preview>
+      <Preview>{subject || "Check out our newest stationery arrival at Adarsh Stationery!"}</Preview>
 
-      <Section style={{ padding: "30px 20px", fontFamily: "Roboto, sans-serif", backgroundColor: "#fafafa" }}>
-        <Section style={{ maxWidth: "600px", margin: "0 auto", backgroundColor: "#ffffff", border: "1px solid #e8e8e8", borderRadius: "16px", padding: "32px", boxShadow: "0 4px 12px rgba(0,0,0,0.03)" }}>
+      <Section style={{ backgroundColor: "#F8F5FB", padding: "40px 15px", fontFamily: "Roboto, sans-serif" }}>
+        <Section style={{ maxWidth: "600px", margin: "0 auto", backgroundColor: "#ffffff", borderRadius: "24px", border: "1px solid #E9D8F4", overflow: "hidden", boxShadow: "0 8px 30px rgba(74, 5, 109, 0.08)" }}>
           
-          {/* Branded Header */}
-          <Section style={{ borderBottom: "2px solid #f0f0f0", pb: "16px", marginBottom: "24px" }}>
-            <Heading style={{ margin: "0 0 4px 0", fontSize: "20px", color: "#1a1a1a", fontWeight: "bold" }}>
-              Adarsh Stationery
+          {/* Branded Amethyst Header */}
+          <div style={{ backgroundColor: "#4A056D", backgroundImage: "linear-gradient(135deg, #4A056D 0%, #7E22CE 100%)", padding: "36px 28px", textAlign: "center" }}>
+            <div style={{ display: "inline-block", padding: "6px 16px", backgroundColor: "rgba(255, 255, 255, 0.15)", borderRadius: "20px", border: "1px solid rgba(255, 255, 255, 0.25)", marginBottom: "12px" }}>
+              <span style={{ fontSize: "11px", color: "#F3E8FF", letterSpacing: "2px", fontWeight: "bold", textTransform: "uppercase" }}>
+                Exclusive Store Announcement
+              </span>
+            </div>
+            <Heading as="h1" style={{ margin: 0, fontSize: "24px", color: "#ffffff", fontWeight: "900", letterSpacing: "-0.5px" }}>
+              Adarsh Stationery Mart
             </Heading>
-            <Text style={{ margin: 0, fontSize: "11px", color: "#f97316", textTransform: "uppercase", letterSpacing: "2px", fontWeight: "bold" }}>
-              Exclusive Store Launch
-            </Text>
-          </Section>
+          </div>
 
-          {/* AI-Drafted Notification Body */}
-          <Row>
-            <Text style={{ fontSize: "14px", color: "#374151", lineHeight: "1.6", margin: "0 0 24px 0", whiteSpace: "pre-line" }}>
+          <div style={{ padding: "36px 28px" }}>
+            {customerName && (
+              <Text style={{ fontSize: "18px", color: "#2D0343", fontWeight: "bold", margin: "0 0 16px 0" }}>
+                Hello {customerName},
+              </Text>
+            )}
+
+            {/* Notification Body Content */}
+            <Text style={{ fontSize: "14px", color: "#4B5563", lineHeight: "1.7", margin: "0 0 24px 0", whiteSpace: "pre-line" }}>
               {body}
             </Text>
-          </Row>
 
-          {/* Product Showcase Card */}
-          <Section style={{ border: "1px solid #eaeaea", borderRadius: "12px", padding: "20px", backgroundColor: "#f9fafb", marginBottom: "24px" }}>
-            <Row style={{ display: "flex", gap: "16px", alignItems: "center" }}>
-              {productImage && (
-                <div style={{ marginRight: "16px" }}>
-                  <img
-                    src={productImage}
-                    alt={productName}
-                    width="96"
-                    height="96"
-                    style={{ objectFit: "contain", borderRadius: "8px", border: "1px solid #eaeaea", backgroundColor: "#ffffff", padding: "4px" }}
-                  />
-                </div>
-              )}
-              <div style={{ flex: 1 }}>
-                <span style={{ fontSize: "10px", backgroundColor: "#e0f2fe", color: "#0369a1", padding: "2px 8px", borderRadius: "4px", fontWeight: "bold", textTransform: "uppercase" }}>
-                  {productCategory || "Stationery"}
-                </span>
-                <Heading as="h4" style={{ margin: "8px 0 4px 0", fontSize: "15px", color: "#111827", fontWeight: "bold" }}>
-                  {productName}
-                </Heading>
-                <div style={{ display: "flex", alignItems: "baseline", gap: "8px", marginTop: "8px" }}>
-                  <Text style={{ margin: 0, fontSize: "16px", color: "#10b981", fontWeight: "bold", fontFamily: "monospace" }}>
-                    {formattedPrice}
-                  </Text>
-                  {discount > 0 && (
-                    <span style={{ fontSize: "11px", color: "#f59e0b", backgroundColor: "#fef3c7", padding: "1px 6px", borderRadius: "4px", fontWeight: "bold", marginLeft: "8px" }}>
-                      {discount}% OFF
-                    </span>
+            {/* Product Showcase Card */}
+            <div style={{ border: "1px solid #E9D8F4", borderRadius: "16px", padding: "20px", backgroundColor: "#F9F5FC", marginBottom: "28px" }}>
+              <table width="100%" cellPadding="0" cellSpacing="0" border="0">
+                <tr>
+                  {productImage && (
+                    <td width="100" style={{ verticalAlign: "top", paddingRight: "16px" }}>
+                      <img
+                        src={productImage}
+                        alt={productName || "Product"}
+                        width="90"
+                        height="90"
+                        style={{ objectFit: "contain", borderRadius: "12px", border: "1px solid #E9D8F4", backgroundColor: "#ffffff", padding: "6px" }}
+                      />
+                    </td>
                   )}
-                </div>
-              </div>
-            </Row>
-          </Section>
+                  <td style={{ verticalAlign: "top" }}>
+                    <span style={{ fontSize: "10px", backgroundColor: "#F3E8FF", color: "#7E22CE", padding: "3px 10px", borderRadius: "12px", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "1px", border: "1px solid #E9D8F4" }}>
+                      {productCategory || "Stationery"}
+                    </span>
+                    <Heading as="h3" style={{ margin: "8px 0 6px 0", fontSize: "16px", color: "#2D0343", fontWeight: "bold", lineHeight: "1.3" }}>
+                      {productName}
+                    </Heading>
+                    <div style={{ marginTop: "8px" }}>
+                      <span style={{ fontSize: "18px", color: "#4A056D", fontWeight: "900", fontFamily: "monospace" }}>
+                        {formattedPrice}
+                      </span>
+                      {discount > 0 && (
+                        <span style={{ fontSize: "11px", color: "#B45309", backgroundColor: "#FEF3C7", padding: "2px 8px", borderRadius: "8px", fontWeight: "bold", marginLeft: "10px", border: "1px solid #FDE68A" }}>
+                          {discount}% OFF
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            </div>
 
-          {/* Call to Action Button */}
-          <Row style={{ marginTop: "24px", textAlign: "center" }}>
-            <Button
-              href="https://adarsh-stationery.vercel.app"
-              style={{
-                color: "#ffffff",
-                backgroundColor: "#2563eb",
-                padding: "12px 28px",
-                borderRadius: "8px",
-                fontWeight: "bold",
-                textDecoration: "none",
-                fontSize: "14px",
-                display: "inline-block",
-              }}
-            >
-              Shop New Arrivals
-            </Button>
-          </Row>
+            {/* CTA Button */}
+            <div style={{ textAlign: "center", margin: "32px 0 20px 0" }}>
+              <Button
+                href="https://adarsh-stationery.vercel.app"
+                style={{
+                  color: "#ffffff",
+                  backgroundColor: "#4A056D",
+                  backgroundImage: "linear-gradient(135deg, #4A056D 0%, #7E22CE 100%)",
+                  padding: "14px 32px",
+                  borderRadius: "14px",
+                  fontWeight: "bold",
+                  fontSize: "14px",
+                  textDecoration: "none",
+                  display: "inline-block",
+                  boxShadow: "0 4px 14px rgba(126, 34, 206, 0.3)",
+                }}
+              >
+                Explore & Shop Now →
+              </Button>
+            </div>
 
-          {/* Footer */}
-          <Row style={{ marginTop: "32px", borderTop: "1px solid #f0f0f0", paddingTop: "20px" }}>
-            <Text style={{ fontSize: "11px", color: "#9ca3af", lineHeight: "1.4", margin: 0 }}>
-              You received this message because you have been a loyal buyer of {productCategory || "stationery"} products at Adarsh Stationery. If you wish to unsubscribe, please reply directly.
-            </Text>
-          </Row>
+            {/* Footer Disclaimer */}
+            <div style={{ marginTop: "32px", paddingTop: "20px", borderTop: "1px solid #E9D8F4", textAlign: "center" }}>
+              <Text style={{ fontSize: "11px", color: "#8A6B9B", lineHeight: "1.5", margin: 0 }}>
+                You received this announcement from Adarsh Stationery Mart based on your buyer preferences.
+              </Text>
+              <Text style={{ fontSize: "11px", color: "#A88DBB", margin: "8px 0 0 0" }}>
+                © {new Date().getFullYear()} Adarsh Stationery Mart. All rights reserved.
+              </Text>
+            </div>
 
+          </div>
         </Section>
       </Section>
     </Html>
