@@ -1625,15 +1625,19 @@ function ProductManagementContent() {
                               </button>
                             </div>
 
-                            {/* Slot Enhance Button (Turns background to solid white) */}
+                            {/* Enlarged Slot Enhance Button (Turns background to solid white) */}
                             <button
                               type="button"
                               onClick={() => handleImageEnhancement(i)}
                               disabled={isEnhancingImage}
-                              className="mt-1.5 w-full h-7 rounded-xl bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-800 text-[10px] font-black flex items-center justify-center gap-1 transition-all cursor-pointer shadow-2xs"
+                              className="mt-2 w-full h-8.5 py-1.5 px-3 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-primary-600 hover:from-purple-700 hover:to-primary-700 text-white text-xs font-black flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-md hover:shadow-lg hover:scale-102 active:scale-98 disabled:opacity-50"
                               title="Turn photo background to clean white"
                             >
-                              <Wand2 className="w-3 h-3 text-purple-600" />
+                              {isEnhancingImage ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                <Wand2 className="w-3.5 h-3.5 text-white" />
+                              )}
                               <span>Enhance BG (White)</span>
                             </button>
                           </>
@@ -1720,20 +1724,6 @@ function ProductManagementContent() {
                     </div>
                   </div>
                   {errors.images && <p className="text-xs text-rose-600 font-bold mt-2">{errors.images.message}</p>}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleImageEnhancement}
-                    disabled={isEnhancingImage}
-                    className="mt-4 w-full h-11 rounded-2xl border-border-subtle bg-white text-xs font-bold text-primary-700 hover:bg-primary-50 cursor-pointer btn-modern"
-                  >
-                    {isEnhancingImage ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin inline" />
-                    ) : (
-                      <Wand2 className="h-4 w-4 mr-2 inline text-primary-600" />
-                    )}
-                    {isEnhancingImage ? "Generating mockup..." : "Enhance product image"}
-                  </Button>
                 </div>
  
                 <div className="rounded-[24px] border border-border-subtle bg-bg-surface p-6 shadow-xs">
