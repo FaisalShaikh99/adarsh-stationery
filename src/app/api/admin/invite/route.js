@@ -11,6 +11,7 @@ import { Admin } from "@/models/admin.model";
 import { adminInviteSchema } from "@/schemas/invite.schema";
 import { resend } from "@/lib/resend";
 import InviteEmail from "@/email_template/inviteEmailTemplate";
+import { render } from "@react-email/components";
 
 export const POST = asyncHandler(async (request) => {
     // DB Connection
@@ -60,11 +61,22 @@ export const POST = asyncHandler(async (request) => {
     }
     const inviteLink = `${baseUrl}/admin/sign-in?token=${token}`;
 
-    const apiKey = process.env.ADMIN_RESEND_API_KEY || process.env.ADARSH_ADMIN_API_KEY;
+    // Check all possible Resend API Key env variable names
+    const apiKey = process.env.RESEND_API_KEY || process.env.ADMIN_RESEND_API_KEY || process.env.ADARSH_ADMIN_API_KEY;
     const isResendConfigured = apiKey && !apiKey.startsWith("re_dummy");
 
     let emailSent = false;
     let lastError = null;
+
+    // Render exact Amethyst Dusk Purple Gradient React Email component to raw HTML string
+    const htmlContent = await render(
+        <InviteEmail
+            email={email}
+            role={role}
+            inviteLink={inviteLink}
+            message={message}
+        />
+    );
 
     // 1. Try Resend first (if API key configured)
     if (isResendConfigured) {
@@ -112,6 +124,10 @@ export const POST = asyncHandler(async (request) => {
                      role: role.toUpperCase(),
                      message: message || "No custom message attached.",
                      invite_link: inviteLink,
+                     html: htmlContent,
+                     message_html: htmlContent,
+                     html_content: htmlContent,
+                     content: htmlContent,
                 },
             };
 
