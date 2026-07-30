@@ -33,6 +33,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea.jsx";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Switch } from "@/components/ui/switch";
+import { CustomSelect } from "@/components/ui/custom-select";
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -587,48 +588,140 @@ function ProductManagementContent() {
     setCameraCapturedImage(dataUrl);
   };
 
+  const processOuterBackgroundWhite = (imgSource, onSuccess, onError) => {
+    const img = new window.Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.drawImage(img, 0, 0);
+
+      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const data = imgData.data;
+      const width = canvas.width;
+      const height = canvas.height;
+
+      const visited = new Uint8Array(width * height);
+      const queue = new Int32Array(width * height * 2);
+      let head = 0;
+      let tail = 0;
+
+      let bgR = 0, bgG = 0, bgB = 0;
+      let edgeCount = 0;
+
+      for (let x = 0; x < width; x += 2) {
+        const topIdx = x * 4;
+        const botIdx = ((height - 1) * width + x) * 4;
+        bgR += data[topIdx] + data[botIdx];
+        bgG += data[topIdx + 1] + data[botIdx + 1];
+        bgB += data[topIdx + 2] + data[botIdx + 2];
+        edgeCount += 2;
+      }
+      for (let y = 0; y < height; y += 2) {
+        const leftIdx = (y * width) * 4;
+        const rightIdx = (y * width + (width - 1)) * 4;
+        bgR += data[leftIdx] + data[rightIdx];
+        bgG += data[leftIdx + 1] + data[rightIdx + 1];
+        bgB += data[leftIdx + 2] + data[rightIdx + 2];
+        edgeCount += 2;
+      }
+      bgR /= edgeCount; bgG /= edgeCount; bgB /= edgeCount;
+
+      for (let x = 0; x < width; x++) {
+        queue[tail++] = x; queue[tail++] = 0;
+        queue[tail++] = x; queue[tail++] = height - 1;
+      }
+      for (let y = 0; y < height; y++) {
+        queue[tail++] = 0; queue[tail++] = y;
+        queue[tail++] = width - 1; queue[tail++] = y;
+      }
+
+      while (head < tail) {
+        const x = queue[head++];
+        const y = queue[head++];
+        const pixelIdx = y * width + x;
+
+        if (visited[pixelIdx]) continue;
+        visited[pixelIdx] = 1;
+
+        const idx = pixelIdx * 4;
+        const r = data[idx];
+        const g = data[idx + 1];
+        const b = data[idx + 2];
+
+        data[idx] = 255;
+        data[idx + 1] = 255;
+        data[idx + 2] = 255;
+
+        const neighbors = [
+          [x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]
+        ];
+
+        for (let i = 0; i < 4; i++) {
+          const nx = neighbors[i][0];
+          const ny = neighbors[i][1];
+
+          if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+            const nPixelIdx = ny * width + nx;
+            if (!visited[nPixelIdx]) {
+              const nIdx = nPixelIdx * 4;
+              const nr = data[nIdx];
+              const ng = data[nIdx + 1];
+              const nb = data[nIdx + 2];
+
+              const diffFromCurrent = Math.sqrt(
+                Math.pow(nr - r, 2) + Math.pow(ng - g, 2) + Math.pow(nb - b, 2)
+              );
+
+              const diffFromBgAvg = Math.sqrt(
+                Math.pow(nr - bgR, 2) + Math.pow(ng - bgG, 2) + Math.pow(nb - bgB, 2)
+              );
+
+              if (diffFromCurrent < 30 || diffFromBgAvg < 70) {
+                queue[tail++] = nx;
+                queue[tail++] = ny;
+              }
+            }
+          }
+        }
+      }
+
+      ctx.putImageData(imgData, 0, 0);
+      const enhancedDataUrl = canvas.toDataURL("image/jpeg", 0.95);
+      if (onSuccess) onSuccess(enhancedDataUrl);
+    };
+
+    img.onerror = () => {
+      if (onError) onError("Failed to load image format");
+    };
+
+    img.src = imgSource;
+  };
+
   const confirmAndSaveCameraPhoto = (dataUrl) => {
     const finalUrl = dataUrl || cameraCapturedImage;
     if (!finalUrl) return;
 
     if (autoWhiteBg) {
-      const img = new window.Image();
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
-        canvas.width = img.width;
-        canvas.height = img.height;
-        ctx.drawImage(img, 0, 0);
-
-        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const data = imgData.data;
-
-        const corners = [0, (canvas.width - 1) * 4, (canvas.height - 1) * canvas.width * 4, (canvas.width * canvas.height - 1) * 4];
-        let bgR = 0, bgG = 0, bgB = 0;
-        corners.forEach(idx => { bgR += data[idx]; bgG += data[idx + 1]; bgB += data[idx + 2]; });
-        bgR /= 4; bgG /= 4; bgB /= 4;
-
-        for (let i = 0; i < data.length; i += 4) {
-          const r = data[i], g = data[i + 1], b = data[i + 2];
-          const dist = Math.sqrt(Math.pow(r - bgR, 2) + Math.pow(g - bgG, 2) + Math.pow(b - bgB, 2));
-          const brightness = (r + g + b) / 3;
-          const maxColor = Math.max(r, g, b), minColor = Math.min(r, g, b);
-          const saturation = maxColor > 0 ? (maxColor - minColor) / maxColor : 0;
-
-          if (dist < 65 || (brightness > 190 && saturation < 0.28)) {
-            data[i] = 255; data[i + 1] = 255; data[i + 2] = 255;
-          }
+      processOuterBackgroundWhite(
+        finalUrl,
+        (enhancedUrl) => {
+          const updated = [...watchImages];
+          updated[cameraSlotIndex] = enhancedUrl;
+          setValue("images", updated);
+          closeLiveCameraModal();
+          toast.success("Photo snapped & outer background turned pure white!");
+        },
+        (err) => {
+          const updated = [...watchImages];
+          updated[cameraSlotIndex] = finalUrl;
+          setValue("images", updated);
+          closeLiveCameraModal();
+          toast.success("Photo snapped and uploaded!");
         }
-        ctx.putImageData(imgData, 0, 0);
-        const enhancedUrl = canvas.toDataURL("image/jpeg", 0.95);
-
-        const updated = [...watchImages];
-        updated[cameraSlotIndex] = enhancedUrl;
-        setValue("images", updated);
-        closeLiveCameraModal();
-        toast.success("Product photo snapped & background enhanced to white!");
-      };
-      img.src = finalUrl;
+      );
     } else {
       const updated = [...watchImages];
       updated[cameraSlotIndex] = finalUrl;
@@ -648,90 +741,26 @@ function ProductManagementContent() {
     }
 
     setIsEnhancingImage(true);
-    const enhancementToast = toast.loading("Turning photo background to pure clean white...");
+    const enhancementToast = toast.loading("Turning outer background to pure clean white...");
 
-    try {
-      const img = new window.Image();
-      img.crossOrigin = "anonymous";
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
-        canvas.width = img.width;
-        canvas.height = img.height;
-
-        // Draw original photo onto canvas
-        ctx.drawImage(img, 0, 0);
-
-        // Get pixel data
-        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const data = imgData.data;
-
-        // Sample corner pixels to detect background color/tint
-        const cornerIndices = [
-          0,
-          (canvas.width - 1) * 4,
-          (canvas.height - 1) * canvas.width * 4,
-          (canvas.width * canvas.height - 1) * 4
-        ];
-
-        let bgR = 0, bgG = 0, bgB = 0;
-        cornerIndices.forEach(idx => {
-          bgR += data[idx];
-          bgG += data[idx + 1];
-          bgB += data[idx + 2];
-        });
-        bgR /= 4; bgG /= 4; bgB /= 4;
-
-        // Turn background and shadow pixels to solid pure white (#FFFFFF)
-        // Do NOT modify product subject pixels or apply any other enhancements
-        for (let i = 0; i < data.length; i += 4) {
-          const r = data[i];
-          const g = data[i + 1];
-          const b = data[i + 2];
-
-          const distFromBg = Math.sqrt(
-            Math.pow(r - bgR, 2) + Math.pow(g - bgG, 2) + Math.pow(b - bgB, 2)
-          );
-
-          const brightness = (r + g + b) / 3;
-          const maxRGB = Math.max(r, g, b);
-          const minRGB = Math.min(r, g, b);
-          const saturation = maxRGB > 0 ? (maxRGB - minRGB) / maxRGB : 0;
-
-          // If pixel matches background tint OR is off-white/shadowed (brightness > 190, saturation < 0.28)
-          if (distFromBg < 65 || (brightness > 190 && saturation < 0.28)) {
-            data[i] = 255;     // Red
-            data[i + 1] = 255; // Green
-            data[i + 2] = 255; // Blue
-          }
-        }
-
-        // Put modified pixel data back onto canvas
-        ctx.putImageData(imgData, 0, 0);
-
-        // Save enhanced image Data URL back into the exact same slot location
-        const enhancedDataUrl = canvas.toDataURL("image/jpeg", 0.95);
+    processOuterBackgroundWhite(
+      currentImg,
+      (enhancedDataUrl) => {
         const updated = [...watchImages];
         const indexToSave = watchImages[activeIndex] ? activeIndex : 0;
         updated[indexToSave] = enhancedDataUrl;
         setValue("images", updated);
 
+        setIsEnhancingImage(false);
         toast.dismiss(enhancementToast);
-        toast.success("Photo background updated to pure white!");
-      };
-
-      img.onerror = () => {
+        toast.success("Outer background updated to pure white!");
+      },
+      (err) => {
+        setIsEnhancingImage(false);
         toast.dismiss(enhancementToast);
-        toast.error("Could not load image format for enhancement.");
-      };
-
-      img.src = currentImg;
-    } catch (err) {
-      toast.dismiss(enhancementToast);
-      toast.error("Failed to enhance background. Please try again.");
-    } finally {
-      setIsEnhancingImage(false);
-    }
+        toast.error("Failed to enhance background. Please try again.");
+      }
+    );
   };
  
   const triggerFilePicker = (index) => {
@@ -1411,46 +1440,24 @@ function ProductManagementContent() {
                     {/* Category */}
                     <div className="space-y-2">
                       <Label className="text-xs text-gray-900 font-black">Select Category</Label>
-                      <select
-                        {...register("category")}
-                        className="w-full bg-white border border-border-subtle rounded-2xl h-11 px-4 text-xs font-bold text-gray-900 focus:outline-none focus:border-primary-400 focus:ring-1 focus:ring-primary-400 transition-all appearance-none cursor-pointer shadow-2xs"
-                        style={{
-                          backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>")`,
-                          backgroundRepeat: 'no-repeat',
-                          backgroundPosition: 'right 16px center',
-                          backgroundSize: '14px'
-                        }}
-                      >
-                        <option value="" className="bg-white text-zinc-500">-- Choose Option --</option>
-                        {categories.map(opt => (
-                          <option key={opt._id} value={opt._id} className="bg-white text-gray-900 font-bold">
-                            {opt.name}
-                          </option>
-                        ))}
-                      </select>
+                      <CustomSelect
+                        options={categories.map(c => ({ value: c._id, label: c.name }))}
+                        value={watch("category")}
+                        onChange={(val) => setValue("category", val, { shouldValidate: true })}
+                        placeholder="-- Select Category --"
+                      />
                       {errors.category && <p className="text-xs text-rose-600 font-bold mt-1">{errors.category.message}</p>}
                     </div>
 
                     {/* Brand */}
                     <div className="space-y-2">
                       <Label className="text-xs text-gray-900 font-black">Select Brand/Company</Label>
-                      <select
-                        {...register("company")}
-                        className="w-full bg-white border border-border-subtle rounded-2xl h-11 px-4 text-xs font-bold text-gray-900 focus:outline-none focus:border-primary-400 focus:ring-1 focus:ring-primary-400 transition-all appearance-none cursor-pointer shadow-2xs"
-                        style={{
-                          backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>")`,
-                          backgroundRepeat: 'no-repeat',
-                          backgroundPosition: 'right 16px center',
-                          backgroundSize: '14px'
-                        }}
-                      >
-                        <option value="" className="bg-white text-zinc-500">-- Choose Option --</option>
-                        {brands.map(opt => (
-                          <option key={opt._id} value={opt._id} className="bg-white text-gray-900 font-bold">
-                            {opt.name}
-                          </option>
-                        ))}
-                      </select>
+                      <CustomSelect
+                        options={brands.map(b => ({ value: b._id, label: b.name }))}
+                        value={watch("company")}
+                        onChange={(val) => setValue("company", val, { shouldValidate: true })}
+                        placeholder="-- Select Brand --"
+                      />
                       {errors.company && <p className="text-xs text-rose-600 font-bold mt-1">{errors.company.message}</p>}
                     </div>
 
@@ -1469,19 +1476,15 @@ function ProductManagementContent() {
                     {/* Units */}
                     <div className="space-y-2">
                       <Label className="text-xs text-gray-900 font-black">Select Units</Label>
-                      <select
-                        {...register("stockUnit")}
-                        className="w-full bg-white border border-border-subtle rounded-2xl h-11 px-4 text-xs font-bold text-gray-900 focus:outline-none focus:border-primary-400 focus:ring-1 focus:ring-primary-400 transition-all appearance-none cursor-pointer shadow-2xs"
-                        style={{
-                          backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>")`,
-                          backgroundRepeat: 'no-repeat',
-                          backgroundPosition: 'right 16px center',
-                          backgroundSize: '14px'
-                        }}
-                      >
-                        <option value="Pcs" className="bg-white text-gray-900 font-bold">Pcs</option>
-                        <option value="Boxes" className="bg-white text-gray-900 font-bold">Boxes</option>
-                      </select>
+                      <CustomSelect
+                        options={[
+                          { value: "Pcs", label: "Pcs" },
+                          { value: "Boxes", label: "Boxes" }
+                        ]}
+                        value={watch("stockUnit")}
+                        onChange={(val) => setValue("stockUnit", val, { shouldValidate: true })}
+                        placeholder="Select Units"
+                      />
                       {errors.stockUnit && <p className="text-xs text-rose-600 font-bold mt-1">{errors.stockUnit.message}</p>}
                     </div>
 
