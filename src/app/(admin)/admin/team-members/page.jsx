@@ -57,6 +57,71 @@ const formatLastLogin = (dateString) => {
   } catch { return "Never logged in"; }
 };
 
+function MemberRoleSelect({ member, onSelectRole }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  const roles = [
+    { value: "superadmin", label: "SUPERADMIN", color: "bg-purple-50 text-purple-700 border-purple-200" },
+    { value: "admin", label: "ADMIN", color: "bg-primary-50 text-primary-700 border-primary-200" },
+    { value: "staff", label: "STAFF", color: "bg-zinc-100 text-zinc-700 border-zinc-200" },
+    { value: "manager", label: "STORE MANAGER", color: "bg-amber-50 text-amber-700 border-amber-200" },
+    { value: "inventory", label: "INVENTORY SPECIALIST", color: "bg-emerald-50 text-emerald-700 border-emerald-200" }
+  ];
+
+  const currentRoleObj = roles.find(r => r.value === member.role) || roles[1];
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div ref={dropdownRef} className="relative inline-block" onClick={(e) => e.stopPropagation()}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className={`px-3 py-1 rounded-xl text-xs font-black uppercase tracking-wider border shadow-2xs flex items-center gap-1.5 cursor-pointer transition-all ${currentRoleObj.color} hover:shadow-xs hover:scale-102`}
+        title="Click to change team member role"
+      >
+        <span>{currentRoleObj.label}</span>
+        <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute left-0 mt-1.5 w-48 bg-white/95 backdrop-blur-2xl border border-border-subtle rounded-2xl p-1.5 shadow-2xl z-50 space-y-0.5 animate-in fade-in zoom-in-95 duration-150 font-sans">
+          {roles.map((r) => {
+            const isSelected = r.value === member.role;
+            return (
+              <button
+                key={r.value}
+                type="button"
+                onClick={() => {
+                  onSelectRole(r.value);
+                  setIsOpen(false);
+                }}
+                className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-between ${
+                  isSelected
+                    ? "bg-purple-50 text-purple-700 font-black border border-purple-200"
+                    : "text-gray-800 hover:bg-primary-50/70 hover:text-primary-700"
+                }`}
+              >
+                <span>{r.label}</span>
+                {isSelected && <Check className="w-3.5 h-3.5 text-purple-600 shrink-0" />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 import { Suspense } from "react";
 
 function TeamMembersContent() {
@@ -314,44 +379,20 @@ function TeamMembersContent() {
 
                   if (isSuperAdmin && !isSelf) {
                     return (
-                      <div className="relative">
-                        <select
-                          value={member.role}
-                          disabled={updateRoleMutation.isPending && updateRoleMutation.variables?.id === member._id}
-                          onChange={(e) => {
-                            const newRole = e.target.value;
-                            if (newRole !== member.role) {
-                              setPendingRoleChange({
-                                id: member._id,
-                                name: member.name || member.email,
-                                currentRole: member.role,
-                                newRole: newRole
-                              });
-                              setRoleConfirmOpen(true);
-                            }
-                          }}
-                          className={`px-3 py-1 rounded-xl text-xs font-black uppercase tracking-wider border shadow-2xs appearance-none pr-7 cursor-pointer outline-none transition-all ${
-                            member.role === 'superadmin' 
-                              ? 'bg-purple-50 text-purple-700 border-purple-200 hover:border-purple-400' 
-                              : member.role === 'admin' 
-                                ? 'bg-primary-50 text-primary-700 border-primary-200 hover:border-primary-400' 
-                                : 'bg-zinc-100 text-zinc-700 border-zinc-200 hover:border-zinc-400'
-                          }`}
-                          style={{
-                            backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>")`,
-                            backgroundRepeat: 'no-repeat',
-                            backgroundPosition: 'right 8px center',
-                            backgroundSize: '12px'
-                          }}
-                          title="Change team member role"
-                        >
-                          <option value="superadmin" className="bg-white text-purple-700 font-bold">SUPERADMIN</option>
-                          <option value="admin" className="bg-white text-primary-700 font-bold">ADMIN</option>
-                          <option value="staff" className="bg-white text-zinc-800 font-bold">STAFF</option>
-                          <option value="manager" className="bg-white text-zinc-800 font-bold">STORE MANAGER</option>
-                          <option value="inventory" className="bg-white text-zinc-800 font-bold">INVENTORY SPECIALIST</option>
-                        </select>
-                      </div>
+                      <MemberRoleSelect
+                        member={member}
+                        onSelectRole={(newRole) => {
+                          if (newRole !== member.role) {
+                            setPendingRoleChange({
+                              id: member._id,
+                              name: member.name || member.email,
+                              currentRole: member.role,
+                              newRole: newRole
+                            });
+                            setRoleConfirmOpen(true);
+                          }
+                        }}
+                      />
                     );
                   }
 
