@@ -21,7 +21,8 @@ import {
   Percent,
   Send,
   Package,
-  Camera
+  Camera,
+  Check
 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -519,31 +520,49 @@ function ProductManagementContent() {
   const cameraInputRefs = useRef([]);
   const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
   const [cameraSlotIndex, setCameraSlotIndex] = useState(0);
+  const [facingMode, setFacingMode] = useState("environment");
+  const [cameraCapturedImage, setCameraCapturedImage] = useState(null);
+  const [autoWhiteBg, setAutoWhiteBg] = useState(true);
   const videoRef = useRef(null);
   const mediaStreamRef = useRef(null);
 
-  const triggerCameraPicker = (index) => {
-    if (cameraInputRefs.current[index]) {
-      cameraInputRefs.current[index]?.click();
-    } else {
-      openLiveCameraModal(index);
-    }
+  const triggerCameraPicker = (index = 0) => {
+    openLiveCameraModal(index, facingMode);
   };
 
-  const openLiveCameraModal = async (index) => {
+  const openLiveCameraModal = async (index = 0, currentFacing = "environment") => {
     setCameraSlotIndex(index);
+    setCameraCapturedImage(null);
     setIsCameraModalOpen(true);
+
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      mediaStreamRef.current = null;
+    }
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" }
+        video: { facingMode: { ideal: currentFacing }, width: { ideal: 1280 }, height: { ideal: 1280 } }
       });
       mediaStreamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
       }
     } catch (err) {
-      console.log("Camera stream notice:", err);
+      console.log("Live camera permission note:", err);
+      if (cameraInputRefs.current[index]) {
+        cameraInputRefs.current[index]?.click();
+        setIsCameraModalOpen(false);
+      } else {
+        toast.error("Could not open camera stream. Please allow camera permissions.");
+      }
     }
+  };
+
+  const toggleCameraFacingMode = () => {
+    const nextMode = facingMode === "user" ? "environment" : "user";
+    setFacingMode(nextMode);
+    openLiveCameraModal(cameraSlotIndex, nextMode);
   };
 
   const closeLiveCameraModal = () => {
@@ -551,6 +570,7 @@ function ProductManagementContent() {
       mediaStreamRef.current.getTracks().forEach(track => track.stop());
       mediaStreamRef.current = null;
     }
+    setCameraCapturedImage(null);
     setIsCameraModalOpen(false);
   };
 
@@ -558,18 +578,64 @@ function ProductManagementContent() {
     if (!videoRef.current) return;
     const video = videoRef.current;
     const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth || 800;
-    canvas.height = video.videoHeight || 600;
+    canvas.width = video.videoWidth || 1024;
+    canvas.height = video.videoHeight || 1024;
     const ctx = canvas.getContext("2d");
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     const dataUrl = canvas.toDataURL("image/jpeg", 0.95);
 
-    const updated = [...watchImages];
-    updated[cameraSlotIndex] = dataUrl;
-    setValue("images", updated);
+    setCameraCapturedImage(dataUrl);
+  };
 
-    closeLiveCameraModal();
-    toast.success("Photo captured directly from camera!");
+  const confirmAndSaveCameraPhoto = (dataUrl) => {
+    const finalUrl = dataUrl || cameraCapturedImage;
+    if (!finalUrl) return;
+
+    if (autoWhiteBg) {
+      const img = new window.Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+
+        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imgData.data;
+
+        const corners = [0, (canvas.width - 1) * 4, (canvas.height - 1) * canvas.width * 4, (canvas.width * canvas.height - 1) * 4];
+        let bgR = 0, bgG = 0, bgB = 0;
+        corners.forEach(idx => { bgR += data[idx]; bgG += data[idx + 1]; bgB += data[idx + 2]; });
+        bgR /= 4; bgG /= 4; bgB /= 4;
+
+        for (let i = 0; i < data.length; i += 4) {
+          const r = data[i], g = data[i + 1], b = data[i + 2];
+          const dist = Math.sqrt(Math.pow(r - bgR, 2) + Math.pow(g - bgG, 2) + Math.pow(b - bgB, 2));
+          const brightness = (r + g + b) / 3;
+          const maxColor = Math.max(r, g, b), minColor = Math.min(r, g, b);
+          const saturation = maxColor > 0 ? (maxColor - minColor) / maxColor : 0;
+
+          if (dist < 65 || (brightness > 190 && saturation < 0.28)) {
+            data[i] = 255; data[i + 1] = 255; data[i + 2] = 255;
+          }
+        }
+        ctx.putImageData(imgData, 0, 0);
+        const enhancedUrl = canvas.toDataURL("image/jpeg", 0.95);
+
+        const updated = [...watchImages];
+        updated[cameraSlotIndex] = enhancedUrl;
+        setValue("images", updated);
+        closeLiveCameraModal();
+        toast.success("Product photo snapped & background enhanced to white!");
+      };
+      img.src = finalUrl;
+    } else {
+      const updated = [...watchImages];
+      updated[cameraSlotIndex] = finalUrl;
+      setValue("images", updated);
+      closeLiveCameraModal();
+      toast.success("Product photo snapped and uploaded!");
+    }
   };
 
   const handleImageEnhancement = async (targetIndex = 0) => {
@@ -1914,53 +1980,128 @@ function ProductManagementContent() {
         </DialogContent>
       </Dialog>
  
-      {/* LIVE CAMERA CAPTURE DIALOG */}
+      {/* WHATSAPP-STYLE INSTANT CAMERA OVERLAY */}
       <Dialog open={isCameraModalOpen} onOpenChange={(open) => { if (!open) closeLiveCameraModal(); }}>
-        <DialogContent className="max-w-md bg-white border border-border-subtle rounded-3xl p-5 text-gray-900 shadow-2xl">
-          <DialogHeader className="pb-3 border-b border-border-subtle flex flex-row items-center justify-between">
+        <DialogContent className="max-w-md w-[95vw] bg-black text-white border border-zinc-800 rounded-[32px] p-4 sm:p-5 shadow-2xl overflow-hidden font-sans">
+          <DialogHeader className="pb-2 border-b border-zinc-800 flex flex-row items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="p-2 rounded-xl bg-purple-100 text-purple-700">
+              <div className="p-2 rounded-2xl bg-rose-600/20 border border-rose-500/30 text-rose-500">
                 <Camera className="w-5 h-5" />
               </div>
               <div>
-                <DialogTitle className="text-base font-black text-gray-900">Take Product Photo</DialogTitle>
-                <p className="text-xs text-zinc-500 font-medium">Align product in camera frame</p>
+                <DialogTitle className="text-base font-black text-white">Instant Product Camera</DialogTitle>
+                <p className="text-xs text-zinc-400 font-medium">Point camera at item and snap</p>
               </div>
             </div>
+            
+            <button 
+              type="button" 
+              onClick={closeLiveCameraModal} 
+              className="p-2 rounded-full text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </DialogHeader>
 
-          <div className="space-y-4 pt-2">
-            <div className="relative aspect-video sm:aspect-square w-full rounded-2xl bg-black overflow-hidden flex items-center justify-center border-2 border-purple-300 shadow-inner">
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-4 border-2 border-dashed border-white/60 rounded-xl pointer-events-none flex items-center justify-center">
-                <span className="text-[10px] font-black uppercase tracking-widest text-white/80 bg-black/40 px-2 py-1 rounded-full backdrop-blur-xs">Center Product</span>
-              </div>
-            </div>
+          <div className="space-y-4 pt-3">
+            {cameraCapturedImage ? (
+              /* SNAP PREVIEW MODE */
+              <div className="space-y-4">
+                <div className="relative aspect-square w-full rounded-2xl bg-zinc-900 overflow-hidden border-2 border-purple-500 shadow-2xl flex items-center justify-center">
+                  <img src={cameraCapturedImage} alt="Captured Product" className="w-full h-full object-contain bg-white" />
+                  <span className="absolute top-3 left-3 px-3 py-1 rounded-full bg-black/70 backdrop-blur-md text-[10px] font-black uppercase text-purple-300 border border-purple-500/30">
+                    Photo Captured
+                  </span>
+                </div>
 
-            <div className="flex items-center justify-end gap-3 pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={closeLiveCameraModal}
-                className="rounded-xl border border-border-subtle text-xs font-bold text-gray-700 hover:bg-zinc-100 h-10"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                onClick={captureWebcamPhoto}
-                className="btn-pill-gradient rounded-xl px-5 h-10 text-xs font-black text-white flex items-center gap-2 shadow-md cursor-pointer"
-              >
-                <Camera className="w-4 h-4" />
-                <span>Snap & Upload</span>
-              </Button>
-            </div>
+                <div className="flex items-center justify-between gap-2 p-3 rounded-2xl bg-zinc-900/80 border border-zinc-800">
+                  <label className="flex items-center gap-2.5 text-xs font-bold text-zinc-200 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={autoWhiteBg}
+                      onChange={(e) => setAutoWhiteBg(e.target.checked)}
+                      className="w-4 h-4 accent-purple-600 rounded cursor-pointer"
+                    />
+                    <span>Enhance Background to Pure White (#FFF)</span>
+                  </label>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 pt-1">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setCameraCapturedImage(null)}
+                    className="h-11 rounded-2xl border-zinc-700 bg-zinc-900 text-xs font-bold text-zinc-300 hover:bg-zinc-800 hover:text-white cursor-pointer"
+                  >
+                    <RefreshCw className="w-4 h-4 mr-1.5" /> Retake Photo
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={() => confirmAndSaveCameraPhoto()}
+                    className="h-11 rounded-2xl bg-gradient-to-r from-rose-600 to-purple-600 text-xs font-black text-white hover:opacity-90 shadow-lg cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    <Check className="w-4 h-4" /> Save & Upload
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              /* LIVE CAMERA VIEWFINDER MODE */
+              <div className="space-y-4">
+                <div className="relative aspect-square w-full rounded-2xl bg-zinc-950 overflow-hidden border-2 border-purple-500/40 shadow-2xl flex items-center justify-center">
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    className="w-full h-full object-cover"
+                  />
+                  
+                  {/* Camera Framing Grid Overlay */}
+                  <div className="absolute inset-6 border-2 border-dashed border-white/40 rounded-2xl pointer-events-none flex items-center justify-center">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-white/80 bg-black/60 px-3 py-1.5 rounded-full backdrop-blur-md border border-white/20">
+                      Center Product Here
+                    </span>
+                  </div>
+
+                  {/* Camera Switch Facing Mode Button */}
+                  <button
+                    type="button"
+                    onClick={toggleCameraFacingMode}
+                    className="absolute top-3 right-3 p-2.5 rounded-full bg-black/60 hover:bg-black/80 text-white backdrop-blur-md border border-white/20 transition-all cursor-pointer"
+                    title="Switch Camera"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Auto White Background Toggle */}
+                <div className="flex items-center justify-between p-3 rounded-2xl bg-zinc-900/80 border border-zinc-800">
+                  <label className="flex items-center gap-2.5 text-xs font-bold text-zinc-200 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={autoWhiteBg}
+                      onChange={(e) => setAutoWhiteBg(e.target.checked)}
+                      className="w-4 h-4 accent-purple-600 rounded cursor-pointer"
+                    />
+                    <span>Auto-Enhance Background to Pure White</span>
+                  </label>
+                </div>
+
+                {/* WhatsApp-Style Circular Shutter Button */}
+                <div className="flex items-center justify-center py-2">
+                  <button
+                    type="button"
+                    onClick={captureWebcamPhoto}
+                    className="w-18 h-18 rounded-full border-4 border-white bg-rose-600 hover:bg-rose-500 hover:scale-105 transition-all flex items-center justify-center shadow-2xl cursor-pointer active:scale-95 ring-4 ring-rose-500/30"
+                    title="Click to snap product photo"
+                  >
+                    <div className="w-14 h-14 rounded-full bg-white shadow-inner flex items-center justify-center">
+                      <Camera className="w-6 h-6 text-rose-600" />
+                    </div>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
