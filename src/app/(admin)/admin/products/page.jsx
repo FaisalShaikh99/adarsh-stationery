@@ -102,6 +102,89 @@ function ProductManagementContent() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
 
+  // Quick Add Category & Brand States
+  const [isQuickCategoryModalOpen, setIsQuickCategoryModalOpen] = useState(false);
+  const [quickCategoryName, setQuickCategoryName] = useState("");
+  const [quickCategoryImage, setQuickCategoryImage] = useState("");
+
+  const [isQuickBrandModalOpen, setIsQuickBrandModalOpen] = useState(false);
+  const [quickBrandName, setQuickBrandName] = useState("");
+  const [quickBrandCategories, setQuickBrandCategories] = useState([]);
+
+  // Quick Add Category Mutation
+  const quickAddCategoryMutation = useMutation({
+    mutationFn: async (payload) => {
+      const res = await axios.post("/api/admin/categories", payload);
+      return res.data;
+    },
+    onSuccess: (resData) => {
+      toast.success(resData?.message || "New category added successfully!");
+      queryClient.invalidateQueries({ queryKey: ["categoriesDropdown"] });
+      const createdCategory = resData?.data;
+      if (createdCategory?._id) {
+        setValue("category", createdCategory._id, { shouldValidate: true });
+      }
+      setIsQuickCategoryModalOpen(false);
+    },
+    onError: (err) => {
+      toast.error(err.response?.data?.message || "Failed to add category.");
+    }
+  });
+
+  // Quick Add Brand Mutation
+  const quickAddBrandMutation = useMutation({
+    mutationFn: async (payload) => {
+      const res = await axios.post("/api/admin/brands", payload);
+      return res.data;
+    },
+    onSuccess: (resData) => {
+      toast.success(resData?.message || "New brand added successfully!");
+      queryClient.invalidateQueries({ queryKey: ["brandsDropdown"] });
+      const createdBrand = resData?.data;
+      if (createdBrand?._id) {
+        setValue("company", createdBrand._id, { shouldValidate: true });
+      }
+      setIsQuickBrandModalOpen(false);
+    },
+    onError: (err) => {
+      toast.error(err.response?.data?.message || "Failed to add brand.");
+    }
+  });
+
+  const handleQuickCategorySubmit = (e) => {
+    e.preventDefault();
+    if (!quickCategoryName.trim() || quickCategoryName.trim().length < 2) {
+      toast.error("Category name must be at least 2 characters.");
+      return;
+    }
+    quickAddCategoryMutation.mutate({
+      name: quickCategoryName.trim(),
+      imageUrl: quickCategoryImage.trim() || undefined
+    });
+  };
+
+  const handleQuickBrandSubmit = (e) => {
+    e.preventDefault();
+    if (!quickBrandName.trim() || quickBrandName.trim().length < 2) {
+      toast.error("Brand name must be at least 2 characters.");
+      return;
+    }
+    const currentSelectedCat = watch("category");
+    const categoriesList = quickBrandCategories.length > 0
+      ? quickBrandCategories
+      : (currentSelectedCat ? [currentSelectedCat] : (categories[0]?._id ? [categories[0]._id] : []));
+
+    if (categoriesList.length === 0) {
+      toast.error("Please select at least one category for this brand.");
+      return;
+    }
+
+    quickAddBrandMutation.mutate({
+      name: quickBrandName.trim(),
+      categories: categoriesList
+    });
+  };
+
   // Notify Customers States
   const [isNotifyModalOpen, setIsNotifyModalOpen] = useState(false);
   const [eligibleCustomers, setEligibleCustomers] = useState([]);
@@ -1445,6 +1528,12 @@ function ProductManagementContent() {
                         value={watch("category")}
                         onChange={(val) => setValue("category", val, { shouldValidate: true })}
                         placeholder="-- Select Category --"
+                        addLabel="Category"
+                        onAddNew={(typedVal) => {
+                          setQuickCategoryName(typedVal);
+                          setQuickCategoryImage("");
+                          setIsQuickCategoryModalOpen(true);
+                        }}
                       />
                       {errors.category && <p className="text-xs text-rose-600 font-bold mt-1">{errors.category.message}</p>}
                     </div>
@@ -1457,6 +1546,13 @@ function ProductManagementContent() {
                         value={watch("company")}
                         onChange={(val) => setValue("company", val, { shouldValidate: true })}
                         placeholder="-- Select Brand --"
+                        addLabel="Brand"
+                        onAddNew={(typedVal) => {
+                          setQuickBrandName(typedVal);
+                          const currentCat = watch("category");
+                          setQuickBrandCategories(currentCat ? [currentCat] : []);
+                          setIsQuickBrandModalOpen(true);
+                        }}
                       />
                       {errors.company && <p className="text-xs text-rose-600 font-bold mt-1">{errors.company.message}</p>}
                     </div>
@@ -1751,13 +1847,19 @@ function ProductManagementContent() {
                   </Button>
                   {aiDescriptions.length > 0 && (
                     <div className="mt-4 space-y-3">
+                      <div className="text-[11px] font-black uppercase tracking-wider text-primary-700">Click a suggestion to select & clear list:</div>
                       {aiDescriptions.map((desc, idx) => (
                         <div
                           key={idx}
-                          onClick={() => setValue("description", desc)}
-                          className="cursor-pointer rounded-2xl border border-border-subtle bg-white p-3.5 text-xs text-gray-900 transition hover:border-primary-400 hover:bg-primary-50/60 shadow-2xs font-medium leading-relaxed"
+                          onClick={() => {
+                            setValue("description", desc, { shouldValidate: true });
+                            setAiDescriptions([]);
+                            toast.success("AI description selected!");
+                          }}
+                          className="cursor-pointer rounded-2xl border border-border-subtle bg-white p-3.5 text-xs text-gray-900 transition hover:border-primary-400 hover:bg-primary-50/60 shadow-2xs font-medium leading-relaxed group"
                         >
-                          {desc}
+                          <p>{desc}</p>
+                          <span className="mt-2 text-[10px] font-extrabold text-primary-600 group-hover:underline block">Use this description →</span>
                         </div>
                       ))}
                     </div>
@@ -2096,6 +2198,141 @@ function ProductManagementContent() {
               </div>
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* QUICK ADD CATEGORY MODAL */}
+      <Dialog open={isQuickCategoryModalOpen} onOpenChange={setIsQuickCategoryModalOpen}>
+        <DialogContent className="max-w-md bg-white border border-border-subtle rounded-3xl p-5 text-gray-900 shadow-2xl">
+          <DialogHeader className="pb-3 border-b border-border-subtle flex flex-row items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="p-2 rounded-xl bg-purple-100 text-purple-700">
+                <Plus className="w-5 h-5" />
+              </div>
+              <div>
+                <DialogTitle className="text-base font-black text-gray-900">Quick Add Category</DialogTitle>
+                <p className="text-xs text-zinc-500 font-medium">Add a new category without leaving product form</p>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <form onSubmit={handleQuickCategorySubmit} className="space-y-4 pt-3">
+            <div className="space-y-2">
+              <Label className="text-xs font-black text-gray-900">Category Name</Label>
+              <Input
+                type="text"
+                value={quickCategoryName}
+                onChange={(e) => setQuickCategoryName(e.target.value)}
+                placeholder="e.g. Executive Registers"
+                required
+                className="bg-white border border-border-subtle rounded-xl h-11 text-xs font-semibold"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs font-black text-gray-900">Category Image URL (Optional)</Label>
+              <Input
+                type="url"
+                value={quickCategoryImage}
+                onChange={(e) => setQuickCategoryImage(e.target.value)}
+                placeholder="https://..."
+                className="bg-white border border-border-subtle rounded-xl h-11 text-xs font-semibold"
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-border-subtle">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsQuickCategoryModalOpen(false)}
+                className="rounded-xl border border-border-subtle text-xs font-bold h-10"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={quickAddCategoryMutation.isPending}
+                className="btn-pill-gradient rounded-xl px-5 h-10 text-xs font-black text-white shadow-md cursor-pointer"
+              >
+                {quickAddCategoryMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save & Auto-Select"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* QUICK ADD BRAND MODAL */}
+      <Dialog open={isQuickBrandModalOpen} onOpenChange={setIsQuickBrandModalOpen}>
+        <DialogContent className="max-w-md bg-white border border-border-subtle rounded-3xl p-5 text-gray-900 shadow-2xl">
+          <DialogHeader className="pb-3 border-b border-border-subtle flex flex-row items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="p-2 rounded-xl bg-purple-100 text-purple-700">
+                <Plus className="w-5 h-5" />
+              </div>
+              <div>
+                <DialogTitle className="text-base font-black text-gray-900">Quick Add Brand</DialogTitle>
+                <p className="text-xs text-zinc-500 font-medium">Add a new brand profile directly</p>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <form onSubmit={handleQuickBrandSubmit} className="space-y-4 pt-3">
+            <div className="space-y-2">
+              <Label className="text-xs font-black text-gray-900">Brand / Company Name</Label>
+              <Input
+                type="text"
+                value={quickBrandName}
+                onChange={(e) => setQuickBrandName(e.target.value)}
+                placeholder="e.g. Classmate"
+                required
+                className="bg-white border border-border-subtle rounded-xl h-11 text-xs font-semibold"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs font-black text-gray-900">Associate Categories</Label>
+              <div className="max-h-36 overflow-y-auto p-2 border border-border-subtle rounded-xl space-y-1 bg-zinc-50/50 custom-scrollbar">
+                {categories.map((cat) => {
+                  const isChecked = quickBrandCategories.includes(cat._id);
+                  return (
+                    <label key={cat._id} className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-white text-xs font-bold text-gray-800 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setQuickBrandCategories(prev => [...prev, cat._id]);
+                          } else {
+                            setQuickBrandCategories(prev => prev.filter(id => id !== cat._id));
+                          }
+                        }}
+                        className="w-3.5 h-3.5 accent-purple-600 rounded"
+                      />
+                      <span>{cat.name}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-border-subtle">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsQuickBrandModalOpen(false)}
+                className="rounded-xl border border-border-subtle text-xs font-bold h-10"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={quickAddBrandMutation.isPending}
+                className="btn-pill-gradient rounded-xl px-5 h-10 text-xs font-black text-white shadow-md cursor-pointer"
+              >
+                {quickAddBrandMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save & Auto-Select"}
+              </Button>
+            </div>
+          </form>
         </DialogContent>
       </Dialog>
 
