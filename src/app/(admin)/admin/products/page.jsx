@@ -20,7 +20,8 @@ import {
   Bell,
   Percent,
   Send,
-  Package
+  Package,
+  Camera
 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -515,118 +516,153 @@ function ProductManagementContent() {
     toast.info("Offline fallback descriptions generated successfully.");
   };
 
-  const handleImageEnhancement = async () => {
-    const currentImg = watchImages[0];
+  const cameraInputRefs = useRef([]);
+  const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
+  const [cameraSlotIndex, setCameraSlotIndex] = useState(0);
+  const videoRef = useRef(null);
+  const mediaStreamRef = useRef(null);
 
-    // Case 1: If user already uploaded a product photo, enhance it client-side to preserve colors, logo, and actual product
-    if (currentImg && (currentImg.startsWith("data:image/") || currentImg.startsWith("http"))) {
-      setIsEnhancingImage(true);
-      const enhancementToast = toast.loading("Applying studio lighting and clarity filters to your photo...");
-
-      try {
-        const img = new Image();
-        img.crossOrigin = "anonymous"; // bypass CORS for external URLs
-        img.onload = () => {
-          const canvas = document.createElement("canvas");
-          const ctx = canvas.getContext("2d");
-          canvas.width = img.width;
-          canvas.height = img.height;
-
-          // Draw original image
-          ctx.drawImage(img, 0, 0);
-
-          // Get image data
-          const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          const data = imgData.data;
-
-          // Apply studio enhancement: Brightness (+20), Contrast (+25), Saturation (+10)
-          const brightness = 20;
-          const contrast = 25;
-          const factor = (259 * (contrast + 255)) / (255 * (259 - contrast));
-
-          for (let i = 0; i < data.length; i += 4) {
-            // Brightness
-            let r = data[i] + brightness;
-            let g = data[i + 1] + brightness;
-            let b = data[i + 2] + brightness;
-
-            // Contrast
-            r = factor * (r - 128) + 128;
-            g = factor * (g - 128) + 128;
-            b = factor * (b - 128) + 128;
-
-            // Saturation boost
-            const gray = 0.2989 * r + 0.587 * g + 0.114 * b;
-            r = gray + 1.1 * (r - gray);
-            g = gray + 1.1 * (g - gray);
-            b = gray + 1.1 * (b - gray);
-
-            // Clamp values
-            data[i] = Math.min(255, Math.max(0, r));
-            data[i + 1] = Math.min(255, Math.max(0, g));
-            data[i + 2] = Math.min(255, Math.max(0, b));
-          }
-
-          // Put adjusted data back
-          ctx.putImageData(imgData, 0, 0);
-
-          // Convert back to base64 Data URL and save
-          const enhancedDataUrl = canvas.toDataURL("image/jpeg", 0.95);
-          const updated = [...watchImages];
-          updated[0] = enhancedDataUrl;
-          setValue("images", updated);
-
-          toast.dismiss(enhancementToast);
-          toast.success("Photo enhanced with studio lighting and contrast!");
-        };
-        img.onerror = () => {
-          toast.dismiss(enhancementToast);
-          toast.error("Could not load image format for enhancement.");
-        };
-        img.src = currentImg;
-      } catch (err) {
-        toast.dismiss(enhancementToast);
-        toast.error("Failed to enhance photo. Please try again.");
-      } finally {
-        setIsEnhancingImage(false);
-      }
-      return;
+  const triggerCameraPicker = (index) => {
+    if (cameraInputRefs.current[index]) {
+      cameraInputRefs.current[index]?.click();
+    } else {
+      openLiveCameraModal(index);
     }
+  };
 
-    // Case 2: If the slot is empty, generate a new mockup via Pollinations AI
-    const nameVal = watchName?.trim();
-    if (!nameVal) {
-      toast.error("Please upload a photo first to enhance, or enter a Product Name to generate a mockup.");
+  const openLiveCameraModal = async (index) => {
+    setCameraSlotIndex(index);
+    setIsCameraModalOpen(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" }
+      });
+      mediaStreamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (err) {
+      console.log("Camera stream notice:", err);
+    }
+  };
+
+  const closeLiveCameraModal = () => {
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      mediaStreamRef.current = null;
+    }
+    setIsCameraModalOpen(false);
+  };
+
+  const captureWebcamPhoto = () => {
+    if (!videoRef.current) return;
+    const video = videoRef.current;
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth || 800;
+    canvas.height = video.videoHeight || 600;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.95);
+
+    const updated = [...watchImages];
+    updated[cameraSlotIndex] = dataUrl;
+    setValue("images", updated);
+
+    closeLiveCameraModal();
+    toast.success("Photo captured directly from camera!");
+  };
+
+  const handleImageEnhancement = async (targetIndex = 0) => {
+    const activeIndex = typeof targetIndex === "number" ? targetIndex : 0;
+    const currentImg = watchImages[activeIndex] || watchImages[0];
+
+    if (!currentImg || (!currentImg.startsWith("data:image/") && !currentImg.startsWith("http"))) {
+      toast.error("Please upload or capture a photo first to enhance its background.");
       return;
     }
 
     setIsEnhancingImage(true);
-    const enhancementToast = toast.loading("Generating professional product mockup via AI engine...");
+    const enhancementToast = toast.loading("Turning photo background to pure clean white...");
 
     try {
-      const categoryId = watch("category");
-      const categoryObj = categories.find(c => c._id === categoryId);
-      const categoryName = categoryObj?.name || "Stationery";
-      const brandId = watch("company");
-      const brandObj = brands.find(b => b._id === brandId);
-      const brandName = brandObj?.name || "";
+      const img = new window.Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        canvas.width = img.width;
+        canvas.height = img.height;
 
-      const prompt = encodeURIComponent(
-        `E-commerce product listing photo of a premium ${brandName} ${nameVal} ${categoryName}, clean white background, extremely attractive, modern marketing layout, conversion highlights, features list callouts, studio lighting, high resolution, stable diffusion, like amazon or flipkart`
-      );
-      
-      const enhancedImageUrl = `https://image.pollinations.ai/prompt/${prompt}?nologo=true&private=true&width=1024&height=1024&seed=${Math.floor(Math.random() * 100008)}`;
+        // Draw original photo onto canvas
+        ctx.drawImage(img, 0, 0);
 
-      const updatedImages = [...watchImages];
-      updatedImages[0] = enhancedImageUrl;
-      setValue("images", updatedImages);
-      
+        // Get pixel data
+        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imgData.data;
+
+        // Sample corner pixels to detect background color/tint
+        const cornerIndices = [
+          0,
+          (canvas.width - 1) * 4,
+          (canvas.height - 1) * canvas.width * 4,
+          (canvas.width * canvas.height - 1) * 4
+        ];
+
+        let bgR = 0, bgG = 0, bgB = 0;
+        cornerIndices.forEach(idx => {
+          bgR += data[idx];
+          bgG += data[idx + 1];
+          bgB += data[idx + 2];
+        });
+        bgR /= 4; bgG /= 4; bgB /= 4;
+
+        // Turn background and shadow pixels to solid pure white (#FFFFFF)
+        // Do NOT modify product subject pixels or apply any other enhancements
+        for (let i = 0; i < data.length; i += 4) {
+          const r = data[i];
+          const g = data[i + 1];
+          const b = data[i + 2];
+
+          const distFromBg = Math.sqrt(
+            Math.pow(r - bgR, 2) + Math.pow(g - bgG, 2) + Math.pow(b - bgB, 2)
+          );
+
+          const brightness = (r + g + b) / 3;
+          const maxRGB = Math.max(r, g, b);
+          const minRGB = Math.min(r, g, b);
+          const saturation = maxRGB > 0 ? (maxRGB - minRGB) / maxRGB : 0;
+
+          // If pixel matches background tint OR is off-white/shadowed (brightness > 190, saturation < 0.28)
+          if (distFromBg < 65 || (brightness > 190 && saturation < 0.28)) {
+            data[i] = 255;     // Red
+            data[i + 1] = 255; // Green
+            data[i + 2] = 255; // Blue
+          }
+        }
+
+        // Put modified pixel data back onto canvas
+        ctx.putImageData(imgData, 0, 0);
+
+        // Save enhanced image Data URL back into the exact same slot location
+        const enhancedDataUrl = canvas.toDataURL("image/jpeg", 0.95);
+        const updated = [...watchImages];
+        const indexToSave = watchImages[activeIndex] ? activeIndex : 0;
+        updated[indexToSave] = enhancedDataUrl;
+        setValue("images", updated);
+
+        toast.dismiss(enhancementToast);
+        toast.success("Photo background updated to pure white!");
+      };
+
+      img.onerror = () => {
+        toast.dismiss(enhancementToast);
+        toast.error("Could not load image format for enhancement.");
+      };
+
+      img.src = currentImg;
+    } catch (err) {
       toast.dismiss(enhancementToast);
-      toast.success("AI product mockup generated successfully!");
-
-    } catch (error) {
-      toast.dismiss(enhancementToast);
-      toast.error("AI image generation failed. Please try again.");
+      toast.error("Failed to enhance background. Please try again.");
     } finally {
       setIsEnhancingImage(false);
     }
@@ -1488,7 +1524,8 @@ function ProductManagementContent() {
                   {/* Grid layout of image slots */}
                   <div className="grid grid-cols-2 gap-3">
                     {watchImages.map((img, i) => (
-                      <div key={i} className="relative aspect-square rounded-2xl border-2 border-dashed border-border-subtle bg-white hover:border-primary-400 overflow-hidden flex flex-col items-center justify-center p-2.5 transition-all shadow-2xs">
+                      <div key={i} className="relative aspect-square rounded-2xl border-2 border-dashed border-border-subtle bg-white hover:border-primary-400 overflow-hidden flex flex-col items-center justify-between p-2.5 transition-all shadow-2xs">
+                        {/* File Upload Input */}
                         <input
                           ref={(el) => (fileInputRefs.current[i] = el)}
                           type="file"
@@ -1496,27 +1533,64 @@ function ProductManagementContent() {
                           className="hidden"
                           onChange={(e) => handleFileSelected(i, e)}
                         />
+                        {/* Camera Capture Input */}
+                        <input
+                          ref={(el) => (cameraInputRefs.current[i] = el)}
+                          type="file"
+                          accept="image/*"
+                          capture="environment"
+                          className="hidden"
+                          onChange={(e) => handleFileSelected(i, e)}
+                        />
                         {img ? (
                           <>
-                            <img src={img} className="h-full w-full object-contain rounded-xl" alt="Product" />
+                            <div className="relative w-full h-full flex items-center justify-center overflow-hidden rounded-xl bg-zinc-50">
+                              <img src={img} className="h-full w-full object-contain rounded-xl" alt="Product" />
+                              <button
+                                type="button"
+                                onClick={(e) => handleRemoveImage(i, e)}
+                                className="absolute right-2 top-2 inline-flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-gray-900 shadow-md border border-border-subtle hover:text-rose-600 hover:scale-105 transition-all cursor-pointer z-10"
+                                title="Remove photo"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            </div>
+
+                            {/* Slot Enhance Button (Turns background to solid white) */}
                             <button
                               type="button"
-                              onClick={(e) => handleRemoveImage(i, e)}
-                              className="absolute right-2.5 top-2.5 inline-flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-gray-900 shadow-md border border-border-subtle hover:text-rose-600 hover:scale-105 transition-all cursor-pointer"
+                              onClick={() => handleImageEnhancement(i)}
+                              disabled={isEnhancingImage}
+                              className="mt-1.5 w-full h-7 rounded-xl bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-800 text-[10px] font-black flex items-center justify-center gap-1 transition-all cursor-pointer shadow-2xs"
+                              title="Turn photo background to clean white"
                             >
-                              <X className="h-4 w-4" />
+                              <Wand2 className="w-3 h-3 text-purple-600" />
+                              <span>Enhance BG (White)</span>
                             </button>
                           </>
                         ) : (
                           <div className="flex h-full w-full flex-col items-center justify-between py-1 text-center">
-                            {/* Upload Trigger Click */}
-                            <div 
-                              onClick={() => triggerFilePicker(i)}
-                              className="flex flex-col items-center gap-1 cursor-pointer w-full group py-2"
-                            >
-                              <UploadCloud className="h-6 w-6 text-zinc-400 group-hover:text-primary-600 group-hover:scale-105 transition-all" />
-                              <p className="text-xs font-bold text-gray-900">Upload File</p>
-                              <p className="text-[10px] text-zinc-500 font-mono">Slot {i + 1}</p>
+                            {/* Upload or Camera Triggers */}
+                            <div className="w-full flex items-center justify-center gap-2 pt-1">
+                              <button
+                                type="button"
+                                onClick={() => triggerFilePicker(i)}
+                                className="flex-1 flex flex-col items-center gap-1 p-1.5 rounded-xl border border-border-subtle bg-white hover:bg-primary-50 text-zinc-700 hover:text-primary-700 transition-all cursor-pointer group"
+                                title="Upload photo file"
+                              >
+                                <UploadCloud className="h-4.5 w-4.5 text-zinc-400 group-hover:text-primary-600" />
+                                <span className="text-[10px] font-extrabold">Upload</span>
+                              </button>
+                              
+                              <button
+                                type="button"
+                                onClick={() => triggerCameraPicker(i)}
+                                className="flex-1 flex flex-col items-center gap-1 p-1.5 rounded-xl border border-purple-200 bg-purple-50/60 hover:bg-purple-100 text-purple-900 transition-all cursor-pointer group"
+                                title="Take photo with camera"
+                              >
+                                <Camera className="h-4.5 w-4.5 text-purple-600" />
+                                <span className="text-[10px] font-black">Camera</span>
+                              </button>
                             </div>
 
                             {/* Paste URL for this Slot */}
@@ -1840,6 +1914,57 @@ function ProductManagementContent() {
         </DialogContent>
       </Dialog>
  
+      {/* LIVE CAMERA CAPTURE DIALOG */}
+      <Dialog open={isCameraModalOpen} onOpenChange={(open) => { if (!open) closeLiveCameraModal(); }}>
+        <DialogContent className="max-w-md bg-white border border-border-subtle rounded-3xl p-5 text-gray-900 shadow-2xl">
+          <DialogHeader className="pb-3 border-b border-border-subtle flex flex-row items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="p-2 rounded-xl bg-purple-100 text-purple-700">
+                <Camera className="w-5 h-5" />
+              </div>
+              <div>
+                <DialogTitle className="text-base font-black text-gray-900">Take Product Photo</DialogTitle>
+                <p className="text-xs text-zinc-500 font-medium">Align product in camera frame</p>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <div className="space-y-4 pt-2">
+            <div className="relative aspect-video sm:aspect-square w-full rounded-2xl bg-black overflow-hidden flex items-center justify-center border-2 border-purple-300 shadow-inner">
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-4 border-2 border-dashed border-white/60 rounded-xl pointer-events-none flex items-center justify-center">
+                <span className="text-[10px] font-black uppercase tracking-widest text-white/80 bg-black/40 px-2 py-1 rounded-full backdrop-blur-xs">Center Product</span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={closeLiveCameraModal}
+                className="rounded-xl border border-border-subtle text-xs font-bold text-gray-700 hover:bg-zinc-100 h-10"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={captureWebcamPhoto}
+                className="btn-pill-gradient rounded-xl px-5 h-10 text-xs font-black text-white flex items-center gap-2 shadow-md cursor-pointer"
+              >
+                <Camera className="w-4 h-4" />
+                <span>Snap & Upload</span>
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* 6. DELETE CONFIRMATION */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent className="bg-zinc-900 border border-zinc-800 text-white rounded-2xl">

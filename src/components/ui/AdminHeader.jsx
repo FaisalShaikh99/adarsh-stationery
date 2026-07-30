@@ -153,7 +153,7 @@ export default function AdminHeader({ onToggleMobileDrawer }) {
   const breadcrumbs = getBreadcrumbs();
 
   return (
-    <header className="sticky top-2 sm:top-3.5 z-30 w-[98%] sm:w-[96%] max-w-full mx-auto my-1 sm:my-2 bg-white sm:bg-white/80 backdrop-blur-none sm:backdrop-blur-2xl border border-border-subtle rounded-2xl sm:rounded-[28px] px-2.5 sm:px-4 md:px-6 py-2 sm:py-2.5 transition-all duration-300 shadow-md">
+    <header className="sticky top-2 sm:top-3.5 z-30 w-[98%] sm:w-[96%] max-w-full mx-auto my-1 sm:my-2 bg-white backdrop-blur-none sm:backdrop-blur-2xl border border-border-subtle rounded-2xl sm:rounded-[28px] px-2.5 sm:px-4 md:px-6 py-2 sm:py-2.5 transition-all duration-300 shadow-md">
       <div className="flex items-center justify-between gap-2 sm:gap-4">
         
         {/* Left Side: Mobile Drawer Trigger + Breadcrumbs */}
