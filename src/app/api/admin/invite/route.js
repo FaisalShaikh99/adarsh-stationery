@@ -47,11 +47,8 @@ export const POST = asyncHandler(async (request) => {
         throw new ApiError(400, "This user is already a team member");
     }
 
-    // Check if an active (unused) invitation already exists for this email
-    const adminExistInInviteState = await AdminInvite.findOne({ email, isUsed: false });
-    if (adminExistInInviteState) {
-        throw new ApiError(400, "An active invitation has already been sent to this email");
-    }
+    // Invalidate any previous unused invitations for this email so Super Admin can resend invites freely
+    await AdminInvite.updateMany({ email, isUsed: false }, { isUsed: true });
 
     const token = crypto.randomBytes(32).toString("hex");
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
