@@ -111,14 +111,17 @@ export default function BrandFormModal({
     };
 
     try {
+      let savedBrand = null;
       if (editingBrand) {
-        await axios.patch(`/api/admin/brands/${editingBrand._id}`, payload);
+        const res = await axios.patch(`/api/admin/brands/${editingBrand._id}`, payload);
+        savedBrand = res.data?.data;
         toast.success("Brand profile updated successfully!");
       } else {
-        await axios.post("/api/admin/brands", payload);
+        const res = await axios.post("/api/admin/brands", payload);
+        savedBrand = res.data?.data;
         toast.success("New brand profile published!");
       }
-      onSuccess();
+      if (onSuccess) onSuccess(savedBrand);
       onClose();
     } catch (error) {
       toast.error(error.response?.data?.message || "Unable to save brand details.");
