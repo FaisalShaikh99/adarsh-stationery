@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import { 
   LayoutDashboard, 
   ShoppingBag, 
@@ -18,7 +18,8 @@ import {
   FolderTree,
   Tag,
   Shield,
-  ChevronRight
+  ChevronRight,
+  LogOut
 } from "lucide-react";
 
 export default function AdminSidebar({ 
@@ -87,7 +88,6 @@ export default function AdminSidebar({
       icon: Shield,
       links: [
         { name: "Team Members", href: "/admin/team-members", icon: Shield, requireSuperAdmin: true },
-        { name: "My Profile", href: "/admin/profile", icon: User },
         { name: "Store Settings", href: "/admin/settings", icon: Settings },
       ]
     }
@@ -113,72 +113,115 @@ export default function AdminSidebar({
           isMobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="space-y-6">
-          <div className="flex items-center justify-between pb-4 border-b border-border-subtle">
-            <Link 
-              href="/" 
-              onClick={() => setIsMobileOpen(false)} 
-              className="w-[82%] rounded-2xl bg-gradient-to-b from-[#F8F9FE] to-[#ECEFFA] border border-purple-200/60 p-2 shadow-2xs overflow-hidden flex items-center justify-center hover:scale-102 transition-transform"
-            >
-              <Image
-                src="/logo-full.png"
-                alt="Adarsh Stationery Mart"
-                width={1024}
-                height={1024}
-                quality={95}
-                priority
-                className="w-44 h-auto max-h-16 object-contain mix-blend-multiply rounded-xl"
-              />
-            </Link>
-            <button
-              onClick={() => setIsMobileOpen(false)}
-              className="p-2 rounded-full text-zinc-500 hover:text-gray-900 hover:bg-primary-50 transition-colors cursor-pointer"
-            >
-              <X className="w-6 h-6" />
-            </button>
+        <div className="space-y-6 flex-1 flex flex-col justify-between">
+          <div className="space-y-6">
+            <div className="flex items-center justify-between pb-4 border-b border-border-subtle">
+              <Link 
+                href="/" 
+                onClick={() => setIsMobileOpen(false)} 
+                className="w-[82%] rounded-2xl bg-gradient-to-b from-[#F8F9FE] to-[#ECEFFA] border border-purple-200/60 p-2 shadow-2xs overflow-hidden flex items-center justify-center hover:scale-102 transition-transform"
+              >
+                <Image
+                  src="/logo-full.png"
+                  alt="Adarsh Stationery Mart"
+                  width={1024}
+                  height={1024}
+                  quality={95}
+                  priority
+                  className="w-44 h-auto max-h-16 object-contain mix-blend-multiply rounded-xl"
+                />
+              </Link>
+              <button
+                onClick={() => setIsMobileOpen(false)}
+                className="p-2 rounded-full text-zinc-500 hover:text-gray-900 hover:bg-primary-50 transition-colors cursor-pointer"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              {navigationGroups.map((group) => {
+                const visibleLinks = group.links.filter(
+                  l => !l.requireSuperAdmin || session?.user?.role === "superadmin"
+                );
+                const GroupIcon = group.icon;
+
+                return (
+                  <div key={group.id} className="space-y-2">
+                    <div className="text-xs font-black uppercase tracking-wider text-primary-700 flex items-center gap-2 px-2">
+                      <GroupIcon className="w-4 h-4 text-primary-600" />
+                      {group.title}
+                    </div>
+                    <div className="space-y-1 pl-1">
+                      {visibleLinks.map((link) => {
+                        const Icon = link.icon;
+                        const isLinkActive = pathname === link.href;
+
+                        return (
+                          <Link
+                            key={link.href}
+                            href={link.href}
+                            onClick={() => setIsMobileOpen(false)}
+                            className={`flex items-center justify-between px-3.5 py-3 rounded-2xl text-sm transition-colors ${
+                              isLinkActive
+                                ? "bg-primary-100 text-primary-700 font-black border-l-4 border-primary-600 shadow-2xs"
+                                : "text-gray-900 hover:text-primary-700 hover:bg-primary-50 font-bold"
+                            }`}
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              <Icon className={`w-5 h-5 shrink-0 ${isLinkActive ? "text-primary-600" : "text-zinc-500"}`} />
+                              <span className="truncate">{link.name}</span>
+                            </div>
+                            {isLinkActive && <ChevronRight className="w-4 h-4 text-primary-600 shrink-0" />}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
-          <div className="space-y-6">
-            {navigationGroups.map((group) => {
-              const visibleLinks = group.links.filter(
-                l => !l.requireSuperAdmin || session?.user?.role === "superadmin"
-              );
-              const GroupIcon = group.icon;
-
-              return (
-                <div key={group.id} className="space-y-2">
-                  <div className="text-xs font-black uppercase tracking-wider text-primary-700 flex items-center gap-2 px-2">
-                    <GroupIcon className="w-4 h-4 text-primary-600" />
-                    {group.title}
-                  </div>
-                  <div className="space-y-1 pl-1">
-                    {visibleLinks.map((link) => {
-                      const Icon = link.icon;
-                      const isLinkActive = pathname === link.href;
-
-                      return (
-                        <Link
-                          key={link.href}
-                          href={link.href}
-                          onClick={() => setIsMobileOpen(false)}
-                          className={`flex items-center justify-between px-3.5 py-3 rounded-2xl text-sm transition-colors ${
-                            isLinkActive
-                              ? "bg-primary-100 text-primary-700 font-black border-l-4 border-primary-600 shadow-2xs"
-                              : "text-gray-900 hover:text-primary-700 hover:bg-primary-50 font-bold"
-                          }`}
-                        >
-                          <div className="flex items-center gap-3 min-w-0">
-                            <Icon className={`w-5 h-5 shrink-0 ${isLinkActive ? "text-primary-600" : "text-zinc-500"}`} />
-                            <span className="truncate">{link.name}</span>
-                          </div>
-                          {isLinkActive && <ChevronRight className="w-4 h-4 text-primary-600 shrink-0" />}
-                        </Link>
-                      );
-                    })}
-                  </div>
+          {/* MOBILE PROFILE & LOGOUT SECTION */}
+          <div className="pt-4 border-t border-border-subtle space-y-3 mt-auto">
+            <div className="flex items-center gap-3 p-3 rounded-2xl bg-primary-50/70 border border-primary-100">
+              {session?.user?.image ? (
+                <img 
+                  src={session.user.image} 
+                  alt="Profile" 
+                  className="w-10 h-10 rounded-full border border-border-subtle object-cover shrink-0"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-primary-600 flex items-center justify-center text-sm font-black text-white shrink-0">
+                  {session?.user?.name ? session.user.name[0].toUpperCase() : "A"}
                 </div>
-              );
-            })}
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-black text-gray-900 truncate">{session?.user?.name || "Admin User"}</p>
+                <p className="text-[11px] text-zinc-600 font-mono truncate">{session?.user?.email || "admin@adarsh.com"}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <Link
+                href="/admin/profile"
+                onClick={() => setIsMobileOpen(false)}
+                className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-white border border-border-subtle text-xs font-bold text-gray-900 hover:bg-primary-50 transition-colors"
+              >
+                <User className="w-4 h-4 text-primary-600" /> Profile
+              </Link>
+              <button
+                onClick={() => {
+                  setIsMobileOpen(false);
+                  signOut({ callbackUrl: "/admin/sign-in" });
+                }}
+                className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-xs font-bold text-rose-600 hover:bg-rose-100 transition-colors cursor-pointer"
+              >
+                <LogOut className="w-4 h-4 text-rose-600" /> Logout
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -202,7 +245,7 @@ export default function AdminSidebar({
         </Link>
       </div>
 
-      {/* 🌟 2. SEPARATE SIDEBAR NAVIGATION CAPSULE (TRIMMED BORDER STARTING FROM FIRST ICON) */}
+      {/* 🌟 2. SEPARATE SIDEBAR NAVIGATION CAPSULE */}
       <aside className="hidden lg:flex fixed top-20 bottom-4 left-4 z-40 w-14 sm:w-16 bg-white/90 backdrop-blur-2xl border border-border-subtle rounded-[32px] flex-col justify-between items-center py-4 px-1.5 select-none shadow-md">
         
         {/* TOP SECTION: STACKED NAVIGATION ICON BUTTONS */}

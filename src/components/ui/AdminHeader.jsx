@@ -151,7 +151,6 @@ export default function AdminHeader({ onToggleMobileDrawer }) {
   };
 
   const breadcrumbs = getBreadcrumbs();
-  const currentBreadcrumb = breadcrumbs[breadcrumbs.length - 1];
 
   return (
     <header className="sticky top-2 sm:top-3.5 z-30 w-[98%] sm:w-[96%] max-w-full mx-auto my-1 sm:my-2 bg-white/80 backdrop-blur-2xl border border-border-subtle rounded-2xl sm:rounded-[28px] px-2.5 sm:px-4 md:px-6 py-2 sm:py-2.5 transition-all duration-300 shadow-md">
@@ -167,7 +166,7 @@ export default function AdminHeader({ onToggleMobileDrawer }) {
             <Menu className="h-4.5 w-4.5 sm:h-5 sm:w-5" />
           </button>
 
-          {/* Breadcrumb Trail (Desktop Full, Mobile Compact) */}
+          {/* Breadcrumb Trail (Desktop Only) */}
           <nav className="hidden sm:flex items-center gap-2 text-xs sm:text-sm text-zinc-600 font-bold bg-white/90 border border-border-subtle px-3 sm:px-4 py-1 sm:py-1.5 rounded-full shadow-2xs min-w-0">
             {breadcrumbs.map((crumb, idx) => (
               <React.Fragment key={crumb.href}>
@@ -178,13 +177,9 @@ export default function AdminHeader({ onToggleMobileDrawer }) {
               </React.Fragment>
             ))}
           </nav>
-
-          <span className="sm:hidden text-xs font-black text-gray-900 truncate max-w-[110px]">
-            {currentBreadcrumb?.label || "Admin"}
-          </span>
         </div>
 
-        {/* Right Side: Pill-Styled Interactive Controls (Optimized for Small Screens) */}
+        {/* Right Side: Pill-Styled Interactive Controls (Only Menu, Search, +, Notifications on Mobile) */}
         <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
           
           {/* Search Pill */}
@@ -344,10 +339,10 @@ export default function AdminHeader({ onToggleMobileDrawer }) {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* User Profile Pill */}
+          {/* Desktop Only Profile Pill (Hidden on Mobile) */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex items-center gap-2 px-1.5 sm:px-2.5 h-8.5 sm:h-10 rounded-full bg-white border border-border-subtle hover:bg-primary-50 transition-all outline-none cursor-pointer group text-left shadow-2xs shrink-0">
+              <button className="hidden sm:flex items-center gap-2 px-1.5 sm:px-2.5 h-8.5 sm:h-10 rounded-full bg-white border border-border-subtle hover:bg-primary-50 transition-all outline-none cursor-pointer group text-left shadow-2xs shrink-0">
                 <div className="relative shrink-0">
                   {session?.user?.image ? (
                     <img 
@@ -364,7 +359,7 @@ export default function AdminHeader({ onToggleMobileDrawer }) {
                   <span className="absolute bottom-0 right-0 h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-emerald-500 ring-2 ring-white" />
                 </div>
 
-                <div className="hidden sm:flex flex-col text-left">
+                <div className="flex flex-col text-left">
                   <div className="flex items-center gap-1.5">
                     <span className="text-xs font-black text-gray-900 truncate max-w-[130px]">
                       {session?.user?.name || "Admin User"}
