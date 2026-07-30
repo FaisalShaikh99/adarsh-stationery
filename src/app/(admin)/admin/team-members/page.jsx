@@ -79,6 +79,35 @@ function TeamMembersContent() {
   const [pendingTarget, setPendingTarget] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  // Role Change State & Mutation
+  const [roleConfirmOpen, setRoleConfirmOpen] = useState(false);
+  const [pendingRoleChange, setPendingRoleChange] = useState(null);
+
+  const updateRoleMutation = useMutation({
+    mutationFn: async ({ id, newRole }) => {
+      const response = await axios.patch(`/api/admin/team/${id}`, { role: newRole });
+      return response.data;
+    },
+    onSuccess: (data) => {
+      toast.success(data.message || "Team member role updated successfully!");
+      queryClient.invalidateQueries({ queryKey: ["teamMembers"] });
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || "Role update failed.");
+    }
+  });
+
+  const executeRoleChange = () => {
+    if (!pendingRoleChange) return;
+    const { id, newRole } = pendingRoleChange;
+    setRoleConfirmOpen(false);
+    updateRoleMutation.mutate({ id, newRole }, {
+      onSettled: () => {
+        setPendingRoleChange(null);
+      }
+    });
+  };
+
   const { register, handleSubmit: handleFormSubmit, reset, setValue, watch, formState: { errors } } = useForm({
     resolver: zodResolver(adminInviteSchema),
     defaultValues: { email: "", role: "admin", message: AI_ROLE_SUGGESTIONS.admin }
@@ -277,20 +306,70 @@ function TeamMembersContent() {
                 member.isBlocked ? "opacity-75 bg-rose-50/40 border-rose-200" : ""
               }`}
             >
-              {/* Header: Role & Block Switch */}
+              {/* Header: Role Dropdown / Badge & Block Switch */}
               <div className="flex justify-between items-center mb-4">
-                <span className={`px-3 py-1 rounded-xl text-xs font-black uppercase tracking-wider border shadow-2xs ${
-                  member.role === 'superadmin' 
-                    ? 'bg-purple-50 text-purple-700 border-purple-200' 
-                    : member.role === 'admin' 
-                      ? 'bg-primary-50 text-primary-700 border-primary-200' 
-                      : 'bg-zinc-100 text-zinc-700 border-zinc-200'
-                }`}>
-                  {member.role}
-                </span>
+                {(() => {
+                  const isSelf = (member.email === session?.user?.email) || (member._id === session?.user?.id);
+                  const isSuperAdmin = session?.user?.role === "superadmin";
+
+                  if (isSuperAdmin && !isSelf) {
+                    return (
+                      <div className="relative">
+                        <select
+                          value={member.role}
+                          disabled={updateRoleMutation.isPending && updateRoleMutation.variables?.id === member._id}
+                          onChange={(e) => {
+                            const newRole = e.target.value;
+                            if (newRole !== member.role) {
+                              setPendingRoleChange({
+                                id: member._id,
+                                name: member.name || member.email,
+                                currentRole: member.role,
+                                newRole: newRole
+                              });
+                              setRoleConfirmOpen(true);
+                            }
+                          }}
+                          className={`px-3 py-1 rounded-xl text-xs font-black uppercase tracking-wider border shadow-2xs appearance-none pr-7 cursor-pointer outline-none transition-all ${
+                            member.role === 'superadmin' 
+                              ? 'bg-purple-50 text-purple-700 border-purple-200 hover:border-purple-400' 
+                              : member.role === 'admin' 
+                                ? 'bg-primary-50 text-primary-700 border-primary-200 hover:border-primary-400' 
+                                : 'bg-zinc-100 text-zinc-700 border-zinc-200 hover:border-zinc-400'
+                          }`}
+                          style={{
+                            backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>")`,
+                            backgroundRepeat: 'no-repeat',
+                            backgroundPosition: 'right 8px center',
+                            backgroundSize: '12px'
+                          }}
+                          title="Change team member role"
+                        >
+                          <option value="superadmin" className="bg-white text-purple-700 font-bold">SUPERADMIN</option>
+                          <option value="admin" className="bg-white text-primary-700 font-bold">ADMIN</option>
+                          <option value="staff" className="bg-white text-zinc-800 font-bold">STAFF</option>
+                          <option value="manager" className="bg-white text-zinc-800 font-bold">STORE MANAGER</option>
+                          <option value="inventory" className="bg-white text-zinc-800 font-bold">INVENTORY SPECIALIST</option>
+                        </select>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <span className={`px-3 py-1 rounded-xl text-xs font-black uppercase tracking-wider border shadow-2xs ${
+                      member.role === 'superadmin' 
+                        ? 'bg-purple-50 text-purple-700 border-purple-200' 
+                        : member.role === 'admin' 
+                          ? 'bg-primary-50 text-primary-700 border-primary-200' 
+                          : 'bg-zinc-100 text-zinc-700 border-zinc-200'
+                    }`}>
+                      {member.role} {isSelf && "(You)"}
+                    </span>
+                  );
+                })()}
 
                 <div>
-                  {member.role === "superadmin" ? (
+                  {member.role === "superadmin" && ((member.email === session?.user?.email) || (member._id === session?.user?.id)) ? (
                     <span className="text-xs text-purple-700 font-black uppercase tracking-wider bg-purple-50 px-2.5 py-1 rounded-lg border border-purple-200 flex items-center gap-1">
                       <ShieldCheck className="w-3.5 h-3.5" /> Master
                     </span>
@@ -353,6 +432,37 @@ function TeamMembersContent() {
           ))}
         </div>
       )}
+
+      {/* ROLE CHANGE CONFIRMATION MODAL */}
+      <AlertDialog open={roleConfirmOpen} onOpenChange={setRoleConfirmOpen}>
+        <AlertDialogContent className="bg-white/95 backdrop-blur-2xl border border-border-subtle text-gray-900 rounded-[28px] shadow-2xl p-6 font-sans">
+          <AlertDialogHeader>
+            <div className="w-10 h-10 rounded-2xl bg-purple-100 text-purple-700 border border-purple-200 flex items-center justify-center mb-2">
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <AlertDialogTitle className="text-gray-900 font-black text-lg">
+              Confirm System Role Change
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-zinc-600 text-xs font-medium mt-1">
+              Are you sure you want to change the system role for <span className="text-gray-900 font-black capitalize">&quot;{pendingRoleChange?.name}&quot;</span> from <span className="text-purple-700 font-black uppercase">{pendingRoleChange?.currentRole}</span> to <span className="text-primary-700 font-black uppercase">{pendingRoleChange?.newRole}</span>?
+              <br /><br />
+              This will update their access permissions across the admin panel immediately.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="pt-4">
+            <AlertDialogCancel className="bg-white text-gray-900 border-border-subtle hover:bg-primary-50 rounded-2xl cursor-pointer font-bold text-xs h-11 px-5">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={executeRoleChange}
+              disabled={updateRoleMutation.isPending}
+              className="rounded-2xl text-white font-black text-xs h-11 px-6 cursor-pointer shadow-md bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
+            >
+              {updateRoleMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Confirm Role Change"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* CONFIRMATION MODAL */}
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
