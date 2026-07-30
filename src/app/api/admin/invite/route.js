@@ -63,10 +63,13 @@ export const POST = asyncHandler(async (request) => {
     const apiKey = process.env.ADMIN_RESEND_API_KEY || process.env.ADARSH_ADMIN_API_KEY;
     const isResendConfigured = apiKey && !apiKey.startsWith("re_dummy");
 
+    let emailSent = false;
+    let lastError = null;
+
+    // 1. Try Resend first (if API key configured)
     if (isResendConfigured) {
-        // Send branded Amethyst Dusk React Email via Resend
         try {
-            await resend.emails.send({
+            const resendResult = await resend.emails.send({
                 from: process.env.SENDER_EMAIL || "Adarsh Stationery <onboarding@resend.dev>",
                 to: email,
                 subject: `Official Admin Invitation (${role.toUpperCase()}) - Adarsh Stationery`,
@@ -79,44 +82,67 @@ export const POST = asyncHandler(async (request) => {
                     />
                 ),
             });
-        } catch (resendErr) {
-            console.error("Resend delivery failed, falling back to EmailJS:", resendErr);
-        }
-    } else {
-        // EmailJS Fallback API call
-        const emailJSData = {
-            service_id: process.env.EMAILJS_SERVICE_ID,
-            template_id: process.env.EMAILJS_TEMPLATE_ID,
-            user_id: process.env.EMAILJS_PUBLIC_KEY,
-            accessToken: process.env.EMAILJS_PRIVATE_KEY, 
-            template_params: {
-                 to_email: email,
-                 recipient_email: email,
-                 user_email: email,
-                 email: email,
-                 role: role.toUpperCase(),
-                 message: message || "No custom message attached.",
-                 invite_link: inviteLink,
-            },
-        };
 
-        try {
-            const emailResponse = await fetch("https://api.emailjs.com/api/v1.0/email/send", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(emailJSData),
-            });
-
-            if (!emailResponse.ok) {
-                const errorText = await emailResponse.text();
-                console.error("EmailJS Error:", errorText);
-                throw new ApiError(500, "Failed to send invitation email.");
+            if (resendResult.error) {
+                console.error("Resend Delivery Error Result:", resendResult.error);
+                lastError = resendResult.error.message || JSON.stringify(resendResult.error);
+            } else {
+                emailSent = true;
             }
-        } catch (err) {
-            if (err instanceof ApiError) throw err;
-            console.error("Unexpected error sending EmailJS email:", err);
-            throw new ApiError(500, "Failed to send invitation email.");
+        } catch (resendErr) {
+            console.error("Resend Delivery Exception:", resendErr);
+            lastError = resendErr.message;
         }
+    }
+
+    // 2. Fallback to EmailJS if Resend failed or is not configured
+    if (!emailSent) {
+        const isEmailJSConfigured = process.env.EMAILJS_SERVICE_ID && process.env.EMAILJS_TEMPLATE_ID && process.env.EMAILJS_PUBLIC_KEY;
+        if (isEmailJSConfigured) {
+            const emailJSData = {
+                service_id: process.env.EMAILJS_SERVICE_ID,
+                template_id: process.env.EMAILJS_TEMPLATE_ID,
+                user_id: process.env.EMAILJS_PUBLIC_KEY,
+                accessToken: process.env.EMAILJS_PRIVATE_KEY, 
+                template_params: {
+                     to_email: email,
+                     recipient_email: email,
+                     user_email: email,
+                     email: email,
+                     role: role.toUpperCase(),
+                     message: message || "No custom message attached.",
+                     invite_link: inviteLink,
+                },
+            };
+
+            try {
+                const emailResponse = await fetch("https://api.emailjs.com/api/v1.0/email/send", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(emailJSData),
+                });
+
+                if (emailResponse.ok) {
+                    emailSent = true;
+                } else {
+                    const errorText = await emailResponse.text();
+                    console.error("EmailJS Error:", errorText);
+                    lastError = errorText;
+                }
+            } catch (err) {
+                console.error("EmailJS Exception:", err);
+                lastError = err.message;
+            }
+        }
+    }
+
+    // 3. If neither provider delivered, throw real error to UI
+    if (!emailSent) {
+        console.error("Email delivery failed. Last error:", lastError);
+        throw new ApiError(
+            500,
+            `Email delivery failed: ${lastError || "Please check Resend/EmailJS API keys & domain verification."}`
+        );
     }
 
     // Save Invitation to Database only if email sending is successful
