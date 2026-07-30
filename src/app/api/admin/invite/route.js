@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import React from "react";
 import { NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { asyncHandler } from "@/utils/asyncHandler";
@@ -8,6 +9,8 @@ import { dbConnect } from "@/lib/dbConnect";
 import { AdminInvite } from "@/models/adminInvite.model";
 import { Admin } from "@/models/admin.model";
 import { adminInviteSchema } from "@/schemas/invite.schema";
+import { resend } from "@/lib/resend";
+import InviteEmail from "@/email_template/inviteEmailTemplate";
 
 export const POST = asyncHandler(async (request) => {
     // DB Connection
@@ -50,51 +53,73 @@ export const POST = asyncHandler(async (request) => {
         throw new ApiError(400, "An active invitation has already been sent to this email");
     }
 
-    
     const token = crypto.randomBytes(32).toString("hex");
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-    
-    const inviteLink = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/admin/sign-in?token=${token}`;
+    // Build secure HTTPS link to prevent Gmail anti-phishing spam flags
+    let baseUrl = process.env.NEXTAUTH_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://adarsh-stationery.vercel.app");
+    if (baseUrl.startsWith("http://localhost")) {
+      baseUrl = "https://adarsh-stationery.vercel.app";
+    }
+    const inviteLink = `${baseUrl}/admin/sign-in?token=${token}`;
 
-   const emailJSData = {
-       service_id: process.env.EMAILJS_SERVICE_ID,
-       template_id: process.env.EMAILJS_TEMPLATE_ID,
-       user_id: process.env.EMAILJS_PUBLIC_KEY,
-       accessToken: process.env.EMAILJS_PRIVATE_KEY, 
-       template_params: {
-            // include several common variable names to match different template setups
-            to_email: email,
-            recipient_email: email,
-            user_email: email,
-            email: email,
-            role: role,
-            message: message || "No custom message attached.",
-            invite_link: inviteLink,
-       },
-   };
+    const apiKey = process.env.ADMIN_RESEND_API_KEY || process.env.ADARSH_ADMIN_API_KEY;
+    const isResendConfigured = apiKey && !apiKey.startsWith("re_dummy");
 
-    // Log payload for debugging (server logs only)
-    try {
-        console.debug("EmailJS payload:", JSON.stringify(emailJSData));
-
-        const emailResponse = await fetch("https://api.emailjs.com/api/v1.0/email/send", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(emailJSData),
-        });
-
-        if (!emailResponse.ok) {
-            const errorText = await emailResponse.text();
-            console.error("EmailJS Service Error Details:", errorText);
-            console.error("EmailJS Payload:", JSON.stringify(emailJSData));
-            throw new ApiError(500, "Failed to send invitation email via EmailJS. Please try again.");
+    if (isResendConfigured) {
+        // Send branded Amethyst Dusk React Email via Resend
+        try {
+            await resend.emails.send({
+                from: process.env.SENDER_EMAIL || "Adarsh Stationery <onboarding@resend.dev>",
+                to: email,
+                subject: `Official Admin Invitation (${role.toUpperCase()}) - Adarsh Stationery`,
+                react: (
+                    <InviteEmail
+                        email={email}
+                        role={role}
+                        inviteLink={inviteLink}
+                        message={message}
+                    />
+                ),
+            });
+        } catch (resendErr) {
+            console.error("Resend delivery failed, falling back to EmailJS:", resendErr);
         }
-    } catch (err) {
-        // Bubble up ApiError or wrap unexpected errors
-        if (err instanceof ApiError) throw err;
-        console.error("Unexpected error sending EmailJS email:", err);
-        throw new ApiError(500, "Failed to send invitation email via EmailJS. Please try again.");
+    } else {
+        // EmailJS Fallback API call
+        const emailJSData = {
+            service_id: process.env.EMAILJS_SERVICE_ID,
+            template_id: process.env.EMAILJS_TEMPLATE_ID,
+            user_id: process.env.EMAILJS_PUBLIC_KEY,
+            accessToken: process.env.EMAILJS_PRIVATE_KEY, 
+            template_params: {
+                 to_email: email,
+                 recipient_email: email,
+                 user_email: email,
+                 email: email,
+                 role: role.toUpperCase(),
+                 message: message || "No custom message attached.",
+                 invite_link: inviteLink,
+            },
+        };
+
+        try {
+            const emailResponse = await fetch("https://api.emailjs.com/api/v1.0/email/send", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(emailJSData),
+            });
+
+            if (!emailResponse.ok) {
+                const errorText = await emailResponse.text();
+                console.error("EmailJS Error:", errorText);
+                throw new ApiError(500, "Failed to send invitation email.");
+            }
+        } catch (err) {
+            if (err instanceof ApiError) throw err;
+            console.error("Unexpected error sending EmailJS email:", err);
+            throw new ApiError(500, "Failed to send invitation email.");
+        }
     }
 
     // Save Invitation to Database only if email sending is successful
@@ -109,6 +134,6 @@ export const POST = asyncHandler(async (request) => {
     });
 
     return NextResponse.json(
-        new ApiResponse(200, null, "Invitation sent and email delivered successfully!")
+        new ApiResponse(201, { email, role, inviteLink }, "Invitation sent successfully!")
     );
 });
