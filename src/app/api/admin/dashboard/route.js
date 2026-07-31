@@ -200,24 +200,28 @@ export async function GET(req) {
       },
     ]);
 
-    // 4. Low Stock Alerts
+    // 4. Low Stock Alerts (comparing actual schema fields 'stock' and 'minStock')
     const lowStockProducts = await Product.find({
-      stockQuantity: { $lte: lowStockThreshold },
+      $or: [
+        { $expr: { $lte: ["$stock", "$minStock"] } },
+        { stock: { $lte: lowStockThreshold } }
+      ]
     })
-      .select("name stockQuantity sku category")
+      .select("name stock minStock productId category")
+      .populate("category", "name")
       .lean();
 
     const lowStockAlerts = lowStockProducts.map((p) => ({
       productId: p._id,
       productName: p.name,
-      stockQuantity: p.stockQuantity,
-      sku: p.sku || "N/A",
-      threshold: lowStockThreshold,
+      stockQuantity: p.stock,
+      sku: p.productId || "N/A",
+      threshold: p.minStock !== undefined ? p.minStock : lowStockThreshold,
     }));
 
-    // 5. Category Purchase Trend
+    // 5. Category Purchase Trend (Fixed aggregation fields to match Recharts props)
     const categoryPurchaseTrend = await Order.aggregate([
-      { $match: { createdAt: { $gte: d30 }, status: { $ne: "Cancelled" } } },
+      { $match: { status: { $ne: "Cancelled" } } },
       { $unwind: "$items" },
       {
         $lookup: {
@@ -239,19 +243,20 @@ export async function GET(req) {
       { $unwind: { path: "$categoryDetails", preserveNullAndEmptyArrays: true } },
       {
         $group: {
-          _id: "$categoryDetails.name",
-          totalPurchases: { $sum: "$items.quantity font-mono" },
-          revenue: { $sum: "$items.subtotal" },
+          _id: { $ifNull: ["$categoryDetails.name", "General Stationery"] },
+          totalQuantitySold: { $sum: { $ifNull: ["$items.quantity", 1] } },
+          totalRevenue: { $sum: { $ifNull: ["$items.subtotal", 0] } },
         },
       },
       {
         $project: {
-          categoryName: { $ifNull: ["$_id", "Uncategorized"] },
-          totalPurchases: "$revenue",
-          revenue: 1,
+          _id: 0,
+          categoryName: "$_id",
+          totalQuantitySold: 1,
+          totalRevenue: 1,
         },
       },
-      { $sort: { revenue: -1 } },
+      { $sort: { totalQuantitySold: -1 } },
       { $limit: 6 },
     ]);
 

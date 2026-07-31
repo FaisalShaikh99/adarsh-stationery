@@ -300,7 +300,9 @@ function ProductManagementContent() {
     },
     refetchOnMount: true
   });
-  const products = productsData || [];
+  const products = Array.isArray(productsData) ? productsData : (productsData?.products || []);
+  const liveRevenue = (typeof productsData === "object" && !Array.isArray(productsData)) ? (productsData?.totalRevenue || 0) : 0;
+  const liveSold = (typeof productsData === "object" && !Array.isArray(productsData)) ? (productsData?.totalSold || 0) : 0;
 
   const handleRefreshAll = async () => {
     try {
@@ -870,8 +872,8 @@ function ProductManagementContent() {
  
   const metrics = [
     { title: "Product Counter", value: String(products.length).padStart(2, "0") },
-    { title: "Revenue", value: "₹0", subtext: "Available after Orders module" },
-    { title: "Total Sold", value: "0", subtext: "Available after Orders module" },
+    { title: "Revenue", value: `₹${liveRevenue.toLocaleString("en-IN")}`, subtext: "Non-cancelled Orders Net" },
+    { title: "Total Sold", value: String(liveSold), subtext: "Fulfilled Order Units" },
     { title: "Active Catalog", value: String(products.filter(p => p.isVisible !== false).length).padStart(2, "0") }
   ];
 

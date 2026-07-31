@@ -7,6 +7,7 @@ import { asyncHandler } from "@/utils/asyncHandler";
 import { getToken } from "next-auth/jwt";
 import crypto from "crypto";
 import mongoose from "mongoose";
+import Order from "@/models/order.model";
 import { Brand } from "@/models/brand.model";
 import { productValidationSchema } from "@/schemas/products.schema";
 import { createNotification } from "@/lib/createNotification";
@@ -147,8 +148,24 @@ export const GET = asyncHandler(async (request) => {
         }
     ]);
 
+    // Calculate single source of truth sales metrics from Order collection
+    const [revenueAgg, soldAgg] = await Promise.all([
+        Order.aggregate([
+            { $match: { status: { $ne: "Cancelled" } } },
+            { $group: { _id: null, totalRevenue: { $sum: "$totalAmount" } } }
+        ]),
+        Order.aggregate([
+            { $match: { status: { $ne: "Cancelled" } } },
+            { $unwind: "$items" },
+            { $group: { _id: null, totalSold: { $sum: "$items.quantity" } } }
+        ])
+    ]);
+
+    const totalRevenue = revenueAgg[0]?.totalRevenue || 0;
+    const totalSold = soldAgg[0]?.totalSold || 0;
+
     return NextResponse.json(
-        new ApiResponse(200, products, "Inventory data successfully indexed and optimized!")
+        new ApiResponse(200, { products, totalRevenue, totalSold }, "Inventory data successfully indexed and optimized!")
     );
 });
 
