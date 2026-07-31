@@ -148,8 +148,8 @@ export const GET = asyncHandler(async (request) => {
         }
     ]);
 
-    // Calculate single source of truth sales metrics from Order collection
-    const [revenueAgg, soldAgg] = await Promise.all([
+    // Calculate single source of truth sales metrics & sold history items from Order collection
+    const [revenueAgg, soldAgg, soldItemsAgg] = await Promise.all([
         Order.aggregate([
             { $match: { status: { $ne: "Cancelled" } } },
             { $group: { _id: null, totalRevenue: { $sum: "$totalAmount" } } }
@@ -158,14 +158,36 @@ export const GET = asyncHandler(async (request) => {
             { $match: { status: { $ne: "Cancelled" } } },
             { $unwind: "$items" },
             { $group: { _id: null, totalSold: { $sum: "$items.quantity" } } }
+        ]),
+        Order.aggregate([
+            { $match: { status: { $ne: "Cancelled" } } },
+            { $unwind: "$items" },
+            { $sort: { createdAt: -1 } },
+            {
+                $project: {
+                    _id: { $concat: [{ $toString: "$_id" }, "-", { $ifNull: [{ $toString: "$items._id" }, "1"] }] },
+                    orderId: "$_id",
+                    orderNumber: 1,
+                    status: 1,
+                    createdAt: 1,
+                    customerName: "$shippingAddress.name",
+                    customerPhone: "$shippingAddress.phone",
+                    productId: "$items.product",
+                    productName: "$items.productName",
+                    quantity: "$items.quantity",
+                    pricePerUnit: "$items.pricePerUnit",
+                    subtotal: "$items.subtotal"
+                }
+            }
         ])
     ]);
 
     const totalRevenue = revenueAgg[0]?.totalRevenue || 0;
     const totalSold = soldAgg[0]?.totalSold || 0;
+    const soldItems = soldItemsAgg || [];
 
     return NextResponse.json(
-        new ApiResponse(200, { products, totalRevenue, totalSold }, "Inventory data successfully indexed and optimized!")
+        new ApiResponse(200, { products, totalRevenue, totalSold, soldItems }, "Inventory data successfully indexed and optimized!")
     );
 });
 

@@ -303,6 +303,9 @@ function ProductManagementContent() {
   const products = Array.isArray(productsData) ? productsData : (productsData?.products || []);
   const liveRevenue = (typeof productsData === "object" && !Array.isArray(productsData)) ? (productsData?.totalRevenue || 0) : 0;
   const liveSold = (typeof productsData === "object" && !Array.isArray(productsData)) ? (productsData?.totalSold || 0) : 0;
+  const soldItems = (typeof productsData === "object" && !Array.isArray(productsData)) ? (productsData?.soldItems || []) : [];
+  const [isSoldHistoryOpen, setIsSoldHistoryOpen] = useState(false);
+  const [soldSearchQuery, setSoldSearchQuery] = useState("");
 
   const handleRefreshAll = async () => {
     try {
@@ -938,30 +941,46 @@ function ProductManagementContent() {
         </div>
 
         {/* Card 2: Revenue (White Surface with Pink/Purple Icon) */}
-        <div className="p-5 rounded-2xl bg-bg-surface border border-border-subtle shadow-xs flex flex-col justify-between min-h-[110px]">
+        <div 
+          onClick={() => setIsSoldHistoryOpen(true)}
+          className="p-5 rounded-2xl bg-bg-surface border border-border-subtle shadow-xs hover:border-pink-300 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between min-h-[110px] group"
+          title="Click to view sales revenue breakdown"
+        >
           <div className="flex items-center justify-between">
-            <p className="text-xs text-zinc-500 uppercase tracking-wider font-extrabold">Revenue</p>
-            <div className="p-2 rounded-xl bg-pink-50 border border-pink-200 text-pink-600">
+            <p className="text-xs text-zinc-500 uppercase tracking-wider font-extrabold group-hover:text-pink-600 transition-colors">Revenue</p>
+            <div className="p-2 rounded-xl bg-pink-50 border border-pink-200 text-pink-600 group-hover:scale-105 transition-transform">
               <Sparkles className="h-4.5 w-4.5" />
             </div>
           </div>
           <div>
-            <p className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-gray-900 mt-2">₹0</p>
-            <span className="text-[10px] text-zinc-500 mt-1 block italic">Available after Orders module</span>
+            <p className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-gray-900 mt-2">
+              ₹{liveRevenue.toLocaleString("en-IN")}
+            </p>
+            <span className="text-[10px] text-pink-600 font-bold mt-1 flex items-center gap-1">
+              Live Paid Revenue →
+            </span>
           </div>
         </div>
 
-        {/* Card 3: Total Sold (White Surface with Purple Icon) */}
-        <div className="p-5 rounded-2xl bg-bg-surface border border-border-subtle shadow-xs flex flex-col justify-between min-h-[110px]">
+        {/* Card 3: Total Sold (White Surface with Purple Icon - Clickable to open Sold History Drawer) */}
+        <div 
+          onClick={() => setIsSoldHistoryOpen(true)}
+          className="p-5 rounded-2xl bg-bg-surface border border-border-subtle shadow-xs hover:border-purple-400 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between min-h-[110px] group"
+          title="Click to open Sold Items History drawer"
+        >
           <div className="flex items-center justify-between">
-            <p className="text-xs text-zinc-500 uppercase tracking-wider font-extrabold">Total Sold</p>
-            <div className="p-2 rounded-xl bg-purple-50 border border-purple-200 text-purple-600">
+            <p className="text-xs text-zinc-500 uppercase tracking-wider font-extrabold group-hover:text-purple-600 transition-colors">Total Sold</p>
+            <div className="p-2 rounded-xl bg-purple-50 border border-purple-200 text-purple-600 group-hover:scale-105 transition-transform">
               <Wand2 className="h-4.5 w-4.5" />
             </div>
           </div>
           <div>
-            <p className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-gray-900 mt-2">0</p>
-            <span className="text-[10px] text-zinc-500 mt-1 block italic">Available after Orders module</span>
+            <p className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-gray-900 mt-2">
+              {liveSold}
+            </p>
+            <span className="text-[10px] text-purple-600 font-bold mt-1 flex items-center gap-1">
+              View Sold History →
+            </span>
           </div>
         </div>
 
@@ -2338,6 +2357,135 @@ function ProductManagementContent() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {/* 7. SOLD HISTORY RIGHT SLIDE-OVER DRAWER */}
+      {isSoldHistoryOpen && (
+        <div className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="w-full max-w-xl bg-white h-full shadow-2xl flex flex-col justify-between font-sans text-gray-900 animate-in slide-in-from-right duration-300">
+            
+            {/* Drawer Header with Brand Purple Gradient */}
+            <div className="p-5 sm:p-6 border-b border-border-subtle bg-gradient-to-r from-[#4A056D] to-[#7E22CE] text-white flex items-center justify-between shadow-md">
+              <div>
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-white/20 border border-white/30 text-white">
+                    <ShoppingBag className="w-5 h-5 text-purple-200" />
+                  </div>
+                  <h2 className="text-lg sm:text-xl font-black text-white tracking-tight">Sold Items History</h2>
+                </div>
+                <p className="text-xs text-purple-200 mt-1 font-medium">
+                  Transaction feed across all confirmed, shipped & delivered orders
+                </p>
+              </div>
+              <button 
+                onClick={() => setIsSoldHistoryOpen(false)} 
+                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+                title="Close drawer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Total Revenue & Volume Summary Bar inside Drawer */}
+            <div className="p-4 bg-purple-50/90 border-b border-purple-100 flex items-center justify-between">
+              <div>
+                <span className="text-[11px] font-black uppercase text-purple-800 tracking-wider">Total Sales Revenue</span>
+                <p className="text-xl sm:text-2xl font-black text-purple-950 font-mono">₹{liveRevenue.toLocaleString("en-IN")}</p>
+              </div>
+              <div className="text-right">
+                <span className="text-[11px] font-black uppercase text-purple-800 tracking-wider">Fulfilled Units</span>
+                <p className="text-xl sm:text-2xl font-black text-purple-950 font-mono">{liveSold} Pcs</p>
+              </div>
+            </div>
+
+            {/* Search Filter for Sold Items */}
+            <div className="p-4 border-b border-border-subtle bg-white">
+              <div className="flex items-center bg-zinc-50 border border-border-subtle rounded-xl px-3 h-10 gap-2 focus-within:border-primary-400">
+                <Search className="w-4 h-4 text-zinc-400 shrink-0" />
+                <input
+                  type="text"
+                  placeholder="Search sold items by product, order #, or customer name..."
+                  value={soldSearchQuery}
+                  onChange={(e) => setSoldSearchQuery(e.target.value)}
+                  className="bg-transparent border-none text-xs font-bold text-gray-900 placeholder-zinc-400 focus:outline-none w-full h-full"
+                />
+                {soldSearchQuery && (
+                  <button onClick={() => setSoldSearchQuery("")} className="text-zinc-400 hover:text-gray-900 text-xs font-bold">Clear</button>
+                )}
+              </div>
+            </div>
+
+            {/* Sold Items Scrollable Transaction Feed */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              {(() => {
+                const filteredSold = soldItems.filter(item => 
+                  item.productName?.toLowerCase().includes(soldSearchQuery.toLowerCase()) ||
+                  item.orderNumber?.toLowerCase().includes(soldSearchQuery.toLowerCase()) ||
+                  item.customerName?.toLowerCase().includes(soldSearchQuery.toLowerCase()) ||
+                  item.status?.toLowerCase().includes(soldSearchQuery.toLowerCase())
+                );
+
+                if (filteredSold.length === 0) {
+                  return (
+                    <div className="flex flex-col items-center justify-center text-center p-12 space-y-2 text-zinc-500 min-h-[250px]">
+                      <Package className="w-10 h-10 text-zinc-300" />
+                      <p className="text-xs font-black text-gray-900">No sold item records found matching search.</p>
+                      <p className="text-[11px] text-zinc-400">Items appear here when customer orders are placed and confirmed.</p>
+                    </div>
+                  );
+                }
+
+                return filteredSold.map((item) => {
+                  const statusColors = {
+                    Confirmed: "bg-blue-50 text-blue-700 border-blue-200",
+                    Processing: "bg-purple-50 text-purple-700 border-purple-200",
+                    Shipped: "bg-cyan-50 text-cyan-700 border-cyan-200",
+                    Delivered: "bg-emerald-50 text-emerald-700 border-emerald-200",
+                    Returned: "bg-amber-50 text-amber-700 border-amber-200",
+                  };
+                  const badgeStyle = statusColors[item.status] || "bg-zinc-100 text-zinc-700 border-zinc-200";
+
+                  return (
+                    <div key={item._id} className="bg-white border border-border-subtle hover:border-primary-300 rounded-2xl p-4 shadow-2xs space-y-2.5 transition-all">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border ${badgeStyle}`}>
+                            {item.status || "Confirmed"}
+                          </span>
+                          <h4 className="text-xs font-black text-gray-900 truncate mt-1.5">{item.productName}</h4>
+                          <p className="text-[11px] text-zinc-500 font-mono mt-0.5">
+                            Order #{item.orderNumber || String(item.orderId).slice(-6)} • {item.customerName || "Customer"}
+                          </p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="text-sm font-black text-gray-900 font-mono">₹{(item.subtotal || 0).toLocaleString("en-IN")}</p>
+                          <p className="text-[11px] font-black text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md border border-purple-200 mt-1 inline-block">
+                            {item.quantity} × ₹{item.pricePerUnit || 0}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="pt-2 border-t border-border-subtle flex items-center justify-between text-[10px] text-zinc-400 font-mono">
+                        <span>Date: {item.createdAt ? new Date(item.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Recently'}</span>
+                        <span className="text-emerald-600 font-sans font-bold">Payment Verified</span>
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+
+            {/* Drawer Footer Close */}
+            <div className="p-4 border-t border-border-subtle bg-zinc-50 flex justify-end">
+              <Button 
+                onClick={() => setIsSoldHistoryOpen(false)} 
+                className="bg-white border border-border-subtle text-gray-900 hover:bg-primary-50 rounded-xl text-xs font-bold px-5 h-10 shadow-2xs cursor-pointer"
+              >
+                Close Sold History
+              </Button>
+            </div>
+
+          </div>
+        </div>
+      )}
     </div>
   );
 }
