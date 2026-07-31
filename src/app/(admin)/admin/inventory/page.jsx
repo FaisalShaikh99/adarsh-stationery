@@ -763,16 +763,16 @@ export default function InventoryManagementPage() {
           <div className="overflow-x-auto rounded-2xl border border-border-subtle bg-bg-surface shadow-xs">
             <Table className="min-w-[1300px]">
               <TableHeader className="bg-primary-50/80 sticky top-0 z-10 backdrop-blur-md">
-                <TableRow className="border-b border-border-subtle text-xs uppercase tracking-wider text-primary-900">
+                <TableRow className="border-b border-border-subtle text-xs uppercase tracking-wider text-primary-900 font-mono">
                   <TableHead className="font-extrabold py-3.5 text-primary-900 text-left min-w-[200px]">Product</TableHead>
                   <TableHead className="font-extrabold py-3.5 text-primary-900 text-left w-28">SKU</TableHead>
-                  <TableHead className="font-extrabold py-3.5 text-primary-900 text-right w-36">Current Stock</TableHead>
-                  <TableHead className="font-extrabold py-3.5 text-primary-900 text-right w-32">Reserved Stock</TableHead>
-                  <TableHead className="font-extrabold py-3.5 text-primary-900 text-right w-32">Available Stock</TableHead>
-                  <TableHead className="font-extrabold py-3.5 text-primary-900 text-right w-24">Min Stock</TableHead>
-                  <TableHead className="font-extrabold py-3.5 text-primary-900 text-right w-28">Cost Price</TableHead>
-                  <TableHead className="font-extrabold py-3.5 text-primary-900 text-right w-28">Selling Price</TableHead>
-                  <TableHead className="font-extrabold py-3.5 text-primary-900 text-right w-32">Inventory Value</TableHead>
+                  <TableHead className="font-extrabold py-3.5 text-primary-900 text-center w-36">Current Stock</TableHead>
+                  <TableHead className="font-extrabold py-3.5 text-primary-900 text-center w-32">Reserved Stock</TableHead>
+                  <TableHead className="font-extrabold py-3.5 text-primary-900 text-center w-32">Available Stock</TableHead>
+                  <TableHead className="font-extrabold py-3.5 text-primary-900 text-center w-24">Min Stock</TableHead>
+                  <TableHead className="font-extrabold py-3.5 text-primary-900 text-right w-28 pr-3">Cost Price</TableHead>
+                  <TableHead className="font-extrabold py-3.5 text-primary-900 text-right w-28 pr-3">Selling Price</TableHead>
+                  <TableHead className="font-extrabold py-3.5 text-primary-900 text-right w-32 pr-3">Inventory Value</TableHead>
                   <TableHead className="font-extrabold py-3.5 text-primary-900 text-left w-32">Supplier</TableHead>
                   <TableHead className="font-extrabold py-3.5 text-primary-900 text-center w-28">Status</TableHead>
                   <TableHead className="font-extrabold py-3.5 text-primary-900 text-center w-32">Last Restocked</TableHead>
@@ -830,8 +830,8 @@ export default function InventoryManagementPage() {
                       <TableCell className="font-mono font-bold text-zinc-600 py-3 text-left w-28">{sku}</TableCell>
                       
                       {/* Current Stock */}
-                      <TableCell className="font-mono font-bold py-3 text-right w-36" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center justify-end gap-1.5 select-none">
+                      <TableCell className="font-mono tabular-nums py-3 text-center w-36" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-center gap-1 select-none">
                           {editingProductId === p._id ? (
                             <input
                               type="number"
@@ -864,7 +864,7 @@ export default function InventoryManagementPage() {
                                   setEditingProductId(p._id);
                                   setEditValue(String(stockVal));
                                 }}
-                                className={`w-8 text-center font-black cursor-pointer hover:underline ${stockVal === 0 ? "text-rose-600" : stockVal <= minStockVal ? "text-amber-600" : "text-emerald-600"}`}
+                                className={`w-7 text-center font-black cursor-pointer hover:underline ${stockVal === 0 ? "text-rose-600" : stockVal <= minStockVal ? "text-amber-600" : "text-emerald-600"}`}
                                 title="Click to type value"
                               >
                                 {stockVal}
@@ -878,27 +878,35 @@ export default function InventoryManagementPage() {
                               </button>
                             </>
                           )}
-                          <span className="text-zinc-500 font-semibold text-[10px] w-6 text-left ml-0.5">{p.stockUnit || "Pcs"}</span>
+                          <span className="text-zinc-500 font-semibold text-[10px] w-10 text-left ml-0.5">{p.stockUnit || "Pcs"}</span>
                         </div>
                       </TableCell>
 
                       {/* Reserved Stock */}
-                      <TableCell className="font-mono text-amber-600 text-right py-3 font-extrabold w-32">
-                        {reservedVal} <span className="text-[10px] text-zinc-500">{p.stockUnit || "Pcs"}</span>
+                      <TableCell className="font-mono tabular-nums text-center py-3 w-32">
+                        <div className="inline-flex items-center justify-center gap-1">
+                          <span className="font-black text-amber-600 text-xs sm:text-sm w-6 text-right">{reservedVal}</span>
+                          <span className="text-[10px] text-zinc-400 font-semibold w-10 text-left">{p.stockUnit || "Pcs"}</span>
+                        </div>
                       </TableCell>
 
                       {/* Available Stock */}
-                      <TableCell className="font-mono text-emerald-600 text-right py-3 font-black w-32">
-                        {availableVal} <span className="text-[10px] text-zinc-500">{p.stockUnit || "Pcs"}</span>
+                      <TableCell className="font-mono tabular-nums text-center py-3 w-32">
+                        <div className="inline-flex items-center justify-center gap-1">
+                          <span className={`font-black text-xs sm:text-sm w-6 text-right ${availableVal <= 0 ? "text-rose-600" : availableVal <= minStockVal ? "text-amber-600" : "text-emerald-600"}`}>
+                            {Math.max(0, availableVal)}
+                          </span>
+                          <span className="text-[10px] text-zinc-400 font-semibold w-10 text-left">{p.stockUnit || "Pcs"}</span>
+                        </div>
                       </TableCell>
                       
                       {/* Min Stock */}
-                      <TableCell className="font-mono text-zinc-600 text-right py-3 w-24 font-bold">{minStockVal}</TableCell>
+                      <TableCell className="font-mono tabular-nums text-zinc-700 text-center py-3 w-24 font-extrabold">{minStockVal}</TableCell>
                       
                       {/* Prices & Value */}
-                      <TableCell className="font-mono text-zinc-600 text-right py-3 w-28 font-medium">₹{costVal}</TableCell>
-                      <TableCell className="font-mono text-gray-900 font-bold text-right py-3 w-28">₹{sellVal}</TableCell>
-                      <TableCell className="font-mono text-gray-900 font-black text-right py-3 w-32">{formatCurrency(invVal)}</TableCell>
+                      <TableCell className="font-mono tabular-nums text-zinc-600 text-right py-3 w-28 font-medium pr-3">₹{costVal.toLocaleString("en-IN")}</TableCell>
+                      <TableCell className="font-mono tabular-nums text-gray-900 font-bold text-right py-3 w-28 pr-3">₹{sellVal.toLocaleString("en-IN")}</TableCell>
+                      <TableCell className="font-mono tabular-nums text-gray-900 font-black text-right py-3 w-32 pr-3">{formatCurrency(invVal)}</TableCell>
                       
                       {/* Supplier */}
                       <TableCell className="text-zinc-700 font-semibold capitalize py-3 truncate text-left w-32" title={supplier}>
