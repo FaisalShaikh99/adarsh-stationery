@@ -37,7 +37,7 @@ export default function InviteEmail({ email, role, inviteLink, message }) {
           {/* Header Banner with Brand Amethyst Gradient & Official Logo */}
           <div style={{ backgroundColor: '#4A056D', backgroundImage: 'linear-gradient(135deg, #4A056D 0%, #7E22CE 100%)', padding: '36px 28px', textAlign: 'center' }}>
             <img
-              src="https://adarsh-stationery.vercel.app/logo.png"
+              src="https://adarsh-stationery-mart-admin.vercel.app/logo.png"
               alt="Adarsh Stationery Logo"
               width="64"
               height="64"
