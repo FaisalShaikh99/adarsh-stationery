@@ -144,16 +144,39 @@ export default function OrderDetailPage() {
   const handleDownloadInvoice = () => {
     const doc = new jsPDF();
 
+    // 1. TOP LEFT: COMPANY BRANDING
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(22);
-    doc.text("Adarsh Stationery", 14, 20);
+    doc.setFontSize(18);
+    doc.setTextColor(155, 102, 212); // Brand Purple
+    doc.text("ADARSH STATIONERY", 14, 18);
 
-    doc.setFontSize(10);
+    doc.setFontSize(9);
+    doc.setTextColor(100, 100, 100);
     doc.setFont("helvetica", "normal");
-    doc.text("Premium Stationery & Office Supplies", 14, 26);
-    doc.line(14, 29, 196, 29);
+    doc.text("Premium Stationery & Office Supplies", 14, 24);
+
+    // 2. TOP RIGHT CORNER: LOGO BADGE (x=150, y=8, w=46, h=18)
+    doc.setFillColor(245, 243, 255);
+    doc.roundedRect(150, 8, 46, 18, 3, 3, "F");
+    doc.setDrawColor(216, 165, 233);
+    doc.roundedRect(150, 8, 46, 18, 3, 3, "D");
 
     doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(126, 34, 206);
+    doc.text("ADARSH LOGO", 173, 16, { align: "center" });
+    doc.setFontSize(7);
+    doc.setTextColor(107, 33, 168);
+    doc.text("STATIONERY MART", 173, 21, { align: "center" });
+
+    // Divider Line
+    doc.setDrawColor(220, 220, 225);
+    doc.line(14, 30, 196, 30);
+
+    // 3. INVOICE META & SHIPPING
+    doc.setTextColor(30, 30, 35);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
     doc.text("TAX INVOICE", 14, 38);
     doc.setFont("helvetica", "normal");
     doc.text(`Invoice No: INV-${order.orderNumber.split("-").pop()}`, 14, 44);
@@ -215,27 +238,27 @@ export default function OrderDetailPage() {
   };
 
   return (
-    <div className="w-full max-w-full space-y-6 font-sans pb-12 text-gray-900 overflow-x-hidden">
+    <div className="w-full max-w-full space-y-4 sm:space-y-6 font-sans pb-12 text-gray-900 overflow-x-hidden px-1 sm:px-0">
       
       {/* 1. HEADER SECTION */}
-      <div className="flex flex-wrap gap-4 justify-between items-center border-b border-border-subtle pb-5">
-        <div className="space-y-1.5">
+      <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center border-b border-border-subtle pb-5">
+        <div className="space-y-1.5 min-w-0 w-full sm:w-auto">
           <Link href="/admin/orders" className="inline-flex items-center gap-1.5 text-zinc-600 hover:text-primary-700 transition-colors text-xs font-black uppercase tracking-wider">
             <ArrowLeft className="w-4 h-4 text-primary-600" /> Back to Orders Feed
           </Link>
-          <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-xl sm:text-2xl font-black tracking-tight font-mono text-gray-900">{order.orderNumber}</h1>
-            <span className={`px-3 py-1 rounded-xl text-xs ${statusClasses[order.status] || "bg-zinc-100 text-zinc-700"}`}>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <h1 className="text-lg sm:text-2xl font-black tracking-tight font-mono text-gray-900 truncate">{order.orderNumber}</h1>
+            <span className={`px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-xl text-xs ${statusClasses[order.status] || "bg-zinc-100 text-zinc-700"}`}>
               {order.status}
             </span>
           </div>
           <p className="text-xs text-zinc-600 font-bold flex items-center gap-1.5">
-            <Calendar className="w-4 h-4 text-primary-600" /> Placed on {formatDate(order.createdAt)}
+            <Calendar className="w-4 h-4 text-primary-600 shrink-0" /> Placed on {formatDate(order.createdAt)}
           </p>
         </div>
         <Button 
           onClick={handleDownloadInvoice} 
-          className="bg-primary-600 hover:bg-primary-700 text-white font-black rounded-2xl px-5 h-11 text-xs sm:text-sm shadow-md cursor-pointer btn-modern shrink-0 flex items-center gap-2"
+          className="w-full sm:w-auto bg-primary-600 hover:bg-primary-700 text-white font-black rounded-2xl px-5 h-10 sm:h-11 text-xs sm:text-sm shadow-md cursor-pointer btn-modern shrink-0 flex items-center justify-center gap-2"
         >
           <Download className="w-4 h-4" /> Download Official Invoice
         </Button>

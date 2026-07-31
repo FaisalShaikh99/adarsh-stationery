@@ -98,28 +98,49 @@ export default function OrderDetailDrawer({ orderId, isOpen, onClose }) {
     if (!order) return;
     const doc = new jsPDF();
 
+    // 1. TOP LEFT: COMPANY BRANDING
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(20);
-    doc.text("ADARSH STATIONERY MART", 14, 20);
+    doc.setFontSize(18);
+    doc.setTextColor(155, 102, 212); // Brand Purple
+    doc.text("ADARSH STATIONERY", 14, 18);
 
-    doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
-    doc.text("Official Tax Invoice", 14, 26);
-    doc.text(`Invoice Date: ${new Date().toLocaleDateString("en-IN")}`, 14, 31);
+    doc.setTextColor(100, 100, 100);
+    doc.setFont("helvetica", "normal");
+    doc.text("Official Tax Invoice", 14, 24);
+    doc.text(`Invoice Date: ${new Date().toLocaleDateString("en-IN")}`, 14, 29);
 
-    doc.line(14, 35, 196, 35);
+    // 2. TOP RIGHT CORNER: LOGO BADGE (x=150, y=8, w=46, h=18)
+    doc.setFillColor(245, 243, 255);
+    doc.roundedRect(150, 8, 46, 18, 3, 3, "F");
+    doc.setDrawColor(216, 165, 233);
+    doc.roundedRect(150, 8, 46, 18, 3, 3, "D");
 
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(126, 34, 206);
+    doc.text("ADARSH LOGO", 173, 16, { align: "center" });
+    doc.setFontSize(7);
+    doc.setTextColor(107, 33, 168);
+    doc.text("STATIONERY MART", 173, 21, { align: "center" });
+
+    // Divider Line
+    doc.setDrawColor(220, 220, 225);
+    doc.line(14, 34, 196, 34);
+
+    // 3. INVOICE ORDER & SHIPPING DETAILS
+    doc.setTextColor(30, 30, 35);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
     doc.text(`Order Ref: ${order.orderNumber}`, 14, 43);
     doc.text(`Payment Method: ${order.paymentMethod || "COD"}`, 14, 48);
 
     doc.setFont("helvetica", "bold");
-    doc.text("Customer & Shipping Address:", 120, 43);
+    doc.text("Customer & Shipping Address:", 110, 43);
     doc.setFont("helvetica", "normal");
-    doc.text(`${order.customer?.name || "Customer"}`, 120, 48);
-    doc.text(`${order.shippingAddress?.street || ""}`, 120, 53);
-    doc.text(`${order.shippingAddress?.city || ""}, ${order.shippingAddress?.state || ""} - ${order.shippingAddress?.postalCode || ""}`, 120, 58);
+    doc.text(`${order.customer?.name || "Customer"}`, 110, 48);
+    doc.text(`${order.shippingAddress?.street || ""}`, 110, 53);
+    doc.text(`${order.shippingAddress?.city || ""}, ${order.shippingAddress?.state || ""} - ${order.shippingAddress?.postalCode || ""}`, 110, 58);
 
     let y = 70;
     doc.setFont("helvetica", "bold");
@@ -171,53 +192,55 @@ export default function OrderDetailDrawer({ orderId, isOpen, onClose }) {
         onClick={onClose} 
       />
 
-      {/* Drawer Container (Strict Clip with overflow-hidden & rounded-l-[36px]) */}
+      {/* Drawer Container */}
       <div className="relative w-full sm:w-[88vw] lg:w-[48%] max-w-[720px] bg-gradient-to-br from-[#9B66D4] via-[#B885E2] to-[#D8A5E9] border-l border-white/30 h-full flex flex-col shadow-2xl z-10 animate-in slide-in-from-right duration-300 text-white sm:rounded-l-[36px] overflow-hidden">
         
         {/* FIXED DRAWER HEADER */}
-        <div className="flex items-center justify-between border-b border-white/25 p-4 sm:p-6 shrink-0 bg-white/10 backdrop-blur-xl sticky top-0 z-20">
-          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 pr-2">
+        <div className="flex items-center justify-between border-b border-white/25 p-3.5 sm:p-6 shrink-0 bg-white/10 backdrop-blur-xl sticky top-0 z-20">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 pr-1">
             <div>
-              <div className="flex items-center gap-2.5">
-                <h3 className="text-xl sm:text-2xl font-black text-white font-mono tracking-tight">{order?.orderNumber || "Loading Order..."}</h3>
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2.5">
+                <h3 className="text-lg sm:text-2xl font-black text-white font-mono tracking-tight truncate">{order?.orderNumber || "Loading Order..."}</h3>
                 {order && (
-                  <span className={`px-3 py-1 rounded-xl text-xs ${statusClasses[order.status] || "bg-white/20 text-white font-bold"}`}>
+                  <span className={`px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-xl text-[10px] sm:text-xs ${statusClasses[order.status] || "bg-white/20 text-white font-bold"}`}>
                     {order.status}
                   </span>
                 )}
               </div>
               {order && (
-                <p className="text-xs text-purple-100 font-bold flex items-center gap-1.5 mt-1">
-                  <Calendar className="w-3.5 h-3.5 text-white" /> Placed on {formatDate(order.createdAt)}
+                <p className="text-[11px] sm:text-xs text-purple-100 font-bold flex items-center gap-1.5 mt-0.5">
+                  <Calendar className="w-3.5 h-3.5 text-white shrink-0" /> Placed on {formatDate(order.createdAt)}
                 </p>
               )}
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             {order && (
               <>
                 <Button 
                   onClick={handleDownloadInvoice} 
-                  className="bg-white text-purple-950 font-black rounded-2xl px-4 h-10 text-xs hover:bg-purple-50 transition-all shadow-md shrink-0 flex items-center gap-1.5 cursor-pointer btn-modern"
+                  className="bg-white text-purple-950 font-black rounded-2xl px-3 sm:px-4 h-9 sm:h-10 text-[11px] sm:text-xs hover:bg-purple-50 transition-all shadow-md shrink-0 flex items-center gap-1 cursor-pointer btn-modern"
                 >
-                  <Download className="w-3.5 h-3.5 text-purple-700" /> Tax Invoice
+                  <Download className="w-3.5 h-3.5 text-purple-700" /> <span className="hidden xs:inline">Tax Invoice</span>
                 </Button>
                 <Link
                   href={`/admin/orders/${order._id}`}
-                  className="p-2 text-white/90 hover:text-white hover:bg-white/20 rounded-xl transition-colors cursor-pointer"
+                  className="p-1.5 sm:p-2 text-white/90 hover:text-white hover:bg-white/20 rounded-xl transition-colors cursor-pointer"
                   title="Open standalone page"
                 >
-                  <ExternalLink className="w-5 h-5" />
+                  <ExternalLink className="w-4 h-4 sm:w-5 sm:h-5" />
                 </Link>
               </>
             )}
             <button 
               onClick={onClose} 
-              className="p-2 rounded-xl text-white/90 hover:text-white hover:bg-white/20 transition-colors cursor-pointer"
+              className="p-1.5 sm:p-2 rounded-xl text-white/90 hover:text-white hover:bg-white/20 transition-colors cursor-pointer"
             >
-              <X className="w-6 h-6" />
+              <X className="w-5 h-5 sm:w-6 sm:h-6" />
             </button>
+          </div>
+        </div>
           </div>
         </div>
 
