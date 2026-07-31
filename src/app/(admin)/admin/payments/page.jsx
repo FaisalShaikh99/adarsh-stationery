@@ -366,21 +366,27 @@ export default function PaymentsPage() {
 
     const expenseMap = {};
     expenseTrend.forEach((item) => {
-      expenseMap[item.date] = item.amount || 0;
+      if (item.date) expenseMap[item.date] = item.amount || 0;
+      if (item.label) expenseMap[item.label] = item.amount || 0;
     });
 
     if (revenueTrend.length > 0) {
-      return revenueTrend.map((r) => ({
-        date: r.date,
-        revenue: r.revenue || 0,
-        expense: expenseMap[r.date] || 0,
-      }));
+      return revenueTrend.map((r) => {
+        const expVal = expenseMap[r.date] ?? expenseMap[r.label] ?? 0;
+        return {
+          date: r.label || r.date,
+          isoDate: r.date,
+          revenue: r.revenue || 0,
+          expense: Number(expVal.toFixed(2)),
+        };
+      });
     }
 
     return expenseTrend.map((e) => ({
-      date: e.date,
+      date: e.label || e.date,
+      isoDate: e.date,
       revenue: 0,
-      expense: e.amount || 0,
+      expense: Number((e.amount || 0).toFixed(2)),
     }));
   }, [dashboardData, expenseTrendData]);
 

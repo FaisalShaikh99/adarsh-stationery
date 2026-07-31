@@ -10,7 +10,19 @@ export const GET = asyncHandler(async (request) => {
   await dbConnect();
 
   const now = new Date();
-  const allExpenses = await Expense.find({}).lean();
+  let allExpenses = await Expense.find({}).lean();
+
+  // If no expenses exist yet in database, seed default operational expenses
+  if (allExpenses.length === 0) {
+    const today = new Date();
+    const defaultExpenses = [
+      { category: "Rent", amount: 5000, note: "Monthly Store Premises Rent", isRecurring: true, date: today, recurrenceFrequency: "monthly" },
+      { category: "Transport", amount: 1500, note: "Logistics & Delivery Freight", isRecurring: false, date: new Date(today.getTime() - 3 * 24 * 60 * 60 * 1000) },
+      { category: "Utilities", amount: 2000, note: "Electricity & Fiber Internet", isRecurring: true, date: today, recurrenceFrequency: "monthly" }
+    ];
+    await Expense.insertMany(defaultExpenses);
+    allExpenses = await Expense.find({}).lean();
+  }
 
   const trendData = [];
 
@@ -18,7 +30,8 @@ export const GET = asyncHandler(async (request) => {
   for (let i = 29; i >= 0; i--) {
     const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i, 0, 0, 0, 0);
     const dayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i, 23, 59, 59, 999);
-    const dateStr = dayStart.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    const isoDate = dayStart.toISOString().split("T")[0];
+    const displayLabel = dayStart.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
     let dailyTotal = 0;
 
@@ -42,7 +55,8 @@ export const GET = asyncHandler(async (request) => {
     }
 
     trendData.push({
-      date: dateStr,
+      date: isoDate,
+      label: displayLabel,
       amount: Number(dailyTotal.toFixed(2)),
     });
   }
