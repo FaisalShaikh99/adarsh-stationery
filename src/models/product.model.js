@@ -86,9 +86,5 @@ const ProductSchema = new mongoose.Schema(
   }
 );
 
-// Force fresh schema registration on reload to avoid schema cache conflicts in Next.js dev server
-if (mongoose.models.Product) {
-  delete mongoose.models.Product;
-}
-
-export default mongoose.model("Product", ProductSchema);
+export const Product = mongoose.models.Product || mongoose.model("Product", ProductSchema);
+export default Product;

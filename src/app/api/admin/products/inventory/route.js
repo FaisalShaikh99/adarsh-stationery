@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { dbConnect } from "@/lib/dbConnect";
 import Product from "@/models/product.model";
 import Order from "@/models/order.model";
+import { Category } from "@/models/category.model";
+import { Brand } from "@/models/brand.model";
 import { ApiResponse } from "@/utils/ApiResponse";
 import { asyncHandler } from "@/utils/asyncHandler";
 
@@ -33,8 +35,8 @@ export const GET = asyncHandler(async () => {
     }
   });
 
-  // 2. Fetch active products with populated category & company
-  const products = await Product.find({ isActive: true })
+  // 2. Fetch products with populated category & company
+  const products = await Product.find({ isActive: { $ne: false } })
     .populate("category", "name")
     .populate("company", "name logo")
     .sort({ name: 1 })

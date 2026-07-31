@@ -79,7 +79,7 @@ export const GET = asyncHandler(async (request) => {
     const companyFilter = searchParams.get("company");
     const searchQuery = searchParams.get("search");
 
-    const matchCriteria = { isActive: true };
+    const matchCriteria = { isActive: { $ne: false } };
 
     if (categoryFilter && categoryFilter !== "all") {
         matchCriteria.category = new mongoose.Types.ObjectId(categoryFilter);
