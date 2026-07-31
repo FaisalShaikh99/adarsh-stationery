@@ -162,6 +162,15 @@ export const GET = asyncHandler(async (request) => {
         Order.aggregate([
             { $match: { status: { $ne: "Cancelled" } } },
             { $unwind: "$items" },
+            {
+                $lookup: {
+                    from: "products",
+                    localField: "items.product",
+                    foreignField: "_id",
+                    as: "productDoc"
+                }
+            },
+            { $unwind: { path: "$productDoc", preserveNullAndEmptyArrays: true } },
             { $sort: { createdAt: -1 } },
             {
                 $project: {
@@ -176,7 +185,8 @@ export const GET = asyncHandler(async (request) => {
                     productName: "$items.productName",
                     quantity: "$items.quantity",
                     pricePerUnit: "$items.pricePerUnit",
-                    subtotal: "$items.subtotal"
+                    subtotal: "$items.subtotal",
+                    productImage: { $arrayElemAt: ["$productDoc.images", 0] }
                 }
             }
         ])

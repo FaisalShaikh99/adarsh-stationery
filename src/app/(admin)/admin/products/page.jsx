@@ -22,7 +22,8 @@ import {
   Send,
   Package,
   Camera,
-  Check
+  Check,
+  ShoppingBag
 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -2444,19 +2445,33 @@ function ProductManagementContent() {
                   const badgeStyle = statusColors[item.status] || "bg-zinc-100 text-zinc-700 border-zinc-200";
 
                   return (
-                    <div key={item._id} className="bg-white border border-border-subtle hover:border-primary-300 rounded-2xl p-4 shadow-2xs space-y-2.5 transition-all">
-                      <div className="flex items-start justify-between gap-3">
+                    <div key={item._id} className="bg-white border border-border-subtle hover:border-primary-300 rounded-2xl p-3.5 sm:p-4 shadow-2xs space-y-2.5 transition-all">
+                      <div className="flex items-start gap-3">
+                        {/* Product Image Thumbnail */}
+                        <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-purple-50/60 border border-purple-100 overflow-hidden shrink-0 flex items-center justify-center p-1">
+                          {item.productImage ? (
+                            <img 
+                              src={item.productImage} 
+                              alt={item.productName} 
+                              className="w-full h-full object-contain mix-blend-multiply rounded-lg" 
+                            />
+                          ) : (
+                            <Package className="w-6 h-6 text-purple-400" />
+                          )}
+                        </div>
+
                         <div className="min-w-0 flex-1">
                           <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border ${badgeStyle}`}>
                             {item.status || "Confirmed"}
                           </span>
-                          <h4 className="text-xs font-black text-gray-900 truncate mt-1.5">{item.productName}</h4>
+                          <h4 className="text-xs sm:text-sm font-black text-gray-900 truncate mt-1">{item.productName}</h4>
                           <p className="text-[11px] text-zinc-500 font-mono mt-0.5">
                             Order #{item.orderNumber || String(item.orderId).slice(-6)} • {item.customerName || "Customer"}
                           </p>
                         </div>
+
                         <div className="text-right shrink-0">
-                          <p className="text-sm font-black text-gray-900 font-mono">₹{(item.subtotal || 0).toLocaleString("en-IN")}</p>
+                          <p className="text-sm sm:text-base font-black text-gray-900 font-mono">₹{(item.subtotal || 0).toLocaleString("en-IN")}</p>
                           <p className="text-[11px] font-black text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md border border-purple-200 mt-1 inline-block">
                             {item.quantity} × ₹{item.pricePerUnit || 0}
                           </p>
