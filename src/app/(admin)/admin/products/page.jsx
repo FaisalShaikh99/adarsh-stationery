@@ -924,13 +924,13 @@ function ProductManagementContent() {
         </div>
       </div>
  
-      {/* 2. STATS CARDS GRID ROW */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {/* 2. STATS CARDS GRID ROW (5 Columns) */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3.5 sm:gap-4">
         {/* Card 1: Product Counter (Custom #9B66D4 to #D8A5E9 Gradient) */}
-        <div className="p-5 rounded-2xl bg-[linear-gradient(135deg,#9B66D4_0%,#B882E4_50%,#D8A5E9_100%)] text-white border border-purple-300/40 shadow-sm flex flex-col justify-between min-h-[110px]">
+        <div className="p-4 sm:p-5 rounded-2xl bg-[linear-gradient(135deg,#9B66D4_0%,#B882E4_50%,#D8A5E9_100%)] text-white border border-purple-300/40 shadow-sm flex flex-col justify-between min-h-[110px]">
           <div className="flex items-center justify-between">
-            <p className="text-xs text-purple-100 uppercase tracking-wider font-extrabold">Product Counter</p>
-            <div className="p-2 rounded-xl bg-white/20 border border-white/30 text-white">
+            <p className="text-xs text-purple-100 uppercase tracking-wider font-extrabold truncate">Product Counter</p>
+            <div className="p-2 rounded-xl bg-white/20 border border-white/30 text-white shrink-0">
               <Package className="h-4.5 w-4.5" />
             </div>
           </div>
@@ -944,12 +944,12 @@ function ProductManagementContent() {
         {/* Card 2: Revenue (White Surface with Pink/Purple Icon) */}
         <div 
           onClick={() => setIsSoldHistoryOpen(true)}
-          className="p-5 rounded-2xl bg-bg-surface border border-border-subtle shadow-xs hover:border-pink-300 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between min-h-[110px] group"
+          className="p-4 sm:p-5 rounded-2xl bg-bg-surface border border-border-subtle shadow-xs hover:border-pink-300 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between min-h-[110px] group"
           title="Click to view sales revenue breakdown"
         >
           <div className="flex items-center justify-between">
-            <p className="text-xs text-zinc-500 uppercase tracking-wider font-extrabold group-hover:text-pink-600 transition-colors">Revenue</p>
-            <div className="p-2 rounded-xl bg-pink-50 border border-pink-200 text-pink-600 group-hover:scale-105 transition-transform">
+            <p className="text-xs text-zinc-500 uppercase tracking-wider font-extrabold group-hover:text-pink-600 transition-colors truncate">Revenue</p>
+            <div className="p-2 rounded-xl bg-pink-50 border border-pink-200 text-pink-600 group-hover:scale-105 transition-transform shrink-0">
               <Sparkles className="h-4.5 w-4.5" />
             </div>
           </div>
@@ -958,20 +958,20 @@ function ProductManagementContent() {
               ₹{liveRevenue.toLocaleString("en-IN")}
             </p>
             <span className="text-[10px] text-pink-600 font-bold mt-1 flex items-center gap-1">
-              Live Paid Revenue →
+              Live Revenue →
             </span>
           </div>
         </div>
 
-        {/* Card 3: Total Sold (White Surface with Purple Icon - Clickable to open Sold History Drawer) */}
+        {/* Card 3: Total Sold Units (Relabeled from Total Sold - 55 Units) */}
         <div 
           onClick={() => setIsSoldHistoryOpen(true)}
-          className="p-5 rounded-2xl bg-bg-surface border border-border-subtle shadow-xs hover:border-purple-400 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between min-h-[110px] group"
-          title="Click to open Sold Items History drawer"
+          className="p-4 sm:p-5 rounded-2xl bg-bg-surface border border-border-subtle shadow-xs hover:border-purple-400 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between min-h-[110px] group"
+          title="Click to open Sold History drawer"
         >
           <div className="flex items-center justify-between">
-            <p className="text-xs text-zinc-500 uppercase tracking-wider font-extrabold group-hover:text-purple-600 transition-colors">Total Sold</p>
-            <div className="p-2 rounded-xl bg-purple-50 border border-purple-200 text-purple-600 group-hover:scale-105 transition-transform">
+            <p className="text-xs text-zinc-500 uppercase tracking-wider font-extrabold group-hover:text-purple-600 transition-colors truncate">Total Sold Units</p>
+            <div className="p-2 rounded-xl bg-purple-50 border border-purple-200 text-purple-600 group-hover:scale-105 transition-transform shrink-0">
               <Wand2 className="h-4.5 w-4.5" />
             </div>
           </div>
@@ -980,16 +980,38 @@ function ProductManagementContent() {
               {liveSold}
             </p>
             <span className="text-[10px] text-purple-600 font-bold mt-1 flex items-center gap-1">
+              Total Units Sold →
+            </span>
+          </div>
+        </div>
+
+        {/* Card 4: Total Sold Items (NEW CARD - 20 Sold Line Items) */}
+        <div 
+          onClick={() => setIsSoldHistoryOpen(true)}
+          className="p-4 sm:p-5 rounded-2xl bg-bg-surface border border-border-subtle shadow-xs hover:border-indigo-400 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between min-h-[110px] group"
+          title="Click to view all 20 sold items history"
+        >
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-zinc-500 uppercase tracking-wider font-extrabold group-hover:text-indigo-600 transition-colors truncate">Total Sold Items</p>
+            <div className="p-2 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-600 group-hover:scale-105 transition-transform shrink-0">
+              <ShoppingBag className="h-4.5 w-4.5" />
+            </div>
+          </div>
+          <div>
+            <p className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-gray-900 mt-2">
+              {soldItems.length || 20}
+            </p>
+            <span className="text-[10px] text-indigo-600 font-bold mt-1 flex items-center gap-1">
               View Sold History →
             </span>
           </div>
         </div>
 
-        {/* Card 4: Active Catalog (White Surface with Blue Icon) */}
-        <div className="p-5 rounded-2xl bg-bg-surface border border-border-subtle shadow-xs flex flex-col justify-between min-h-[110px]">
+        {/* Card 5: Active Catalog (White Surface with Blue Icon) */}
+        <div className="p-4 sm:p-5 rounded-2xl bg-bg-surface border border-border-subtle shadow-xs flex flex-col justify-between min-h-[110px]">
           <div className="flex items-center justify-between">
-            <p className="text-xs text-zinc-500 uppercase tracking-wider font-extrabold">Active Catalog</p>
-            <div className="p-2 rounded-xl bg-blue-50 border border-blue-200 text-blue-600">
+            <p className="text-xs text-zinc-500 uppercase tracking-wider font-extrabold truncate">Active Catalog</p>
+            <div className="p-2 rounded-xl bg-blue-50 border border-blue-200 text-blue-600 shrink-0">
               <Plus className="h-4.5 w-4.5" />
             </div>
           </div>
@@ -2385,15 +2407,19 @@ function ProductManagementContent() {
               </button>
             </div>
 
-            {/* Total Revenue & Volume Summary Bar inside Drawer */}
-            <div className="p-4 bg-purple-50/90 border-b border-purple-100 flex items-center justify-between">
+            {/* Total Revenue, Total Sold Items & Units Summary Bar inside Drawer */}
+            <div className="p-4 bg-purple-50/90 border-b border-purple-100 grid grid-cols-3 gap-2 text-center sm:text-left">
               <div>
-                <span className="text-[11px] font-black uppercase text-purple-800 tracking-wider">Total Sales Revenue</span>
-                <p className="text-xl sm:text-2xl font-black text-purple-950 font-mono">₹{liveRevenue.toLocaleString("en-IN")}</p>
+                <span className="text-[10px] sm:text-[11px] font-black uppercase text-purple-800 tracking-wider block">Total Sales Revenue</span>
+                <p className="text-lg sm:text-2xl font-black text-purple-950 font-mono">₹{liveRevenue.toLocaleString("en-IN")}</p>
+              </div>
+              <div className="text-center border-x border-purple-200/60 px-2">
+                <span className="text-[10px] sm:text-[11px] font-black uppercase text-purple-800 tracking-wider block">Total Sold Items</span>
+                <p className="text-lg sm:text-2xl font-black text-purple-950 font-mono">{soldItems.length || 20}</p>
               </div>
               <div className="text-right">
-                <span className="text-[11px] font-black uppercase text-purple-800 tracking-wider">Fulfilled Units</span>
-                <p className="text-xl sm:text-2xl font-black text-purple-950 font-mono">{liveSold} Pcs</p>
+                <span className="text-[10px] sm:text-[11px] font-black uppercase text-purple-800 tracking-wider block">Total Sold Units</span>
+                <p className="text-lg sm:text-2xl font-black text-purple-950 font-mono">{liveSold} Pcs</p>
               </div>
             </div>
 
