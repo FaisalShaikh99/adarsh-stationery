@@ -46,9 +46,24 @@ export default function NewProductNotification({
       <Section style={{ backgroundColor: "#F8F5FB", padding: "40px 15px", fontFamily: "Roboto, sans-serif" }}>
         <Section style={{ maxWidth: "600px", margin: "0 auto", backgroundColor: "#ffffff", borderRadius: "24px", border: "1px solid #E9D8F4", overflow: "hidden", boxShadow: "0 8px 30px rgba(74, 5, 109, 0.08)" }}>
           
-          {/* Branded Amethyst Header */}
+          {/* Branded Amethyst Header with Official Logo */}
           <div style={{ backgroundColor: "#4A056D", backgroundImage: "linear-gradient(135deg, #4A056D 0%, #7E22CE 100%)", padding: "36px 28px", textAlign: "center" }}>
-            <div style={{ display: "inline-block", padding: "6px 16px", backgroundColor: "rgba(255, 255, 255, 0.15)", borderRadius: "20px", border: "1px solid rgba(255, 255, 255, 0.25)", marginBottom: "12px" }}>
+            <img
+              src="https://adarsh-stationery.vercel.app/logo.png"
+              alt="Adarsh Stationery Logo"
+              width="64"
+              height="64"
+              style={{
+                display: "block",
+                margin: "0 auto 14px auto",
+                borderRadius: "16px",
+                backgroundColor: "#ffffff",
+                padding: "6px",
+                boxShadow: "0 6px 16px rgba(0, 0, 0, 0.25)",
+                border: "2px solid rgba(255, 255, 255, 0.4)"
+              }}
+            />
+            <div style={{ display: "inline-block", padding: "5px 14px", backgroundColor: "rgba(255, 255, 255, 0.15)", borderRadius: "20px", border: "1px solid rgba(255, 255, 255, 0.25)", marginBottom: "10px" }}>
               <span style={{ fontSize: "11px", color: "#F3E8FF", letterSpacing: "2px", fontWeight: "bold", textTransform: "uppercase" }}>
                 Exclusive Store Announcement
               </span>

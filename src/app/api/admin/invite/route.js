@@ -38,8 +38,8 @@ export const POST = asyncHandler(async (request) => {
     // Zod Validation Check
     const validation = adminInviteSchema.safeParse({ email, role });
     if (!validation.success) {
-        const message = validation.error.issues?.[0]?.message || validation.error.message || "Invalid invite payload.";
-        throw new ApiError(400, message);
+        const msg = validation.error.issues?.[0]?.message || validation.error.message || "Invalid invite payload.";
+        throw new ApiError(400, msg);
     }
 
     // Check if the user is already a registered team member
@@ -55,9 +55,9 @@ export const POST = asyncHandler(async (request) => {
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     // Build secure HTTPS link to prevent Gmail anti-phishing spam flags
-    let baseUrl = process.env.NEXTAUTH_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://adarsh-stationery.vercel.app");
+    let baseUrl = process.env.NEXTAUTH_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://adarsh-stationery-mart-admin.vercel.app");
     if (baseUrl.startsWith("http://localhost")) {
-      baseUrl = "https://adarsh-stationery.vercel.app";
+      baseUrl = "https://adarsh-stationery-mart-admin.vercel.app";
     }
     const inviteLink = `${baseUrl}/admin/sign-in?token=${token}`;
 
@@ -85,14 +85,7 @@ export const POST = asyncHandler(async (request) => {
                 from: process.env.SENDER_EMAIL || "Adarsh Stationery <onboarding@resend.dev>",
                 to: email,
                 subject: `Official Admin Invitation (${role.toUpperCase()}) - Adarsh Stationery`,
-                react: (
-                    <InviteEmail
-                        email={email}
-                        role={role}
-                        inviteLink={inviteLink}
-                        message={message}
-                    />
-                ),
+                html: htmlContent,
             });
 
             if (resendResult.error) {
@@ -111,6 +104,7 @@ export const POST = asyncHandler(async (request) => {
     if (!emailSent) {
         const isEmailJSConfigured = process.env.EMAILJS_SERVICE_ID && process.env.EMAILJS_TEMPLATE_ID && process.env.EMAILJS_PUBLIC_KEY;
         if (isEmailJSConfigured) {
+            // Pass htmlContent to message as well so EmailJS template renders our Amethyst Dusk Purple Gradient UI even when using EmailJS template placeholders
             const emailJSData = {
                 service_id: process.env.EMAILJS_SERVICE_ID,
                 template_id: process.env.EMAILJS_TEMPLATE_ID,
@@ -122,12 +116,13 @@ export const POST = asyncHandler(async (request) => {
                      user_email: email,
                      email: email,
                      role: role.toUpperCase(),
-                     message: message || "No custom message attached.",
-                     invite_link: inviteLink,
-                     html: htmlContent,
+                     message: htmlContent,
+                     custom_note: message || "No custom message attached.",
                      message_html: htmlContent,
+                     html: htmlContent,
                      html_content: htmlContent,
                      content: htmlContent,
+                     invite_link: inviteLink,
                 },
             };
 
