@@ -23,7 +23,8 @@ import {
   AlertTriangle,
   UserCheck,
   RefreshCw,
-  Clock
+  Clock,
+  X
 } from "lucide-react";
 import { 
   DropdownMenu, 
@@ -110,6 +111,32 @@ export default function AdminHeader({ onToggleMobileDrawer }) {
       queryClient.invalidateQueries({ queryKey: ["notifications-feed"] });
     },
   });
+
+  const dismissNotificationMutation = useMutation({
+    mutationFn: (id) => axios.delete(`/api/admin/notifications/${id}`),
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ["notifications-feed"] });
+      const previousNotifications = queryClient.getQueryData(["notifications-feed"]) || [];
+      queryClient.setQueryData(["notifications-feed"], (old = []) => 
+        old.filter((n) => n._id !== id)
+      );
+      return { previousNotifications };
+    },
+    onError: (err, id, context) => {
+      if (context?.previousNotifications) {
+        queryClient.setQueryData(["notifications-feed"], context.previousNotifications);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications-unread-count"] });
+      queryClient.invalidateQueries({ queryKey: ["notifications-feed"] });
+    },
+  });
+
+  const handleDismissNotif = (e, notifId) => {
+    e.stopPropagation();
+    dismissNotificationMutation.mutate(notifId);
+  };
 
   const handleNotifClick = (notif) => {
     if (!notif.isRead) {
@@ -303,7 +330,7 @@ export default function AdminHeader({ onToggleMobileDrawer }) {
                       <div
                         key={notif._id}
                         onClick={() => handleNotifClick(notif)}
-                        className={`p-3 sm:p-4 flex items-start gap-2.5 transition-colors cursor-pointer group ${
+                        className={`p-3 sm:p-4 flex items-start gap-2.5 transition-colors cursor-pointer group relative ${
                           !notif.isRead 
                             ? "bg-primary-50/60 font-semibold" 
                             : "hover:bg-primary-50/30"
@@ -313,7 +340,7 @@ export default function AdminHeader({ onToggleMobileDrawer }) {
                           <NotifIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                         </div>
 
-                        <div className="flex-1 min-w-0 space-y-0.5">
+                        <div className="flex-1 min-w-0 space-y-0.5 pr-5">
                           <div className="flex items-center justify-between gap-2">
                             <h4 className={`text-xs truncate ${!notif.isRead ? "font-black text-gray-900" : "font-semibold text-zinc-700"}`}>
                               {notif.title}
@@ -328,8 +355,17 @@ export default function AdminHeader({ onToggleMobileDrawer }) {
                           </p>
                         </div>
 
+                        <button
+                          onClick={(e) => handleDismissNotif(e, notif._id)}
+                          className="p-1 rounded-lg text-zinc-400 hover:text-rose-600 hover:bg-rose-50 transition-colors opacity-80 sm:opacity-0 group-hover:opacity-100 cursor-pointer shrink-0"
+                          title="Dismiss notification"
+                          aria-label="Dismiss notification"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+
                         {!notif.isRead && (
-                          <span className="w-2 h-2 rounded-full bg-primary-600 shrink-0 mt-1.5" />
+                          <span className="w-2 h-2 rounded-full bg-primary-600 shrink-0 mt-1.5 self-center" />
                         )}
                       </div>
                     );
