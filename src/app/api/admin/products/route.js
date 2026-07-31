@@ -174,7 +174,7 @@ export const GET = asyncHandler(async (request) => {
             { $sort: { createdAt: -1 } },
             {
                 $project: {
-                    _id: { $concat: [{ $toString: "$_id" }, "-", { $ifNull: [{ $toString: "$items._id" }, "1"] }] },
+                    _id: { $concat: [{ $toString: "$_id" }, "-", { $ifNull: [{ $toString: "$items.product" }, "item"] }] },
                     orderId: "$_id",
                     orderNumber: 1,
                     status: 1,

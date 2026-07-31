@@ -2434,7 +2434,7 @@ function ProductManagementContent() {
                   );
                 }
 
-                return filteredSold.map((item) => {
+                return filteredSold.map((item, idx) => {
                   const statusColors = {
                     Confirmed: "bg-blue-50 text-blue-700 border-blue-200",
                     Processing: "bg-purple-50 text-purple-700 border-purple-200",
@@ -2445,7 +2445,7 @@ function ProductManagementContent() {
                   const badgeStyle = statusColors[item.status] || "bg-zinc-100 text-zinc-700 border-zinc-200";
 
                   return (
-                    <div key={item._id} className="bg-white border border-border-subtle hover:border-primary-300 rounded-2xl p-3.5 sm:p-4 shadow-2xs space-y-2.5 transition-all">
+                    <div key={item._id ? `${item._id}-${idx}` : `sold-item-${idx}`} className="bg-white border border-border-subtle hover:border-primary-300 rounded-2xl p-3.5 sm:p-4 shadow-2xs space-y-2.5 transition-all">
                       <div className="flex items-start gap-3">
                         {/* Product Image Thumbnail */}
                         <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-purple-50/60 border border-purple-100 overflow-hidden shrink-0 flex items-center justify-center p-1">
