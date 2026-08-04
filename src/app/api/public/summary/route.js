@@ -3,6 +3,7 @@ import { dbConnect } from "@/lib/dbConnect";
 import Order from "@/models/order.model";
 import Product from "@/models/product.model";
 import Customer from "@/models/customer.model";
+import { StoreSettings } from "@/models/storeSettings.model";
 import { Category } from "@/models/category.model";
 
 export const dynamic = "force-dynamic";
@@ -10,6 +11,17 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     await dbConnect();
+
+    // Store Settings for Contact Details
+    let storeSettings = await StoreSettings.findOne().lean();
+    if (!storeSettings) {
+      storeSettings = {
+        storeName: "Adarsh Stationery",
+        contactEmail: "support@adarshstationery.com",
+        contactPhone: "+91 98765 43210",
+        storeAddress: "123 Stationery Plaza, Main Market, Mumbai, MH - 400001",
+      };
+    }
 
     // 1. Calculate real total revenue from non-cancelled orders
     const allOrders = await Order.find({ status: { $ne: "Cancelled" } }, "totalAmount payment items shippingAddress createdAt status orderNumber").lean();
@@ -101,6 +113,7 @@ export async function GET() {
         recentOrdersStream,
         lowStockWatchlist,
         categoryBreakdown,
+        storeSettings
       }
     });
   } catch (error) {

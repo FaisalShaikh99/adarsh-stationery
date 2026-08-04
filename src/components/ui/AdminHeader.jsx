@@ -5,6 +5,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
+import Image from "next/image";
+import Link from "next/link";
 import { 
   Search, 
   Menu, 
@@ -24,7 +26,9 @@ import {
   UserCheck,
   RefreshCw,
   Clock,
-  X
+  X,
+  PanelLeftClose,
+  PanelLeftOpen
 } from "lucide-react";
 import { 
   DropdownMenu, 
@@ -65,11 +69,38 @@ const getRelativeTime = (dateString) => {
   return past.toLocaleDateString("en-IN", { month: "short", day: "numeric" });
 };
 
-export default function AdminHeader({ onToggleMobileDrawer }) {
+export default function AdminHeader({ 
+  onToggleMobileDrawer,
+  isSidebarCollapsed,
+  onToggleSidebar
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const { data: session } = useSession();
   const queryClient = useQueryClient();
+
+  // Scroll direction state for auto-hiding header
+  const [isHeaderVisible, setIsHeaderVisible] = React.useState(true);
+  const lastScrollYRef = React.useRef(0);
+
+  React.useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      if (currentScrollY < 15) {
+        setIsHeaderVisible(true);
+      } else if (currentScrollY > lastScrollYRef.current + 8) {
+        // Scrolling Down -> Hide Header
+        setIsHeaderVisible(false);
+      } else if (currentScrollY < lastScrollYRef.current - 8) {
+        // Scrolling Up -> Show Header
+        setIsHeaderVisible(true);
+      }
+      lastScrollYRef.current = currentScrollY;
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const setCommandPaletteOpen = (open) => {
     window.dispatchEvent(
@@ -180,11 +211,17 @@ export default function AdminHeader({ onToggleMobileDrawer }) {
   const breadcrumbs = getBreadcrumbs();
 
   return (
-    <header className="sticky top-2 sm:top-3.5 z-30 w-[98%] sm:w-[96%] max-w-full mx-auto my-1 sm:my-2 bg-white backdrop-blur-none sm:backdrop-blur-2xl border border-border-subtle rounded-2xl sm:rounded-[28px] px-2.5 sm:px-4 md:px-6 py-2 sm:py-2.5 transition-all duration-300 shadow-md">
+    <header 
+      className={`sticky top-2 sm:top-3.5 z-30 w-[98%] sm:w-[96%] max-w-full mx-auto my-1 sm:my-2 bg-white/95 backdrop-blur-2xl border border-border-subtle rounded-2xl sm:rounded-[28px] px-2.5 sm:px-4 md:px-6 py-2 sm:py-2.5 transition-all duration-300 ease-in-out shadow-md ${
+        isHeaderVisible ? "translate-y-0 opacity-100" : "-translate-y-28 opacity-0 pointer-events-none"
+      }`}
+    >
       <div className="flex items-center justify-between gap-2 sm:gap-4">
         
         {/* Left Side: Mobile Drawer Trigger + Breadcrumbs */}
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+
+          {/* MOBILE DRAWER TRIGGER */}
           <button
             onClick={onToggleMobileDrawer}
             className="lg:hidden p-1.5 sm:p-2 rounded-full text-zinc-700 hover:text-gray-900 hover:bg-primary-50 border border-border-subtle transition-colors cursor-pointer shrink-0"

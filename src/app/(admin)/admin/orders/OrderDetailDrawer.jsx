@@ -241,8 +241,6 @@ export default function OrderDetailDrawer({ orderId, isOpen, onClose }) {
             </button>
           </div>
         </div>
-          </div>
-        </div>
 
         {/* SCROLLABLE DRAWER CONTENT */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6 custom-scrollbar">

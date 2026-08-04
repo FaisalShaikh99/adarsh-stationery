@@ -19,12 +19,16 @@ import {
   Tag,
   Shield,
   ChevronRight,
-  LogOut
+  LogOut,
+  PanelLeftClose,
+  PanelLeftOpen
 } from "lucide-react";
 
 export default function AdminSidebar({ 
   isMobileOpen,
-  setIsMobileOpen
+  setIsMobileOpen,
+  isSidebarCollapsed = false,
+  onToggleSidebar
 }) {
   const pathname = usePathname();
   const { data: session } = useSession();
@@ -226,30 +230,40 @@ export default function AdminSidebar({
         </div>
       </div>
 
-      {/* 🌟 1. STANDALONE COMPANY LOGO CONTAINER (SEAMLESS HD MULTIPLY BLEND) */}
-      <div className="hidden lg:flex fixed top-3.5 left-4 z-40">
-        <Link 
-          href="/" 
-          className="w-14 h-14 sm:w-16 sm:h-16 rounded-[22px] bg-gradient-to-b from-[#F8F9FE] to-[#ECEFFA] border border-purple-200/60 shadow-xs flex items-center justify-center p-1 overflow-hidden hover:scale-105 hover:shadow-md transition-all duration-200 group cursor-pointer"
-          title="Adarsh Stationery Mart"
+      {/* 🌟 DRAWING 1: PURPLE VERTICAL EDGE TAB BUTTON WHEN SIDEBAR IS COLLAPSED */}
+      {isSidebarCollapsed && onToggleSidebar && (
+        <button
+          onClick={onToggleSidebar}
+          className="hidden lg:flex fixed left-0 top-1/2 -translate-y-1/2 z-50 w-3.5 sm:w-4 h-16 sm:h-20 bg-[#702594] hover:bg-[#8031A6] text-white rounded-r-xl shadow-xl border-y border-r border-purple-400 items-center justify-center cursor-pointer transition-all duration-300 hover:w-5.5 group animate-in slide-in-from-left duration-200"
+          title="Open Sidebar"
+          aria-label="Open Sidebar"
         >
-          <Image 
-            src="/logo-icon.png" 
-            alt="Adarsh Stationery Mart Logo" 
-            width={1024}
-            height={1024}
-            quality={95}
-            priority
-            className="w-full h-full object-contain mix-blend-multiply filter drop-shadow-xs group-hover:drop-shadow-md transition-all" 
-          />
-        </Link>
-      </div>
+          <ChevronRight className="w-3.5 h-3.5 text-purple-100 group-hover:translate-x-0.5 transition-transform" />
+        </button>
+      )}
 
-      {/* 🌟 2. SEPARATE SIDEBAR NAVIGATION CAPSULE */}
-      <aside className="hidden lg:flex fixed top-20 bottom-4 left-4 z-40 w-14 sm:w-16 bg-white/90 backdrop-blur-2xl border border-border-subtle rounded-[32px] flex-col justify-between items-center py-4 px-1.5 select-none shadow-md">
+      {/* 🌟 DRAWING 2: DESKTOP FULL-HEIGHT SIDEBAR RAIL WITH TOP PURPLE TOGGLE BUTTON */}
+      <aside 
+        className={`hidden lg:flex fixed top-3.5 bottom-3.5 left-4 z-40 w-14 sm:w-16 bg-white/95 backdrop-blur-2xl border border-border-subtle rounded-[32px] flex-col justify-between items-center py-3.5 px-1.5 select-none shadow-md transition-all duration-300 ease-in-out ${
+          isSidebarCollapsed ? "-translate-x-28 opacity-0 pointer-events-none" : "translate-x-0 opacity-100"
+        }`}
+      >
         
-        {/* TOP SECTION: STACKED NAVIGATION ICON BUTTONS */}
-        <nav className="flex flex-col items-center gap-3.5 w-full">
+        {/* TOP SECTION: PURPLE TOGGLE BUTTON (DRAWING 2) + STACKED NAVIGATION ICON BUTTONS */}
+        <nav className="flex flex-col items-center gap-3 w-full">
+          
+          {/* 🌟 DRAWING 2: TOP PURPLE SIDEBAR TOGGLE BUTTON */}
+          {onToggleSidebar && (
+            <button
+              onClick={onToggleSidebar}
+              className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-purple-100 text-purple-700 hover:bg-purple-200 border border-purple-200 transition-all cursor-pointer flex items-center justify-center shadow-2xs mb-1 group"
+              title="Close Sidebar"
+              aria-label="Close Sidebar"
+            >
+              <PanelLeftClose className="w-5.5 h-5.5 text-purple-800 group-hover:scale-105 transition-transform" />
+            </button>
+          )}
+
           {navigationGroups.map((group) => {
             const GroupIcon = group.icon;
             const isGroupActive = activeGroupId === group.id;
