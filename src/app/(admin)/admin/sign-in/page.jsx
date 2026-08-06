@@ -6,23 +6,16 @@ import { useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, ShieldAlert } from "lucide-react";
+import { Loader2, ShieldAlert, Lock } from "lucide-react";
 import { toast } from "sonner";
 
 function AdminLoginContent() {
   const [loading, setLoading] = useState(false);
   const searchParams = useSearchParams();
 
-  useEffect(() => {
-    const errorParam = searchParams.get("error");
-    if (errorParam === "AccessDenied") {
-      toast.error("Access Denied: Your Google account is not registered as an Admin or Team Member.", {
-        duration: 6000,
-      });
-    }
-  }, [searchParams]);
+  const errorParam = searchParams.get("error");
 
-  // Google Login Handler function
+  // Google Login Handler
   const handleGoogleLogin = async () => {
     setLoading(true);
     try {
@@ -34,16 +27,14 @@ function AdminLoginContent() {
     }
   };
 
-  const errorParam = searchParams.get("error");
-
   return (
     <div className="flex min-h-screen items-center justify-center p-4 font-sans text-gray-900 bg-gradient-to-b from-[#CBB4E8] via-[#ECCDF8] to-[#FBF0FD]">
       
-      {/* Seamless HD Glass Card with Matching Logo Background Tone */}
+      {/* Seamless HD Glass Card */}
       <Card className="w-full max-w-md border border-purple-200/60 bg-[linear-gradient(180deg,#F8F9FE_0%,#F1F4FD_40%,#ECEFFA_100%)] backdrop-blur-xl shadow-2xl rounded-[32px] overflow-hidden animate-in fade-in zoom-in-95 duration-300">
         <CardHeader className="space-y-3 text-center pb-6 border-b border-purple-200/50 flex flex-col items-center pt-8 bg-transparent">
           
-          {/* SEAMLESS HIGH-DEFINITION (HD) LOGO BLEND */}
+          {/* Logo */}
           <div className="flex justify-center w-full my-1">
             <Image
               src="/logo-full.png"
@@ -65,23 +56,44 @@ function AdminLoginContent() {
         </CardHeader>
         
         <CardContent className="pt-8 pb-8 px-6 sm:px-8 space-y-6">
-          <p className="text-center text-xs font-black uppercase tracking-wider text-purple-900">
-            Secure Authentication Required
-          </p>
-
-          {errorParam === "AccessDenied" && (
-            <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex items-start gap-2.5">
-              <ShieldAlert className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
-              <div>
-                <p className="font-black text-rose-900">Access Denied</p>
-                <p className="text-[11px] text-rose-700 font-medium mt-0.5">
-                  Your Google email (shaikhfaisal6262@gmail.com) is not authorized in the Admin database yet. Please sign in with the SuperAdmin account.
+          
+          {/* TASK 2: Blocked / Restricted Account Error Banner */}
+          {errorParam === "AccountRestricted" && (
+            <div className="p-4 rounded-2xl bg-purple-950/10 border border-purple-300/60 text-purple-950 text-xs font-bold flex items-start gap-3 shadow-2xs">
+              <div className="p-2 rounded-xl bg-purple-900/15 text-purple-900 shrink-0 mt-0.5">
+                <Lock className="w-4 h-4" />
+              </div>
+              <div className="space-y-1">
+                <p className="font-black text-purple-950 text-xs sm:text-sm">Account Restricted</p>
+                <p className="text-purple-900/80 text-xs font-medium leading-relaxed">
+                  Your account access has been restricted. Please contact your administrator for assistance.
                 </p>
               </div>
             </div>
           )}
 
-          {/* Google Login Pill Button with UI Micro-Animation */}
+          {/* TASK 2: Uninvited Google Account Error Banner */}
+          {(errorParam === "UnregisteredGoogle" || errorParam === "AccessDenied") && (
+            <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 text-xs font-bold flex items-start gap-3 shadow-2xs">
+              <div className="p-2 rounded-xl bg-rose-100 text-rose-700 shrink-0 mt-0.5">
+                <ShieldAlert className="w-4 h-4" />
+              </div>
+              <div className="space-y-1">
+                <p className="font-black text-rose-950 text-xs sm:text-sm">Access Restricted</p>
+                <p className="text-rose-800 text-xs font-medium leading-relaxed">
+                  This Google account is not registered for admin access.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {!errorParam && (
+            <p className="text-center text-xs font-black uppercase tracking-wider text-purple-900">
+              Secure Authentication Required
+            </p>
+          )}
+
+          {/* Google Login Pill Button */}
           <Button
             onClick={handleGoogleLogin}
             disabled={loading}
